@@ -1,11 +1,18 @@
 'use client';
 
-import { SessionProvider } from 'next-auth/react';
+import { useEffect } from 'react';
+import { useAuthStore } from '@/lib/authStore';
 
 interface AuthProviderProps {
   children: React.ReactNode;
 }
 
 export default function AuthProvider({ children }: AuthProviderProps) {
-  return <SessionProvider>{children}</SessionProvider>;
+  const hydrate = useAuthStore((s) => s.hydrate);
+
+  useEffect(() => {
+    hydrate();
+  }, [hydrate]);
+
+  return <>{children}</>;
 }

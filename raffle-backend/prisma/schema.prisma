@@ -1,0 +1,221 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum Role {
+  USER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum ItemStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum RaffleStatus {
+  SCHEDULED
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+enum TicketStatus {
+  ACTIVE
+  WON
+  LOST
+}
+
+enum TransactionType {
+  DEPOSIT
+  WITHDRAWAL
+  TICKET_PURCHASE
+  TASK_REWARD
+  RAFFLE_WIN
+  REFUND
+}
+
+enum TransactionStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
+enum WithdrawalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum TaskType {
+  WATCH_AD
+  REFERRAL
+  SURVEY
+  SOCIAL_SHARE
+  DAILY_LOGIN
+}
+
+// Models
+
+model User {
+  id            String    @id @default(cuid())
+  userNumber    String    @unique // Unique raffle ID (e.g., RAF-123456)
+  email         String    @unique
+  password      String
+  name          String
+  phone         String?
+  walletBalance Float     @default(0.0)
+  rafflePoints  Int       @default(0)
+  role          Role      @default(USER)
+  status        UserStatus @default(ACTIVE)
+  referredBy    String?   // User number of referrer
+
+  // Email Verification
+  emailVerified          Boolean   @default(false)
+  verificationToken      String?   @unique
+  verificationTokenExpiry DateTime?
+
+  // Password Reset
+  resetPasswordToken      String?   @unique
+  resetPasswordTokenExpiry DateTime?
+
+  // Refresh Token
+  refreshToken  String?
+  
+  tickets       Ticket[]
+  transactions  Transaction[]
+  withdrawals   Withdrawal[]
+  wonRaffles    Raffle[]
+  completedTasks UserTask[]
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@map("users")
+}
+
+model Item {
+  id          String     @id @default(cuid())
+  name        String
+  description String     @db.Text
+  imageUrl    String
+  value       Float
+  category    String
+  status      ItemStatus @default(DRAFT)
+  
+  raffles     Raffle[]
+
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  @@map("items")
+}
+
+model Raffle {
+  id           String       @id @default(cuid())
+  itemId       String
+  item         Item         @relation(fields: [itemId], references: [id])
+  ticketPrice  Float
+  ticketsTotal Int
+  ticketsSold  Int          @default(0)
+  raffleDate   DateTime
+  winnerUserId String?
+  winner       User?        @relation(fields: [winnerUserId], references: [id])
+  status       RaffleStatus @default(SCHEDULED)
+  
+  tickets      Ticket[]
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@map("raffles")
+}
+
+model Ticket {
+  id           String       @id @default(cuid())
+  userId       String
+  user         User         @relation(fields: [userId], references: [id])
+  raffleId     String
+  raffle       Raffle       @relation(fields: [raffleId], references: [id])
+  ticketNumber String       @unique
+  status       TicketStatus @default(ACTIVE)
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@map("tickets")
+}
+
+model Transaction {
+  id          String            @id @default(cuid())
+  userId      String
+  user        User              @relation(fields: [userId], references: [id])
+  type        TransactionType
+  amount      Float
+  status      TransactionStatus @default(PENDING)
+  reference   String?           @unique // Payment gateway reference
+  description String?
+
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  @@map("transactions")
+}
+
+model Withdrawal {
+  id            String           @id @default(cuid())
+  userId        String
+  user          User             @relation(fields: [userId], references: [id])
+  amount        Float
+  bankCode      String
+  accountNumber String
+  accountName   String
+  status        WithdrawalStatus @default(PENDING)
+  adminNote     String?
+
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@map("withdrawals")
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  type        TaskType
+  title       String
+  description String
+  points      Int
+  isActive    Boolean  @default(true)
+  
+  completions UserTask[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("tasks")
+}
+
+model UserTask {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  taskId      String
+  task        Task     @relation(fields: [taskId], references: [id])
+  completedAt DateTime @default(now())
+  pointsEarned Int
+
+  @@map("user_tasks")
+}

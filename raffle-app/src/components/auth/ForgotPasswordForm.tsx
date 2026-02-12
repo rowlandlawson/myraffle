@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { api } from '@/lib/api';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -32,10 +33,17 @@ export function ForgotPasswordForm({ onSuccess }: ForgotPasswordFormProps) {
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      onSuccess();
+      const result = await api.post('/api/auth/forgot-password', {
+        email: data.email,
+      });
+
+      if (result.success) {
+        onSuccess();
+      } else {
+        setError(result.message || 'Failed to send reset email. Please try again.');
+      }
     } catch (err) {
-      setError('Failed to send reset email. Please try again.');
+      setError('Network error. Please check your connection.');
       console.error(err);
     } finally {
       setIsLoading(false);

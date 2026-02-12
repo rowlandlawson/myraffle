@@ -4,6 +4,7 @@ import { useState } from 'react';
 import WalletBalanceCard from '@/components/wallet/WalletBalanceCard';
 import QuickActionCard from '@/components/wallet/QuickActionCard';
 import WalletTransactionRow from '@/components/wallet/WalletTransactionRow';
+import { useWalletBalance, useWalletTransactions } from '@/lib/useWallet';
 
 type TransactionType =
   | 'deposit'
@@ -13,107 +14,49 @@ type TransactionType =
   | 'refund';
 type TransactionStatus = 'completed' | 'pending';
 
-interface Transaction {
-  id: number;
-  type: TransactionType;
-  description: string;
-  amount: number;
-  date: string;
-  time: string;
-  status: TransactionStatus;
-  reference: string;
-}
-
 export default function WalletPage() {
   const [filterStatus, setFilterStatus] = useState<TransactionStatus | 'all'>(
     'all',
   );
   const [filterType, setFilterType] = useState<TransactionType | 'all'>('all');
 
-  const walletBalance = 50000;
+  const { balance, isLoading: balanceLoading } = useWalletBalance();
+  const { data: txData, isLoading: txLoading } = useWalletTransactions();
 
-  const allTransactions: Transaction[] = [
-    {
-      id: 1,
-      type: 'deposit',
-      description: 'Deposit to wallet',
-      amount: 10000,
-      date: '2026-01-25',
-      time: '14:30',
-      status: 'completed',
-      reference: 'DEP-2026-001',
-    },
-    {
-      id: 2,
-      type: 'purchase',
-      description: 'iPhone 15 Pro Max ticket',
-      amount: -5000,
-      date: '2026-01-25',
-      time: '10:15',
-      status: 'completed',
-      reference: 'TKT-2026-001',
-    },
-    {
-      id: 3,
-      type: 'withdrawal',
-      description: 'Withdrawal request - Bank Transfer',
-      amount: -20000,
-      date: '2026-01-24',
-      time: '16:45',
-      status: 'pending',
-      reference: 'WTH-2026-001',
-    },
-    {
-      id: 4,
-      type: 'purchase',
-      description: 'MacBook Pro 14" ticket',
-      amount: -8000,
-      date: '2026-01-23',
-      time: '09:20',
-      status: 'completed',
-      reference: 'TKT-2026-002',
-    },
-    {
-      id: 5,
-      type: 'reward',
-      description: 'Task completed: Watch ad',
-      amount: 2500,
-      date: '2026-01-23',
-      time: '15:00',
-      status: 'completed',
-      reference: 'RWD-2026-001',
-    },
-    {
-      id: 6,
-      type: 'refund',
-      description: 'Raffle ticket refund',
-      amount: 3000,
-      date: '2026-01-22',
-      time: '11:30',
-      status: 'completed',
-      reference: 'REF-2026-001',
-    },
-    {
-      id: 7,
-      type: 'deposit',
-      description: 'Deposit to wallet',
-      amount: 25000,
-      date: '2026-01-21',
-      time: '13:45',
-      status: 'completed',
-      reference: 'DEP-2026-002',
-    },
-    {
-      id: 8,
-      type: 'purchase',
-      description: 'AirPods Pro Max ticket',
-      amount: -3000,
-      date: '2026-01-20',
-      time: '17:20',
-      status: 'completed',
-      reference: 'TKT-2026-003',
-    },
-  ];
+  // Map backend transaction types to frontend types
+  const mapType = (type: string): TransactionType => {
+    const mapping: Record<string, TransactionType> = {
+      DEPOSIT: 'deposit',
+      WITHDRAWAL: 'withdrawal',
+      TICKET_PURCHASE: 'purchase',
+      TASK_REWARD: 'reward',
+      RAFFLE_WIN: 'reward',
+      REFUND: 'refund',
+    };
+    return mapping[type] || 'deposit';
+  };
+
+  const mapStatus = (status: string): TransactionStatus => {
+    return status === 'COMPLETED' ? 'completed' : 'pending';
+  };
+
+  // Transform backend transactions for display
+  const allTransactions = (txData?.transactions || []).map((tx) => {
+    const date = new Date(tx.createdAt);
+    return {
+      id: tx.id,
+      type: mapType(tx.type),
+      description: tx.description || `${tx.type} transaction`,
+      amount:
+        tx.type === 'WITHDRAWAL' || tx.type === 'TICKET_PURCHASE'
+          ? -tx.amount
+          : tx.amount,
+      date: date.toISOString().split('T')[0],
+      time: date.toTimeString().slice(0, 5),
+      status: mapStatus(tx.status),
+      reference: tx.reference || `TXN-${tx.id.slice(0, 8)}`,
+    };
+  });
 
   const filteredTransactions = allTransactions.filter((tx) => {
     const statusMatch = filterStatus === 'all' || tx.status === filterStatus;
@@ -121,14 +64,25 @@ export default function WalletPage() {
     return statusMatch && typeMatch;
   });
 
+  if (balanceLoading || txLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <span className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin"></span>
+          <p className="text-gray-600">Loading wallet...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8 pb-20 md:pb-0">
       <WalletBalanceCard
-        balance={walletBalance}
-        totalDeposited="₦60,000"
-        totalSpent="₦16,000"
-        pendingWithdrawal="₦20,000"
-        totalEarnings="₦5,500"
+        balance={balance?.walletBalance || 0}
+        totalDeposited="—"
+        totalSpent="—"
+        pendingWithdrawal="—"
+        totalEarnings="—"
       />
 
       {/* Quick Actions */}
@@ -237,8 +191,7 @@ export default function WalletPage() {
               <div className="flex justify-between items-start">
                 <div className="flex items-center gap-3">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${
-                      transaction.type === 'deposit'
+                    className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${transaction.type === 'deposit'
                         ? 'bg-green-100 text-green-700'
                         : transaction.type === 'withdrawal'
                           ? 'bg-red-100 text-red-700'
@@ -247,7 +200,7 @@ export default function WalletPage() {
                             : transaction.type === 'reward'
                               ? 'bg-yellow-100 text-yellow-700'
                               : 'bg-purple-100 text-purple-700'
-                    }`}
+                      }`}
                   >
                     {transaction.type === 'deposit'
                       ? '⬇️'
@@ -279,11 +232,10 @@ export default function WalletPage() {
               <div className="flex justify-between items-center text-xs text-gray-500 pt-2 border-t border-gray-100 mt-1">
                 <span className="font-mono">{transaction.reference}</span>
                 <span
-                  className={`px-2 py-1 rounded-full font-semibold ${
-                    transaction.status === 'completed'
+                  className={`px-2 py-1 rounded-full font-semibold ${transaction.status === 'completed'
                       ? 'bg-green-100 text-green-700'
                       : 'bg-yellow-100 text-yellow-700'
-                  }`}
+                    }`}
                 >
                   {transaction.status === 'completed' ? '✓ Done' : '⏳ Pending'}
                 </span>
