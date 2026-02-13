@@ -86,6 +86,7 @@ model User {
   // Email Verification
   emailVerified          Boolean   @default(false)
   verificationToken      String?   @unique
+  verificationCode       String?   // 7-digit code
   verificationTokenExpiry DateTime?
 
   // Password Reset

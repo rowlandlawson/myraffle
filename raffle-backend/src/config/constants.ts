@@ -20,3 +20,7 @@ export const CONSTANTS = {
     // Commission Rates
     COMMISSION_RATE: 0.15, // 15% platform fee
 } as const;
+
+// 1,000 points = ₦100  →  10 points per ₦1
+export const POINTS_VALUE_RATE = 10;
+

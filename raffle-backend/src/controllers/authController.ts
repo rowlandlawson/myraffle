@@ -14,10 +14,14 @@ import {
     sendPasswordResetEmail,
 } from '../services/brevo';
 
-// Generate unique user number: RAF-XXXXXX
 const generateUserNumber = (): string => {
     const randomNum = Math.floor(100000 + Math.random() * 900000);
     return `RAF-${randomNum}`;
+};
+
+// Generate 7-digit verification code
+const generateVerificationCode = (): string => {
+    return Math.floor(1000000 + Math.random() * 9000000).toString();
 };
 
 // POST /api/auth/register
@@ -47,8 +51,9 @@ export const register = async (req: Request, res: Response) => {
             numberExists = await prisma.user.findUnique({ where: { userNumber } });
         }
 
-        // Generate email verification token
+        // Generate email verification token and code
         const verificationToken = generateVerificationToken();
+        const verificationCode = generateVerificationCode();
         const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
         // Handle referral
@@ -73,12 +78,13 @@ export const register = async (req: Request, res: Response) => {
                 referredBy,
                 emailVerified: false,
                 verificationToken,
+                verificationCode,
                 verificationTokenExpiry,
             },
         });
 
         // Send verification email
-        await sendVerificationEmail(email, name, verificationToken);
+        await sendVerificationEmail(email, name, verificationToken, verificationCode);
 
         res.status(201).json({
             success: true,
@@ -102,19 +108,35 @@ export const register = async (req: Request, res: Response) => {
 // POST /api/auth/verify-email
 export const verifyEmail = async (req: Request, res: Response) => {
     try {
-        const { token } = req.body;
+        const { token, email, code } = req.body;
 
-        if (!token) {
+        if (!token && (!email || !code)) {
             res.status(400).json({
                 success: false,
-                message: 'Verification token is required.',
+                message: 'Verification token or code is required.',
             });
             return;
         }
 
-        const user = await prisma.user.findUnique({
-            where: { verificationToken: token },
-        });
+        let user;
+
+        if (token) {
+            user = await prisma.user.findUnique({
+                where: { verificationToken: token },
+            });
+        } else if (email && code) {
+            user = await prisma.user.findUnique({
+                where: { email },
+            });
+
+            if (user && user.verificationCode !== code) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Invalid verification code.',
+                });
+                return;
+            }
+        }
 
         if (!user) {
             res.status(400).json({
@@ -149,6 +171,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
             data: {
                 emailVerified: true,
                 verificationToken: null,
+                verificationCode: null,
                 verificationTokenExpiry: null,
             },
         });
@@ -207,14 +230,15 @@ export const resendVerification = async (req: Request, res: Response) => {
         }
 
         const verificationToken = generateVerificationToken();
+        const verificationCode = generateVerificationCode();
         const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
         await prisma.user.update({
             where: { id: user.id },
-            data: { verificationToken, verificationTokenExpiry },
+            data: { verificationToken, verificationCode, verificationTokenExpiry },
         });
 
-        await sendVerificationEmail(user.email, user.name, verificationToken);
+        await sendVerificationEmail(user.email, user.name, verificationToken, verificationCode);
 
         res.status(200).json({
             success: true,
