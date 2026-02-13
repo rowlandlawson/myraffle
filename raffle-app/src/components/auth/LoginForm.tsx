@@ -8,11 +8,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
 import { loginSchema } from '@/lib/validation';
+import { useAuthStore } from '@/lib/authStore';
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginForm() {
   const router = useRouter();
+  const login = useAuthStore((s) => s.login);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
@@ -31,22 +33,16 @@ export function LoginForm() {
     setError(null);
 
     try {
-      // MOCK: Simulate login - in Phase 4+ this will call actual API
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const result = await login(data.email, data.password);
 
-      // Store mock session in localStorage (will be replaced with NextAuth)
-      localStorage.setItem(
-        'user_session',
-        JSON.stringify({
-          email: data.email,
-          timestamp: new Date().toISOString(),
-        }),
-      );
-
-      reset();
-      router.push('/dashboard');
+      if (result.success) {
+        reset();
+        router.push('/dashboard');
+      } else {
+        setError(result.message || 'Failed to sign in. Please try again.');
+      }
     } catch (err) {
-      setError('Failed to sign in. Please try again.');
+      setError('Network error. Please check your connection.');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -145,17 +141,6 @@ export function LoginForm() {
         <span className="text-xs text-gray-600">or continue with</span>
         <div className="flex-1 h-px bg-gray-300"></div>
       </div>
-
-      {/* Social Login Buttons */}
-      {/* <div className="grid grid-cols-1 gap-3">
-        <button
-          type="button"
-          className="py-3 px-4 bg-white/50 hover:bg-white/70 border border-slate-600 rounded-lg text-black font-medium transition-colors flex items-center justify-center gap-2"
-        >
-          <span>𝐆</span> Google
-        </button>
-       i 
-      </div> */}
     </form>
   );
 }

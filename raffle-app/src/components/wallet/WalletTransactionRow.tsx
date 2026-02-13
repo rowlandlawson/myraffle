@@ -7,7 +7,7 @@ type TransactionType =
 
 interface WalletTransactionRowProps {
   transaction: {
-    id: number;
+    id: number | string;
     type: TransactionType;
     description: string;
     amount: number;
@@ -86,11 +86,10 @@ export default function WalletTransactionRow({
       </td>
       <td className="px-4 py-4 text-center">
         <span
-          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
-            transaction.status === 'completed'
+          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${transaction.status === 'completed'
               ? 'bg-green-100 text-green-700'
               : 'bg-yellow-100 text-yellow-700'
-          }`}
+            }`}
         >
           {transaction.status === 'completed' ? '✓ Done' : '⏳ Pending'}
         </span>

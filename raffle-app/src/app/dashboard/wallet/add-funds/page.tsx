@@ -1,29 +1,44 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Check, Zap } from 'lucide-react';
+import { initiateDeposit } from '@/lib/useWallet';
 
 export default function AddFundsPage() {
+  const router = useRouter();
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState('card');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const quickAmounts = [5000, 10000, 25000, 50000];
 
-  const handleSubmit = () => {
-    if (!amount || parseFloat(amount) < 100) {
-      alert('Please enter a valid amount (minimum ₦100)');
+  const handleSubmit = async () => {
+    const numAmount = parseFloat(amount);
+    if (!amount || numAmount < 100) {
+      setError('Please enter a valid amount (minimum ₦100)');
       return;
     }
 
     setIsProcessing(true);
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const result = await initiateDeposit(numAmount);
+
+      if (result.success && result.data?.authorizationUrl) {
+        // Redirect to Paystack checkout page
+        window.location.href = result.data.authorizationUrl;
+      } else {
+        setError(result.message || 'Failed to initialize payment.');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+      console.error(err);
+    } finally {
       setIsProcessing(false);
-      setShowSuccess(true);
-      setAmount('');
-      setTimeout(() => setShowSuccess(false), 3000);
-    }, 2000);
+    }
   };
 
   const rafflePoints = Math.floor((parseFloat(amount) || 0) * 0.1);
@@ -58,7 +73,10 @@ export default function AddFundsPage() {
                 <input
                   type="number"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    setError(null);
+                  }}
                   placeholder="Enter amount"
                   min="100"
                   step="100"
@@ -80,11 +98,10 @@ export default function AddFundsPage() {
                       key={amt}
                       type="button"
                       onClick={() => setAmount(amt.toString())}
-                      className={`py-2 rounded-lg font-bold transition ${
-                        amount === amt.toString()
+                      className={`py-2 rounded-lg font-bold transition ${amount === amt.toString()
                           ? 'bg-red-600 text-white'
                           : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                      }`}
+                        }`}
                     >
                       ₦{(amt / 1000).toFixed(0)}k
                     </button>
@@ -102,17 +119,16 @@ export default function AddFundsPage() {
                   {/* Card Option */}
                   <div
                     onClick={() => setPaymentMethod('card')}
-                    className={`flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-red-600 transition ${
-                      paymentMethod === 'card'
+                    className={`flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-red-600 transition ${paymentMethod === 'card'
                         ? 'border-red-600 bg-red-50'
                         : 'border-gray-300'
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"
                       name="payment"
                       checked={paymentMethod === 'card'}
-                      onChange={() => {}}
+                      onChange={() => { }}
                       className="w-4 h-4 accent-red-600"
                     />
                     <div className="ml-4 flex-1">
@@ -129,17 +145,16 @@ export default function AddFundsPage() {
                   {/* Bank Transfer Option */}
                   <div
                     onClick={() => setPaymentMethod('bank')}
-                    className={`flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-red-600 transition ${
-                      paymentMethod === 'bank'
+                    className={`flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-red-600 transition ${paymentMethod === 'bank'
                         ? 'border-red-600 bg-red-50'
                         : 'border-gray-300'
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"
                       name="payment"
                       checked={paymentMethod === 'bank'}
-                      onChange={() => {}}
+                      onChange={() => { }}
                       className="w-4 h-4 accent-red-600"
                     />
                     <div className="ml-4 flex-1">
@@ -156,17 +171,16 @@ export default function AddFundsPage() {
                   {/* Mobile Money Option */}
                   <div
                     onClick={() => setPaymentMethod('mobile')}
-                    className={`flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-red-600 transition ${
-                      paymentMethod === 'mobile'
+                    className={`flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-red-600 transition ${paymentMethod === 'mobile'
                         ? 'border-red-600 bg-red-50'
                         : 'border-gray-300'
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"
                       name="payment"
                       checked={paymentMethod === 'mobile'}
-                      onChange={() => {}}
+                      onChange={() => { }}
                       className="w-4 h-4 accent-red-600"
                     />
                     <div className="ml-4 flex-1">
@@ -182,6 +196,13 @@ export default function AddFundsPage() {
                 </div>
               </div>
 
+              {/* Error Message */}
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600">{error}</p>
+                </div>
+              )}
+
               {/* Submit Button */}
               <button
                 onClick={handleSubmit}
@@ -191,7 +212,7 @@ export default function AddFundsPage() {
                 {isProcessing ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    Processing...
+                    Redirecting to Paystack...
                   </span>
                 ) : (
                   'Continue to Payment'
@@ -349,13 +370,6 @@ export default function AddFundsPage() {
           </div>
         </div>
       </div>
-
-      {/* Success Message */}
-      {showSuccess && (
-        <div className="fixed top-4 right-4 bg-green-100 border-2 border-green-600 text-green-700 px-6 py-4 rounded-lg font-semibold flex items-center gap-2 shadow-lg">
-          <Check size={24} /> Deposit request sent! Redirecting...
-        </div>
-      )}
     </div>
   );
 }

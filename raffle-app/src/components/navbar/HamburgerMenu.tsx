@@ -2,12 +2,12 @@
 
 import { useEffect } from 'react';
 import Link from 'next/link';
-import { useSession, signOut } from 'next-auth/react';
 import { X } from 'lucide-react';
 import Image from 'next/image';
+import { useAuthStore } from '@/lib/authStore';
 
 export default function HamburgerMenu({ onClose }: { onClose: () => void }) {
-  const { data: session } = useSession();
+  const { isAuthenticated, logout } = useAuthStore();
 
   // Lock body scroll when menu is open
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function HamburgerMenu({ onClose }: { onClose: () => void }) {
         </div>
 
         <nav className="flex-1 space-y-2 overflow-y-auto">
-          {session ? (
+          {isAuthenticated ? (
             <>
               <Link
                 href="/dashboard"
@@ -85,7 +85,7 @@ export default function HamburgerMenu({ onClose }: { onClose: () => void }) {
               <hr className="my-4 border-gray-200" />
               <button
                 onClick={() => {
-                  signOut();
+                  logout();
                   onClose();
                 }}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors font-medium"

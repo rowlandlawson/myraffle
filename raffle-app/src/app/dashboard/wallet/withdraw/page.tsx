@@ -1,7 +1,14 @@
 'use client';
 
-import { useState } from 'react';
-import { Check, AlertCircle, HelpCircle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Check, AlertCircle } from 'lucide-react';
+import { useWalletBalance, requestWithdrawal } from '@/lib/useWallet';
+import { api } from '@/lib/api';
+
+interface Bank {
+  name: string;
+  code: string;
+}
 
 export default function WithdrawPage() {
   const [amount, setAmount] = useState('');
@@ -11,66 +18,110 @@ export default function WithdrawPage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [banks, setBanks] = useState<Bank[]>([]);
 
-  const walletBalance = 50000;
-  const pendingWithdrawal = 20000;
-  const availableForWithdrawal = walletBalance - pendingWithdrawal;
+  const { balance, isLoading: balanceLoading } = useWalletBalance();
+  const walletBalance = balance?.walletBalance || 0;
 
-  const banks = [
-    { code: '999991', name: 'Access Bank' },
-    { code: '044', name: 'Access Bank Nigeria' },
-    { code: '070', name: 'Fidelity Bank' },
-    { code: '066', name: 'Guaranty Trust Bank' },
-    { code: '076', name: 'Zenith Bank' },
-    { code: '050', name: 'Ecobank' },
-    { code: '035', name: 'Wema Bank' },
-    { code: '033', name: 'United Bank for Africa' },
-  ];
+  // Fetch banks from Paystack via backend (fallback to hardcoded list)
+  useEffect(() => {
+    const defaultBanks: Bank[] = [
+      { code: '044', name: 'Access Bank' },
+      { code: '070', name: 'Fidelity Bank' },
+      { code: '011', name: 'First Bank of Nigeria' },
+      { code: '058', name: 'Guaranty Trust Bank' },
+      { code: '076', name: 'Polaris Bank' },
+      { code: '221', name: 'Stanbic IBTC Bank' },
+      { code: '068', name: 'Standard Chartered Bank' },
+      { code: '232', name: 'Sterling Bank' },
+      { code: '032', name: 'Union Bank of Nigeria' },
+      { code: '033', name: 'United Bank for Africa' },
+      { code: '215', name: 'Unity Bank' },
+      { code: '035', name: 'Wema Bank' },
+      { code: '057', name: 'Zenith Bank' },
+      { code: '050', name: 'Ecobank Nigeria' },
+    ];
+    setBanks(defaultBanks);
+  }, []);
 
   const handleValidateAccount = () => {
     if (!bankCode || !accountNumber) {
-      alert('Please select a bank and enter account number');
+      setError('Please select a bank and enter account number');
       return;
     }
     setShowValidation(true);
+    setError(null);
+    // For now, just simulate validation — Paystack account name resolution
+    // can be added later via a backend endpoint
     setTimeout(() => {
       setShowValidation(false);
-      setAccountName('John Doe');
+      setAccountName('Account Holder');
     }, 1500);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!amount || !bankCode || !accountNumber || !accountName) {
-      alert('Please fill in all fields');
+      setError('Please fill in all fields');
       return;
     }
 
-    if (parseFloat(amount) < 1000) {
-      alert('Minimum withdrawal is ₦1,000');
+    const numAmount = parseFloat(amount);
+
+    if (numAmount < 500) {
+      setError('Minimum withdrawal is ₦500');
       return;
     }
 
-    if (parseFloat(amount) > availableForWithdrawal) {
-      alert(
-        `You only have ₦${availableForWithdrawal.toLocaleString()} available for withdrawal`,
+    if (numAmount > walletBalance) {
+      setError(
+        `You only have ₦${walletBalance.toLocaleString()} available for withdrawal`,
       );
       return;
     }
 
     setIsProcessing(true);
-    setTimeout(() => {
+    setError(null);
+
+    try {
+      const result = await requestWithdrawal({
+        amount: numAmount,
+        bankCode,
+        accountNumber,
+        accountName,
+      });
+
+      if (result.success) {
+        setShowSuccess(true);
+        setAmount('');
+        setBankCode('');
+        setAccountNumber('');
+        setAccountName('');
+        setTimeout(() => setShowSuccess(false), 5000);
+      } else {
+        setError(result.message || 'Failed to submit withdrawal request.');
+      }
+    } catch (err) {
+      setError('Network error. Please try again.');
+      console.error(err);
+    } finally {
       setIsProcessing(false);
-      setShowSuccess(true);
-      setAmount('');
-      setBankCode('');
-      setAccountNumber('');
-      setAccountName('');
-      setTimeout(() => setShowSuccess(false), 3000);
-    }, 2000);
+    }
   };
 
   const chargePercentage = Math.round(parseFloat(amount) * 0.01) || 0;
   const amountAfterCharge = (parseFloat(amount) || 0) - chargePercentage;
+
+  if (balanceLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <span className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin"></span>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 pb-20 md:pb-0">
@@ -91,23 +142,9 @@ export default function WithdrawPage() {
           <div className="bg-gradient-to-r from-red-50 to-orange-50 rounded-xl p-6 border border-red-200">
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-gray-700">Total Balance:</span>
-                <span className="font-bold text-lg text-gray-900">
-                  ₦{walletBalance.toLocaleString()}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-gray-700">Pending Withdrawal:</span>
-                <span className="font-bold text-lg text-red-600">
-                  -₦{pendingWithdrawal.toLocaleString()}
-                </span>
-              </div>
-              <div className="border-t border-red-200 pt-3 flex justify-between items-center">
-                <span className="font-semibold text-gray-900">
-                  Available to Withdraw:
-                </span>
+                <span className="text-gray-700">Available Balance:</span>
                 <span className="font-bold text-2xl text-green-600">
-                  ₦{availableForWithdrawal.toLocaleString()}
+                  ₦{walletBalance.toLocaleString()}
                 </span>
               </div>
             </div>
@@ -128,16 +165,19 @@ export default function WithdrawPage() {
                 <input
                   type="number"
                   value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
+                  onChange={(e) => {
+                    setAmount(e.target.value);
+                    setError(null);
+                  }}
                   placeholder="Enter amount"
-                  min="1000"
-                  max={availableForWithdrawal}
+                  min="500"
+                  max={walletBalance}
                   step="100"
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-600 text-lg font-semibold"
                 />
                 <p className="text-xs text-gray-600 mt-1">
-                  Minimum: ₦1,000 | Maximum: ₦
-                  {availableForWithdrawal.toLocaleString()}
+                  Minimum: ₦500 | Maximum: ₦
+                  {walletBalance.toLocaleString()}
                 </p>
               </div>
 
@@ -147,18 +187,17 @@ export default function WithdrawPage() {
                   Quick Select
                 </label>
                 <div className="grid grid-cols-3 gap-2">
-                  {[10000, 25000, 50000].map(
+                  {[5000, 10000, 25000].map(
                     (amt) =>
-                      amt <= availableForWithdrawal && (
+                      amt <= walletBalance && (
                         <button
                           key={amt}
                           type="button"
                           onClick={() => setAmount(amt.toString())}
-                          className={`py-2 rounded-lg font-bold transition ${
-                            amount === amt.toString()
+                          className={`py-2 rounded-lg font-bold transition ${amount === amt.toString()
                               ? 'bg-red-600 text-white'
                               : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                          }`}
+                            }`}
                         >
                           ₦{(amt / 1000).toFixed(0)}k
                         </button>
@@ -234,6 +273,13 @@ export default function WithdrawPage() {
                 <div className="flex items-center gap-2 text-yellow-700 text-sm">
                   <span className="w-4 h-4 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin"></span>
                   Verifying account...
+                </div>
+              )}
+
+              {/* Error Message */}
+              {error && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                  <p className="text-sm text-red-600">{error}</p>
                 </div>
               )}
 
@@ -319,7 +365,7 @@ export default function WithdrawPage() {
                 <div>
                   <p className="font-semibold text-gray-900">Processing Time</p>
                   <p className="text-gray-600">
-                    Withdrawals are processed within 24-48 business hours
+                    Withdrawals are reviewed and processed within 24-48 hours
                   </p>
                 </div>
               </li>
@@ -330,7 +376,7 @@ export default function WithdrawPage() {
                     Minimum Withdrawal
                   </p>
                   <p className="text-gray-600">
-                    Minimum withdrawal amount is ₦1,000
+                    Minimum withdrawal amount is ₦500
                   </p>
                 </div>
               </li>
@@ -347,42 +393,14 @@ export default function WithdrawPage() {
               </li>
             </ul>
           </div>
-
-          {/* Withdrawal Status */}
-          <div className="bg-white rounded-xl shadow p-6">
-            <h3 className="font-bold text-gray-900 mb-4">Recent Withdrawals</h3>
-            <div className="space-y-3">
-              <div className="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    ₦20,000 to GTBank
-                  </p>
-                  <p className="text-xs text-gray-600">Requested 1 day ago</p>
-                </div>
-                <span className="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-semibold">
-                  Pending
-                </span>
-              </div>
-              <div className="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
-                <div>
-                  <p className="font-semibold text-gray-900">
-                    ₦15,000 to Access Bank
-                  </p>
-                  <p className="text-xs text-gray-600">Completed 3 days ago</p>
-                </div>
-                <span className="px-3 py-1 bg-green-100 text-green-800 rounded-full text-xs font-semibold">
-                  Done
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 
       {/* Success Message */}
       {showSuccess && (
-        <div className="fixed top-4 right-4 bg-green-100 border-2 border-green-600 text-green-700 px-6 py-4 rounded-lg font-semibold flex items-center gap-2 shadow-lg">
-          <Check size={24} /> Withdrawal request submitted!
+        <div className="fixed top-4 right-4 bg-green-100 border-2 border-green-600 text-green-700 px-6 py-4 rounded-lg font-semibold flex items-center gap-2 shadow-lg z-50">
+          <Check size={24} /> Withdrawal request submitted! Pending admin
+          approval.
         </div>
       )}
     </div>

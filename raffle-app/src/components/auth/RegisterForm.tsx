@@ -7,16 +7,20 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff } from 'lucide-react';
 import { registerSchema } from '@/lib/validation';
+import { useAuthStore } from '@/lib/authStore';
+import { api } from '@/lib/api';
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 export function RegisterForm() {
   const router = useRouter();
+  const registerUser = useAuthStore((s) => s.register);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [step, setStep] = useState<'details' | 'verification'>('details');
+  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const {
     register,
@@ -33,10 +37,21 @@ export function RegisterForm() {
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      setStep('verification');
+      const result = await registerUser({
+        name: data.fullName,
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
+      });
+
+      if (result.success) {
+        setRegisteredEmail(data.email);
+        setStep('verification');
+      } else {
+        setError(result.message || 'Failed to create account. Please try again.');
+      }
     } catch (err) {
-      setError('Failed to create account. Please try again.');
+      setError('Network error. Please check your connection.');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -48,21 +63,37 @@ export function RegisterForm() {
     setError(null);
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-      localStorage.setItem(
-        'user_session',
-        JSON.stringify({
-          email: watch('email'),
-          timestamp: new Date().toISOString(),
-        }),
-      );
-      reset();
-      router.push('/dashboard');
+      const result = await api.post('/api/auth/verify-email', {
+        email: registeredEmail || watch('email'),
+        code,
+      });
+
+      if (result.success) {
+        reset();
+        router.push('/login?verified=true');
+      } else {
+        setError(result.message || 'Verification failed. Please try again.');
+      }
     } catch (err) {
-      setError('Verification failed. Please try again.');
+      setError('Network error. Please check your connection.');
       console.error(err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setError(null);
+    try {
+      const result = await api.post('/api/auth/resend-verification', {
+        email: registeredEmail || watch('email'),
+      });
+      if (!result.success) {
+        setError(result.message || 'Failed to resend code.');
+      }
+    } catch (err) {
+      setError('Failed to resend code.');
+      console.error(err);
     }
   };
 
@@ -230,6 +261,7 @@ export function RegisterForm() {
       ) : (
         <VerificationStep
           onVerify={handleVerification}
+          onResend={handleResendCode}
           isLoading={isLoading}
           error={error}
         />
@@ -240,10 +272,12 @@ export function RegisterForm() {
 
 function VerificationStep({
   onVerify,
+  onResend,
   isLoading,
   error,
 }: {
   onVerify: (code: string) => Promise<void>;
+  onResend: () => Promise<void>;
   isLoading: boolean;
   error: string | null;
 }) {
@@ -307,6 +341,7 @@ function VerificationStep({
         Didn&apos;t receive it?{' '}
         <button
           type="button"
+          onClick={onResend}
           className="text-red-600 hover:text-red-500 font-semibold"
         >
           Resend code
