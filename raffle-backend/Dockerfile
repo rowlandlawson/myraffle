@@ -30,11 +30,13 @@ RUN bun run build
 # Copy production dependencies and source code into final image
 FROM base AS release
 COPY --from=install /temp/prod/node_modules node_modules
-COPY --from=prerelease /app/dist/server.js server.js
+# Create dist directory
+RUN mkdir -p dist
+COPY --from=prerelease /app/dist/server.js dist/server.js
 COPY --from=prerelease /app/package.json .
 COPY --from=prerelease /app/prisma prisma
 
 # Run the app
 USER bun
 EXPOSE 10000/tcp
-ENTRYPOINT [ "bun", "run", "server.js" ]
+ENTRYPOINT [ "bun", "run", "start" ]
