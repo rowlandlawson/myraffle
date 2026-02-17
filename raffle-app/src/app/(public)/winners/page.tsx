@@ -1,126 +1,70 @@
 'use client';
 
-import { useState } from 'react';
-import { Trophy, Flame, Calendar } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Trophy, Calendar } from 'lucide-react';
+import { api } from '@/lib/api';
+
+interface WinnerData {
+  raffle: {
+    id: string;
+    raffleDate: string;
+    ticketsSold: number;
+  };
+  item: {
+    id: string;
+    name: string;
+    imageUrl: string;
+    value: number;
+  };
+  winner: {
+    id: string;
+    name: string;
+    userNumber: string;
+  };
+  winningTicketNumber: string | null;
+}
 
 export default function WinnersPage() {
-  const [timeFilter, setTimeFilter] = useState('all');
+  const [winners, setWinners] = useState<WinnerData[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const allWinners = [
-    {
-      id: 1,
-      userNumber: 'USER-98765',
-      userName: 'John D.',
-      prize: 'iPhone 15 Pro Max',
-      prizeImage: '📱',
-      wonDate: '2026-01-25',
-      winTime: '2 hours ago',
-      ranking: 1,
-      totalWinnings: 850000,
-    },
-    {
-      id: 2,
-      userNumber: 'USER-54321',
-      userName: 'Sarah M.',
-      prize: 'MacBook Pro 14"',
-      prizeImage: '💻',
-      wonDate: '2026-01-25',
-      winTime: '5 hours ago',
-      ranking: 2,
-      totalWinnings: 580000,
-    },
-    {
-      id: 3,
-      userNumber: 'USER-11223',
-      userName: 'Alex K.',
-      prize: 'AirPods Pro Max',
-      prizeImage: '🎧',
-      wonDate: '2026-01-24',
-      winTime: '1 day ago',
-      ranking: 3,
-      totalWinnings: 420000,
-    },
-    {
-      id: 4,
-      userNumber: 'USER-44556',
-      userName: 'Maria L.',
-      prize: 'PlayStation 5',
-      prizeImage: '🎮',
-      wonDate: '2026-01-23',
-      winTime: '2 days ago',
-      ranking: 4,
-      totalWinnings: 350000,
-    },
-    {
-      id: 5,
-      userNumber: 'USER-77889',
-      userName: 'Chris T.',
-      prize: 'iPad Pro 12.9"',
-      prizeImage: '📲',
-      wonDate: '2026-01-23',
-      winTime: '2 days ago',
-      ranking: 5,
-      totalWinnings: 280000,
-    },
-    {
-      id: 6,
-      userNumber: 'USER-99001',
-      userName: 'Emma R.',
-      prize: 'Apple Watch Ultra',
-      prizeImage: '⌚',
-      wonDate: '2026-01-22',
-      winTime: '3 days ago',
-      ranking: 6,
-      totalWinnings: 250000,
-    },
-    {
-      id: 7,
-      userNumber: 'USER-22334',
-      userName: 'David H.',
-      prize: 'Xbox Series X',
-      prizeImage: '🕹️',
-      wonDate: '2026-01-22',
-      winTime: '3 days ago',
-      ranking: 7,
-      totalWinnings: 220000,
-    },
-    {
-      id: 8,
-      userNumber: 'USER-55667',
-      userName: 'Lisa P.',
-      prize: 'DJI Mini 3 Pro',
-      prizeImage: '🚁',
-      wonDate: '2026-01-21',
-      winTime: '4 days ago',
-      ranking: 8,
-      totalWinnings: 180000,
-    },
-    {
-      id: 9,
-      userNumber: 'USER-88990',
-      userName: 'James N.',
-      prize: 'Nintendo Switch OLED',
-      prizeImage: '🎯',
-      wonDate: '2026-01-21',
-      winTime: '4 days ago',
-      ranking: 9,
-      totalWinnings: 150000,
-    },
-    {
-      id: 10,
-      userNumber: 'USER-33445',
-      userName: 'Rachel C.',
-      prize: 'Samsung Galaxy Buds Pro',
-      prizeImage: '🎵',
-      wonDate: '2026-01-20',
-      winTime: '5 days ago',
-      ranking: 10,
-      totalWinnings: 120000,
-    },
-  ];
+  useEffect(() => {
+    async function fetchWinners() {
+      setLoading(true);
+      try {
+        // Get completed raffles
+        const res = await api.get('/api/raffles?status=COMPLETED&limit=50');
+        const resData = res.data as any;
+        const completedRaffles = resData.raffles;
 
-  const topWinners = allWinners.slice(0, 3);
-  const otherWinners = allWinners.slice(3);
+        // For each completed raffle, get winner details
+        const winnerPromises = completedRaffles.map(async (raffle: any) => {
+          try {
+            const winnerRes = await api.get(`/api/raffles/${raffle.id}/winners`);
+            return winnerRes.data;
+          } catch {
+            return null;
+          }
+        });
+
+        const results = await Promise.all(winnerPromises);
+        setWinners(results.filter(Boolean));
+      } catch (err) {
+        console.error('Failed to load winners:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchWinners();
+  }, []);
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+  const getImageSrc = (imageUrl: string) => {
+    if (imageUrl?.startsWith('/uploads')) return `${apiUrl}${imageUrl}`;
+    return imageUrl || '📦';
+  };
 
   const getMedalEmoji = (ranking: number) => {
     switch (ranking) {
@@ -148,6 +92,9 @@ export default function WinnersPage() {
     }
   };
 
+  const topWinners = winners.slice(0, 3);
+  const otherWinners = winners.slice(3);
+
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
       {/* Header */}
@@ -157,7 +104,7 @@ export default function WinnersPage() {
             <Trophy size={32} /> Recent Winners
           </h1>
           <p className="text-white/90">
-            Celebrate our lucky winners from the last 30 days
+            Celebrate our lucky winners
           </p>
         </div>
       </div>
@@ -167,183 +114,175 @@ export default function WinnersPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow p-6">
             <p className="text-gray-600 font-semibold mb-2">
-              Total Winners (This Month)
+              Total Winners
             </p>
-            <p className="text-4xl font-bold text-gray-900">248</p>
+            <p className="text-4xl font-bold text-gray-900">{winners.length}</p>
           </div>
           <div className="bg-white rounded-xl shadow p-6">
             <p className="text-gray-600 font-semibold mb-2">
-              Total Distributed
+              Total Value Distributed
             </p>
-            <p className="text-4xl font-bold text-red-600">₦3.2M</p>
+            <p className="text-4xl font-bold text-red-600">
+              ₦{winners.reduce((sum, w) => sum + (w.item?.value || 0), 0).toLocaleString()}
+            </p>
           </div>
           <div className="bg-white rounded-xl shadow p-6">
             <p className="text-gray-600 font-semibold mb-2">Average Win</p>
-            <p className="text-4xl font-bold text-green-600">₦12.9k</p>
+            <p className="text-4xl font-bold text-green-600">
+              ₦{winners.length > 0
+                ? Math.round(winners.reduce((sum, w) => sum + (w.item?.value || 0), 0) / winners.length).toLocaleString()
+                : '0'}
+            </p>
           </div>
         </div>
 
-        {/* Top 3 Winners */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            🏆 Top Winners
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {topWinners.map((winner) => (
-              <div
-                key={winner.id}
-                className={`bg-gradient-to-br ${getMedalColor(winner.ranking)} rounded-2xl shadow-xl p-8 text-center relative overflow-hidden`}
-              >
-                {/* Medal */}
-                <div className="absolute top-4 right-4 text-4xl">
-                  {getMedalEmoji(winner.ranking)}
-                </div>
-
-                {/* Content */}
-                <div className="relative z-10">
-                  <p className="text-4xl font-bold mb-2">
-                    {getMedalEmoji(winner.ranking)}
-                  </p>
-                  <div className="text-6xl mb-4">{winner.prizeImage}</div>
-                  <h3 className="text-xl font-bold mb-1">{winner.prize}</h3>
-                  <p className="font-semibold mb-3 text-sm opacity-90">
-                    {winner.userName}
-                  </p>
-                  <p className="text-xs opacity-75 mb-4">{winner.userNumber}</p>
-                  <div className="border-t border-current/30 pt-4 mt-4">
-                    <p className="text-sm opacity-90">Total Winnings</p>
-                    <p className="text-2xl font-bold">
-                      ₦{(winner.totalWinnings / 1000).toFixed(0)}k
-                    </p>
-                  </div>
+        {loading ? (
+          <div className="text-center py-16">
+            <div className="animate-spin w-8 h-8 border-4 border-yellow-500 border-t-transparent rounded-full mx-auto mb-4" />
+            <p className="text-gray-600">Loading winners...</p>
+          </div>
+        ) : winners.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="text-6xl mb-4">🏆</div>
+            <p className="text-gray-600 text-lg">No winners yet — be the first!</p>
+          </div>
+        ) : (
+          <>
+            {/* Top 3 Winners */}
+            {topWinners.length > 0 && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                  🏆 Top Winners
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {topWinners.map((w, index) => (
+                    <div
+                      key={w.raffle.id}
+                      className={`bg-gradient-to-br ${getMedalColor(index + 1)} rounded-2xl shadow-xl p-8 text-center relative overflow-hidden`}
+                    >
+                      <div className="absolute top-4 right-4 text-4xl">
+                        {getMedalEmoji(index + 1)}
+                      </div>
+                      <div className="relative z-10">
+                        <p className="text-4xl font-bold mb-2">
+                          {getMedalEmoji(index + 1)}
+                        </p>
+                        <div className="text-6xl mb-4">
+                          {getImageSrc(w.item.imageUrl).startsWith('http') ? (
+                            <img
+                              src={getImageSrc(w.item.imageUrl)}
+                              alt={w.item.name}
+                              className="w-20 h-20 object-cover rounded-xl mx-auto"
+                            />
+                          ) : (
+                            getImageSrc(w.item.imageUrl)
+                          )}
+                        </div>
+                        <h3 className="text-xl font-bold mb-1">{w.item.name}</h3>
+                        <p className="font-semibold mb-3 text-sm opacity-90">
+                          {w.winner.name}
+                        </p>
+                        <p className="text-xs opacity-75 mb-4">{w.winner.userNumber}</p>
+                        <div className="border-t border-current/30 pt-4 mt-4">
+                          <p className="text-sm opacity-90">Prize Value</p>
+                          <p className="text-2xl font-bold">
+                            ₦{w.item.value.toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
+            )}
 
-        {/* All Winners List */}
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            All Recent Winners
-          </h2>
-
-          <div className="space-y-4">
-            {otherWinners.map((winner) => (
-              <div
-                key={winner.id}
-                className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition flex items-center gap-6 border-l-4 border-blue-500"
-              >
-                {/* Ranking */}
-                <div className="flex-shrink-0 w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                  <span className="text-2xl font-bold text-blue-600">
-                    #{winner.ranking}
-                  </span>
+            {/* All Winners List */}
+            {otherWinners.length > 0 && (
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                  All Recent Winners
+                </h2>
+                <div className="space-y-4">
+                  {otherWinners.map((w, index) => (
+                    <div
+                      key={w.raffle.id}
+                      className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition flex items-center gap-6 border-l-4 border-blue-500"
+                    >
+                      <div className="flex-shrink-0 w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
+                        <span className="text-2xl font-bold text-blue-600">
+                          #{index + 4}
+                        </span>
+                      </div>
+                      <div className="flex-shrink-0">
+                        {getImageSrc(w.item.imageUrl).startsWith('http') ? (
+                          <img
+                            src={getImageSrc(w.item.imageUrl)}
+                            alt={w.item.name}
+                            className="w-14 h-14 object-cover rounded-lg"
+                          />
+                        ) : (
+                          <span className="text-5xl">{getImageSrc(w.item.imageUrl)}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-bold text-gray-900">
+                          {w.item.name}
+                        </h3>
+                        <p className="text-gray-600">
+                          {w.winner.name} ({w.winner.userNumber})
+                        </p>
+                        <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
+                          <Calendar size={14} />
+                          {new Date(w.raffle.raffleDate).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex-shrink-0 text-right">
+                        <p className="text-xl font-bold text-gray-900">
+                          ₦{w.item.value.toLocaleString()}
+                        </p>
+                        <p className="text-xs text-gray-500">Prize value</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
-                {/* Prize Image */}
-                <div className="flex-shrink-0 text-5xl">
-                  {winner.prizeImage}
-                </div>
-
-                {/* Winner Info */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-bold text-gray-900">
-                    {winner.prize}
-                  </h3>
-                  <p className="text-gray-600">
-                    {winner.userName} ({winner.userNumber})
-                  </p>
-                  <p className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                    <Calendar size={14} /> {winner.wonDate}
-                  </p>
-                </div>
-
-                {/* Time and Winnings */}
-                <div className="flex-shrink-0 text-right">
-                  <p className="text-sm text-gray-500">{winner.winTime}</p>
-                  <p className="text-xl font-bold text-gray-900">
-                    ₦{(winner.totalWinnings / 1000).toFixed(0)}k
-                  </p>
-                  <p className="text-xs text-gray-500">Total winnings</p>
-                </div>
-
-                {/* Arrow */}
-                <div className="flex-shrink-0 text-gray-400">→</div>
               </div>
-            ))}
-          </div>
-        </div>
+            )}
+          </>
+        )}
 
         {/* FAQ Section */}
         <div className="mt-16 bg-white rounded-xl shadow p-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             ❓ Frequently Asked Questions
           </h2>
-
           <div className="space-y-6">
             <div>
-              <h3 className="font-bold text-gray-900 mb-2">
-                How are winners selected?
-              </h3>
+              <h3 className="font-bold text-gray-900 mb-2">How are winners selected?</h3>
               <p className="text-gray-600">
                 Winners are selected using a provably fair random algorithm.
-                Each ticket has an equal chance of winning, regardless of when
-                it was purchased.
+                Each ticket has an equal chance of winning, regardless of when it was purchased.
               </p>
             </div>
-
             <div>
-              <h3 className="font-bold text-gray-900 mb-2">
-                When are winners announced?
-              </h3>
+              <h3 className="font-bold text-gray-900 mb-2">When are winners announced?</h3>
               <p className="text-gray-600">
                 Winners are announced within 1 hour of raffle completion.
-                You&apos;ll receive an SMS and email notification immediately if
-                you&apos;ve won.
+                You&apos;ll receive an SMS and email notification immediately if you&apos;ve won.
               </p>
             </div>
-
             <div>
-              <h3 className="font-bold text-gray-900 mb-2">
-                How do I claim my prize?
-              </h3>
+              <h3 className="font-bold text-gray-900 mb-2">How do I claim my prize?</h3>
               <p className="text-gray-600">
                 Winners are contacted directly by our team. Prizes are shipped
                 to your registered address within 5-7 business days.
               </p>
             </div>
-
             <div>
-              <h3 className="font-bold text-gray-900 mb-2">
-                Can I verify a winner?
-              </h3>
-              <p className="text-gray-600">
-                Yes! All winners on this page are verified and have claimed
-                their prizes. You can check the verification details in the
-                raffle history.
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-bold text-gray-900 mb-2">
-                What&apos;s the largest prize won?
-              </h3>
-              <p className="text-gray-600">
-                The largest prize won so far was an iPhone 15 Pro Max valued at
-                ₦850,000. But many more high-value items are being raffled every
-                week!
-              </p>
-            </div>
-
-            <div>
-              <h3 className="font-bold text-gray-900 mb-2">
-                What are my chances of winning?
-              </h3>
+              <h3 className="font-bold text-gray-900 mb-2">What are my chances of winning?</h3>
               <p className="text-gray-600">
                 Your chances depend on how many tickets are sold. For example,
                 if 100 tickets are sold, you have a 1/100 (1%) chance with one
-                ticket. More tickets = better odds!
+                ticket.
               </p>
             </div>
           </div>

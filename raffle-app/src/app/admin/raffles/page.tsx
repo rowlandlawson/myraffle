@@ -12,134 +12,83 @@ import {
   XCircle,
   Filter,
 } from 'lucide-react';
+import { useRaffles, startRaffleDraw } from '@/lib/useRaffles';
 
-type RaffleStatus = 'pending' | 'active' | 'completed' | 'cancelled';
-
-interface Raffle {
-  id: number;
-  itemName: string;
-  image: string;
-  ticketPrice: number;
-  totalTickets: number;
-  soldTickets: number;
-  startDate: string;
-  endDate: string;
-  status: RaffleStatus;
-  winner?: string;
-}
+type RaffleStatus = 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 
 export default function AdminRafflesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<RaffleStatus | 'all'>('all');
 
-  const [raffles] = useState<Raffle[]>([
-    {
-      id: 1,
-      itemName: 'iPhone 15 Pro Max',
-      image: '📱',
-      ticketPrice: 5000,
-      totalTickets: 100,
-      soldTickets: 87,
-      startDate: '2026-01-25',
-      endDate: '2026-01-30',
-      status: 'active',
-    },
-    {
-      id: 2,
-      itemName: 'MacBook Pro 14"',
-      image: '💻',
-      ticketPrice: 8000,
-      totalTickets: 50,
-      soldTickets: 50,
-      startDate: '2026-01-20',
-      endDate: '2026-01-25',
-      status: 'completed',
-      winner: 'John Doe',
-    },
-    {
-      id: 3,
-      itemName: 'PlayStation 5',
-      image: '🎮',
-      ticketPrice: 6000,
-      totalTickets: 75,
-      soldTickets: 45,
-      startDate: '2026-01-28',
-      endDate: '2026-02-05',
-      status: 'pending',
-    },
-    {
-      id: 4,
-      itemName: 'AirPods Pro Max',
-      image: '🎧',
-      ticketPrice: 3000,
-      totalTickets: 200,
-      soldTickets: 156,
-      startDate: '2026-01-22',
-      endDate: '2026-01-27',
-      status: 'active',
-    },
-    {
-      id: 5,
-      itemName: 'iPad Pro 12.9"',
-      image: '📲',
-      ticketPrice: 4500,
-      totalTickets: 80,
-      soldTickets: 20,
-      startDate: '2026-01-18',
-      endDate: '2026-01-22',
-      status: 'cancelled',
-    },
-    {
-      id: 6,
-      itemName: 'Apple Watch Ultra',
-      image: '⌚',
-      ticketPrice: 2500,
-      totalTickets: 150,
-      soldTickets: 150,
-      startDate: '2026-01-10',
-      endDate: '2026-01-18',
-      status: 'completed',
-      winner: 'Jane Smith',
-    },
-  ]);
+  const { raffles: apiRaffles, loading, error, refetch } = useRaffles({
+    status: statusFilter !== 'all' ? statusFilter : undefined,
+    limit: 50,
+  });
+
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
+  // Map to display format
+  const raffles = apiRaffles.map((r) => ({
+    id: r.id,
+    itemName: r.item.name,
+    image: r.item.imageUrl?.startsWith('/uploads')
+      ? `${apiUrl}${r.item.imageUrl}`
+      : r.item.imageUrl || '📦',
+    ticketPrice: r.ticketPrice,
+    totalTickets: r.ticketsTotal,
+    soldTickets: r.ticketsSold,
+    startDate: new Date(r.createdAt).toISOString().split('T')[0]!,
+    endDate: new Date(r.raffleDate).toISOString().split('T')[0]!,
+    status: r.status as RaffleStatus,
+    winner: r.winner?.name || null,
+  }));
 
   const filteredRaffles = raffles.filter((raffle) => {
     const matchesSearch = raffle.itemName
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      statusFilter === 'all' || raffle.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
+  const handleStartDraw = async (raffleId: string) => {
+    if (!confirm('Are you sure you want to draw a winner for this raffle?')) return;
+    try {
+      const res = await startRaffleDraw(raffleId);
+      alert(res.message || 'Winner drawn successfully!');
+      refetch();
+    } catch (err: any) {
+      alert(err.message || 'Failed to start draw');
+    }
+  };
+
   const getStatusBadge = (status: RaffleStatus) => {
-    const styles = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      active: 'bg-green-100 text-green-800',
-      completed: 'bg-blue-100 text-blue-800',
-      cancelled: 'bg-red-100 text-red-800',
+    const styles: Record<string, string> = {
+      SCHEDULED: 'bg-yellow-100 text-yellow-800',
+      ACTIVE: 'bg-green-100 text-green-800',
+      COMPLETED: 'bg-blue-100 text-blue-800',
+      CANCELLED: 'bg-red-100 text-red-800',
     };
-    const icons = {
-      pending: <Clock size={14} />,
-      active: <Play size={14} />,
-      completed: <CheckCircle size={14} />,
-      cancelled: <XCircle size={14} />,
+    const icons: Record<string, React.ReactNode> = {
+      SCHEDULED: <Clock size={14} />,
+      ACTIVE: <Play size={14} />,
+      COMPLETED: <CheckCircle size={14} />,
+      CANCELLED: <XCircle size={14} />,
     };
     return (
       <span
-        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${styles[status]}`}
+        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold ${styles[status] || ''}`}
       >
         {icons[status]}
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {status.charAt(0) + status.slice(1).toLowerCase()}
       </span>
     );
   };
 
   const stats = {
     total: raffles.length,
-    active: raffles.filter((r) => r.status === 'active').length,
-    pending: raffles.filter((r) => r.status === 'pending').length,
-    completed: raffles.filter((r) => r.status === 'completed').length,
+    active: raffles.filter((r) => r.status === 'ACTIVE').length,
+    scheduled: raffles.filter((r) => r.status === 'SCHEDULED').length,
+    completed: raffles.filter((r) => r.status === 'COMPLETED').length,
   };
 
   return (
@@ -171,8 +120,8 @@ export default function AdminRafflesPage() {
           <p className="text-2xl font-bold text-green-600">{stats.active}</p>
         </div>
         <div className="bg-white rounded-xl shadow p-4 border-l-4 border-yellow-600">
-          <p className="text-sm text-gray-600">Pending</p>
-          <p className="text-2xl font-bold text-yellow-600">{stats.pending}</p>
+          <p className="text-sm text-gray-600">Scheduled</p>
+          <p className="text-2xl font-bold text-yellow-600">{stats.scheduled}</p>
         </div>
         <div className="bg-white rounded-xl shadow p-4 border-l-4 border-blue-600">
           <p className="text-sm text-gray-600">Completed</p>
@@ -203,112 +152,131 @@ export default function AdminRafflesPage() {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
             >
               <option value="all">All Status</option>
-              <option value="pending">Pending</option>
-              <option value="active">Active</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="SCHEDULED">Scheduled</option>
+              <option value="ACTIVE">Active</option>
+              <option value="COMPLETED">Completed</option>
+              <option value="CANCELLED">Cancelled</option>
             </select>
           </div>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                  Item
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                  Ticket Price
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                  Progress
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                  Dates
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredRaffles.map((raffle) => (
-                <tr key={raffle.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-4">
-                    <div className="flex items-center gap-3">
-                      <span className="text-2xl">{raffle.image}</span>
-                      <div>
-                        <p className="font-semibold text-gray-900">
-                          {raffle.itemName}
-                        </p>
-                        {raffle.winner && (
-                          <p className="text-xs text-green-600 flex items-center gap-1">
-                            <Trophy size={12} /> Winner: {raffle.winner}
+        {/* Loading / Error / Table */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto mb-4" />
+            <p className="text-gray-600">Loading raffles...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-red-600">{error}</p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b border-gray-200">
+                <tr>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                    Item
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                    Ticket Price
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                    Progress
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                    Dates
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                    Status
+                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {filteredRaffles.map((raffle) => (
+                  <tr key={raffle.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-4">
+                      <div className="flex items-center gap-3">
+                        {raffle.image.startsWith('http') ? (
+                          <img
+                            src={raffle.image}
+                            alt={raffle.itemName}
+                            className="w-10 h-10 object-cover rounded-lg"
+                          />
+                        ) : (
+                          <span className="text-2xl">{raffle.image}</span>
+                        )}
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            {raffle.itemName}
                           </p>
+                          {raffle.winner && (
+                            <p className="text-xs text-green-600 flex items-center gap-1">
+                              <Trophy size={12} /> Winner: {raffle.winner}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4 text-gray-900 font-semibold">
+                      ₦{raffle.ticketPrice.toLocaleString()}
+                    </td>
+                    <td className="px-4 py-4">
+                      <div className="w-32">
+                        <div className="flex justify-between text-xs text-gray-600 mb-1">
+                          <span>
+                            {raffle.soldTickets}/{raffle.totalTickets}
+                          </span>
+                          <span>
+                            {raffle.totalTickets > 0
+                              ? Math.round(
+                                (raffle.soldTickets / raffle.totalTickets) * 100,
+                              )
+                              : 0}
+                            %
+                          </span>
+                        </div>
+                        <div className="h-2 bg-gray-200 rounded-full">
+                          <div
+                            className="h-2 bg-red-600 rounded-full"
+                            style={{
+                              width: `${raffle.totalTickets > 0 ? (raffle.soldTickets / raffle.totalTickets) * 100 : 0}%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-4">
+                      <p className="text-sm text-gray-900">{raffle.startDate}</p>
+                      <p className="text-xs text-gray-600">to {raffle.endDate}</p>
+                    </td>
+                    <td className="px-4 py-4">{getStatusBadge(raffle.status)}</td>
+                    <td className="px-4 py-4">
+                      <div className="flex gap-2">
+                        <button className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">
+                          View
+                        </button>
+                        {raffle.status === 'ACTIVE' && (
+                          <button
+                            onClick={() => handleStartDraw(raffle.id)}
+                            className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200 transition"
+                          >
+                            Draw
+                          </button>
                         )}
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 text-gray-900 font-semibold">
-                    ₦{raffle.ticketPrice.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-4">
-                    <div className="w-32">
-                      <div className="flex justify-between text-xs text-gray-600 mb-1">
-                        <span>
-                          {raffle.soldTickets}/{raffle.totalTickets}
-                        </span>
-                        <span>
-                          {Math.round(
-                            (raffle.soldTickets / raffle.totalTickets) * 100,
-                          )}
-                          %
-                        </span>
-                      </div>
-                      <div className="h-2 bg-gray-200 rounded-full">
-                        <div
-                          className="h-2 bg-red-600 rounded-full"
-                          style={{
-                            width: `${(raffle.soldTickets / raffle.totalTickets) * 100}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <p className="text-sm text-gray-900">{raffle.startDate}</p>
-                    <p className="text-xs text-gray-600">to {raffle.endDate}</p>
-                  </td>
-                  <td className="px-4 py-4">{getStatusBadge(raffle.status)}</td>
-                  <td className="px-4 py-4">
-                    <div className="flex gap-2">
-                      <button className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">
-                        View
-                      </button>
-                      {raffle.status === 'pending' && (
-                        <button className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200 transition">
-                          Start
-                        </button>
-                      )}
-                      {raffle.status === 'active' && (
-                        <button className="px-3 py-1 text-sm bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 transition">
-                          End
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
 
-        {filteredRaffles.length === 0 && (
+        {!loading && !error && filteredRaffles.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-600 text-lg">No raffles found</p>
           </div>

@@ -4,100 +4,45 @@ import { useState } from 'react';
 import { Search } from 'lucide-react';
 import TicketCard from '@/components/tickets/TicketCard';
 import TicketStatCard from '@/components/tickets/TicketStatCard';
-import TipsSection from '@/components/dashboard/TipsSection';
+import { useTicketHistory } from '@/lib/useTickets';
 
 type TicketStatus = 'active' | 'won' | 'lost';
-
-interface Ticket {
-  id: number;
-  ticketNumber: string;
-  item: string;
-  image: string;
-  price: number;
-  purchaseDate: string;
-  raffleDate: string;
-  status: TicketStatus;
-  daysLeft: number;
-  winnerNotification?: string;
-  loserMessage?: string;
-}
 
 export default function TicketsPage() {
   const [filterStatus, setFilterStatus] = useState<TicketStatus | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const allTickets: Ticket[] = [
-    {
-      id: 1,
-      ticketNumber: 'TKT-2026-0001',
-      item: 'iPhone 15 Pro Max',
-      image: '📱',
-      price: 5000,
-      purchaseDate: '2026-01-25',
-      raffleDate: '2026-01-27',
-      status: 'active',
-      daysLeft: 2,
-    },
-    {
-      id: 2,
-      ticketNumber: 'TKT-2026-0002',
-      item: 'MacBook Pro 14"',
-      image: '💻',
-      price: 8000,
-      purchaseDate: '2026-01-24',
-      raffleDate: '2026-01-29',
-      status: 'active',
-      daysLeft: 4,
-    },
-    {
-      id: 3,
-      ticketNumber: 'TKT-2026-0003',
-      item: 'AirPods Pro Max',
-      image: '🎧',
-      price: 3000,
-      purchaseDate: '2026-01-23',
-      raffleDate: '2026-01-26',
-      status: 'active',
-      daysLeft: 1,
-    },
-    {
-      id: 4,
-      ticketNumber: 'TKT-2026-0004',
-      item: 'PlayStation 5',
-      image: '🎮',
-      price: 6000,
-      purchaseDate: '2026-01-15',
-      raffleDate: '2026-01-22',
-      status: 'won',
-      daysLeft: 0,
+  const { tickets: apiTickets, stats, loading, error } = useTicketHistory();
+
+  // Map API tickets to the format TicketCard expects
+  const allTickets = apiTickets.map((t) => {
+    const now = new Date();
+    const raffleEnd = new Date(t.raffle.raffleDate);
+    const daysLeft = Math.max(0, Math.ceil((raffleEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+    const imageUrl = t.raffle.item.imageUrl?.startsWith('/uploads')
+      ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${t.raffle.item.imageUrl}`
+      : t.raffle.item.imageUrl || '📦';
+
+    return {
+      id: t.id as any,
+      ticketNumber: t.ticketNumber,
+      item: t.raffle.item.name,
+      image: imageUrl,
+      price: t.raffle.ticketPrice,
+      purchaseDate: new Date(t.createdAt).toISOString().split('T')[0]!,
+      raffleDate: new Date(t.raffle.raffleDate).toISOString().split('T')[0]!,
+      status: t.status.toLowerCase() as TicketStatus,
+      daysLeft,
       winnerNotification:
-        'Congratulations! You won! Check your email for details.',
-    },
-    {
-      id: 5,
-      ticketNumber: 'TKT-2026-0005',
-      item: 'iPad Pro 12.9"',
-      image: '📲',
-      price: 4500,
-      purchaseDate: '2026-01-10',
-      raffleDate: '2026-01-18',
-      status: 'lost',
-      daysLeft: 0,
-      loserMessage: 'Better luck next time! Try another raffle.',
-    },
-    {
-      id: 6,
-      ticketNumber: 'TKT-2026-0006',
-      item: 'Apple Watch Ultra',
-      image: '⌚',
-      price: 2500,
-      purchaseDate: '2026-01-08',
-      raffleDate: '2026-01-16',
-      status: 'lost',
-      daysLeft: 0,
-      loserMessage: 'Better luck next time! Try another raffle.',
-    },
-  ];
+        t.status === 'WON'
+          ? 'Congratulations! You won! Check your email for details.'
+          : undefined,
+      loserMessage:
+        t.status === 'LOST'
+          ? 'Better luck next time! Try another raffle.'
+          : undefined,
+    };
+  });
 
   const filteredTickets = allTickets.filter((ticket) => {
     const statusMatch =
@@ -107,10 +52,6 @@ export default function TicketsPage() {
       ticket.ticketNumber.toLowerCase().includes(searchTerm.toLowerCase());
     return statusMatch && searchMatch;
   });
-
-  const activeCount = allTickets.filter((t) => t.status === 'active').length;
-  const wonCount = allTickets.filter((t) => t.status === 'won').length;
-  const lostCount = allTickets.filter((t) => t.status === 'lost').length;
 
   return (
     <div className="space-y-8 pb-20 md:pb-0">
@@ -128,21 +69,21 @@ export default function TicketsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <TicketStatCard
           title="Active Tickets"
-          count={activeCount}
+          count={stats.active}
           subtitle="Waiting for results"
           borderColor="border-blue-600"
           textColor="text-blue-600"
         />
         <TicketStatCard
           title="Won"
-          count={wonCount}
+          count={stats.won}
           subtitle="Congratulations! 🎉"
           borderColor="border-green-600"
           textColor="text-green-600"
         />
         <TicketStatCard
           title="Lost"
-          count={lostCount}
+          count={stats.lost}
           subtitle="Try again next time"
           borderColor="border-red-600"
           textColor="text-red-600"
@@ -183,14 +124,25 @@ export default function TicketsPage() {
           </div>
         </div>
 
-        {/* Tickets List */}
-        <div className="space-y-4">
-          {filteredTickets.map((ticket) => (
-            <TicketCard key={ticket.id} ticket={ticket} />
-          ))}
-        </div>
+        {/* Loading / Error / Tickets List */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto mb-4" />
+            <p className="text-gray-600">Loading your tickets...</p>
+          </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-red-600">{error}</p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredTickets.map((ticket) => (
+              <TicketCard key={ticket.id} ticket={ticket} />
+            ))}
+          </div>
+        )}
 
-        {filteredTickets.length === 0 && (
+        {!loading && !error && filteredTickets.length === 0 && (
           <div className="text-center py-12">
             <div className="text-4xl mb-4">🎫</div>
             <p className="text-gray-600 text-lg">No tickets found</p>

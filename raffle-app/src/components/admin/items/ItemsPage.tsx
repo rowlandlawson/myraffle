@@ -7,108 +7,91 @@ import SearchFilters from '@/components/admin/items/SearchFilters';
 import ItemsTable from '@/components/admin/items/ItemsTable';
 import ItemsStats from '@/components/admin/items/ItemsStats';
 import { Item } from '@/types/items';
-
-// Initial data (could be fetched from API)
-export const initialItems: Item[] = [
-  {
-    id: 1,
-    name: 'iPhone 15 Pro Max',
-    image: '📱',
-    price: 850000,
-    category: 'electronics',
-    status: 'active',
-    ticketPrice: 5000,
-    ticketsTotal: 100,
-    ticketsSold: 87,
-    endsIn: '2 days',
-    createdDate: '2026-01-15',
-    createdBy: 'Admin User',
-  },
-  {
-    id: 2,
-    name: 'MacBook Pro 14"',
-    image: '💻',
-    price: 580000,
-    category: 'electronics',
-    status: 'active',
-    ticketPrice: 8000,
-    ticketsTotal: 50,
-    ticketsSold: 45,
-    endsIn: '5 days',
-    createdDate: '2026-01-10',
-    createdBy: 'Admin User',
-  },
-  {
-    id: 3,
-    name: 'PlayStation 5',
-    image: '🎮',
-    price: 330000,
-    category: 'gaming',
-    status: 'completed',
-    ticketPrice: 6000,
-    ticketsTotal: 60,
-    ticketsSold: 60,
-    endsIn: 'Completed',
-    createdDate: '2026-01-01',
-    createdBy: 'Admin User',
-  },
-];
+import { useItems, createItem, deleteItem as deleteItemApi } from '@/lib/useItems';
 
 export function AdminItemsPage() {
-  const [items, setItems] = useState<Item[]>(initialItems);
   const [showUploadForm, setShowUploadForm] = useState(false);
   const [filters, setFilters] = useState({
     searchTerm: '',
     status: 'all',
   });
 
-  // Filter items based on search and status
+  // Fetch items from API — show all statuses for admin
+  const { items: apiItems, loading, error, refetch } = useItems({
+    search: filters.searchTerm || undefined,
+    status: filters.status !== 'all' ? filters.status.toUpperCase() : undefined,
+    limit: 50,
+  });
+
+  // Map API items to the admin Item type
+  const items: Item[] = apiItems.map((item) => {
+    const activeRaffle = item.raffles[0];
+    return {
+      id: item.id as any,
+      name: item.name,
+      image: item.imageUrl?.startsWith('/uploads')
+        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${item.imageUrl}`
+        : item.imageUrl || '📦',
+      price: item.value,
+      category: item.category,
+      status: item.status === 'ACTIVE' ? 'active' : 'completed',
+      ticketPrice: activeRaffle?.ticketPrice ?? 0,
+      ticketsTotal: activeRaffle?.ticketsTotal ?? 0,
+      ticketsSold: activeRaffle?.ticketsSold ?? 0,
+      endsIn: activeRaffle
+        ? getEndsIn(activeRaffle.raffleDate)
+        : 'No raffle',
+      createdDate: new Date(item.createdAt).toISOString().split('T')[0]!,
+      createdBy: 'Admin',
+    };
+  });
+
+  // Filter items client-side for search (API already filters by status)
   const filteredItems = items.filter((item) => {
     const searchMatch = item.name
       .toLowerCase()
       .includes(filters.searchTerm.toLowerCase());
-    const statusMatch =
-      filters.status === 'all' || item.status === filters.status;
-    return searchMatch && statusMatch;
+    return searchMatch;
   });
 
   // Handlers
-  const handleDeleteItem = (id: number) => {
+  const handleDeleteItem = async (id: number) => {
     if (confirm('Are you sure you want to delete this item?')) {
-      setItems((prev) => prev.filter((item) => item.id !== id));
+      try {
+        await deleteItemApi(String(id));
+        refetch();
+      } catch (err: any) {
+        alert(err.message || 'Failed to delete item');
+      }
     }
   };
 
   const handleEditItem = (item: Item) => {
-    // Open edit modal or navigate to edit page
     console.log('Edit item:', item);
   };
 
   const handleViewItem = (item: Item) => {
-    // Navigate to item detail page
     console.log('View item:', item);
   };
 
-  const handleUploadSubmit = (formData: any) => {
-    // In real app, this would be an API call
-    const newItem: Item = {
-      id: items.length + 1,
-      name: formData.name,
-      image: '📦', // Default icon
-      price: parseInt(formData.value),
-      category: formData.category,
-      status: 'active',
-      ticketPrice: parseInt(formData.ticketPrice),
-      ticketsTotal: parseInt(formData.totalTickets),
-      ticketsSold: 0,
-      endsIn: '7 days',
-      createdDate: new Date().toISOString().split('T')[0],
-      createdBy: 'Admin User',
-    };
+  const handleUploadSubmit = async (formData: any) => {
+    try {
+      const fd = new FormData();
+      fd.append('name', formData.name);
+      fd.append('description', formData.description || formData.name);
+      fd.append('value', String(formData.value));
+      fd.append('category', formData.category);
+      if (formData.image) {
+        fd.append('image', formData.image);
+      }
 
-    setItems((prev) => [...prev, newItem]);
-    setShowUploadForm(false);
-    alert('Item uploaded successfully!');
+      await createItem(fd);
+      setShowUploadForm(false);
+      refetch();
+      alert('Item created successfully!');
+    } catch (err: any) {
+      alert(err.message || 'Failed to create item');
+    }
   };
 
   const handleFilterChange = (key: keyof typeof filters, value: string) => {
@@ -139,18 +122,39 @@ export function AdminItemsPage() {
         onFilterChange={(status) => handleFilterChange('status', status)}
       />
 
-      {/* Items Table */}
-      <ItemsTable
-        items={filteredItems}
-        onDelete={handleDeleteItem}
-        onEdit={handleEditItem}
-        onView={handleViewItem}
-      />
-
-      {/* Stats */}
-      <ItemsStats items={items} />
+      {/* Loading / Error / Items Table */}
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto mb-4" />
+          <p className="text-gray-600">Loading items...</p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-red-600">{error}</p>
+        </div>
+      ) : (
+        <>
+          <ItemsTable
+            items={filteredItems}
+            onDelete={handleDeleteItem}
+            onEdit={handleEditItem}
+            onView={handleViewItem}
+          />
+          <ItemsStats items={items} />
+        </>
+      )}
     </div>
   );
+}
+
+function getEndsIn(raffleDate: string): string {
+  const now = new Date();
+  const end = new Date(raffleDate);
+  const diff = end.getTime() - now.getTime();
+  if (diff <= 0) return 'Ended';
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  if (days === 1) return '1 day';
+  return `${days} days`;
 }
 
 export default AdminItemsPage;

@@ -9,185 +9,16 @@ import ItemsGrid from '@/components/publicItems/ItemsGrid';
 import ItemDetailModal from '@/components/publicItems/ItemDetailModal';
 import ResultsCount from '@/components/publicItems/ResultsCount';
 import { Item, Category, FilterState } from '@/types/publicItems';
-
-// Initial data - exported for reuse
-export const initialItems: Item[] = [
-  {
-    id: 1,
-    name: 'iPhone 15 Pro Max',
-    category: 'electronics',
-    image: '📱',
-    price: 5000,
-    ticketsSold: 87,
-    ticketsTotal: 100,
-    endsIn: '2 days',
-    raffleDate: '2026-01-27',
-    description: 'Latest Apple flagship smartphone with advanced features',
-    status: 'active',
-    progress: 87,
-  },
-  {
-    id: 2,
-    name: 'MacBook Pro 14"',
-    category: 'electronics',
-    image: '💻',
-    price: 8000,
-    ticketsSold: 45,
-    ticketsTotal: 50,
-    endsIn: '5 days',
-    raffleDate: '2026-01-30',
-    description: 'Professional laptop for creative work',
-    status: 'active',
-    progress: 90,
-  },
-  {
-    id: 3,
-    name: 'PlayStation 5',
-    category: 'gaming',
-    image: '🎮',
-    price: 6000,
-    ticketsSold: 60,
-    ticketsTotal: 60,
-    endsIn: 'Completed',
-    raffleDate: '2026-01-25',
-    description: 'Next-gen gaming console',
-    status: 'completed',
-    progress: 100,
-  },
-  {
-    id: 4,
-    name: 'AirPods Pro',
-    category: 'electronics',
-    image: '🎧',
-    price: 2500,
-    ticketsSold: 40,
-    ticketsTotal: 60,
-    endsIn: '1 day',
-    raffleDate: '2026-01-26',
-    description: 'Wireless noise-cancelling earbuds',
-    status: 'active',
-    progress: 67,
-  },
-  {
-    id: 5,
-    name: 'Nike Air Jordan 1',
-    category: 'accessories',
-    image: '👟',
-    price: 3500,
-    ticketsSold: 28,
-    ticketsTotal: 50,
-    endsIn: '3 days',
-    raffleDate: '2026-01-28',
-    description: 'Iconic basketball sneakers',
-    status: 'active',
-    progress: 56,
-  },
-  {
-    id: 6,
-    name: 'Apple Watch Series 9',
-    category: 'electronics',
-    image: '⌚',
-    price: 4500,
-    ticketsSold: 38,
-    ticketsTotal: 60,
-    endsIn: '4 days',
-    raffleDate: '2026-01-29',
-    description: 'Advanced smartwatch with health features',
-    status: 'active',
-    progress: 63,
-  },
-  {
-    id: 7,
-    name: 'Xbox Series X',
-    category: 'gaming',
-    image: '🎯',
-    price: 5500,
-    ticketsSold: 48,
-    ticketsTotal: 70,
-    endsIn: '6 days',
-    raffleDate: '2026-01-31',
-    description: 'Powerful gaming console',
-    status: 'active',
-    progress: 69,
-  },
-  {
-    id: 8,
-    name: 'Ray-Ban Aviator',
-    category: 'accessories',
-    image: '🕶️',
-    price: 2000,
-    ticketsSold: 25,
-    ticketsTotal: 40,
-    endsIn: '2 days',
-    raffleDate: '2026-01-27',
-    description: 'Classic sunglasses',
-    status: 'active',
-    progress: 63,
-  },
-  {
-    id: 9,
-    name: 'Samsung Galaxy S24',
-    category: 'electronics',
-    image: '📲',
-    price: 4800,
-    ticketsSold: 42,
-    ticketsTotal: 80,
-    endsIn: '7 days',
-    raffleDate: '2026-02-01',
-    description: 'Latest Samsung flagship',
-    status: 'active',
-    progress: 53,
-  },
-  {
-    id: 10,
-    name: 'Nintendo Switch OLED',
-    category: 'gaming',
-    image: '🎲',
-    price: 3800,
-    ticketsSold: 35,
-    ticketsTotal: 55,
-    endsIn: '4 days',
-    raffleDate: '2026-01-29',
-    description: 'Hybrid gaming console',
-    status: 'active',
-    progress: 64,
-  },
-  {
-    id: 11,
-    name: 'Dyson Airwrap',
-    category: 'accessories',
-    image: '💇',
-    price: 5200,
-    ticketsSold: 18,
-    ticketsTotal: 30,
-    endsIn: '5 days',
-    raffleDate: '2026-01-30',
-    description: 'Revolutionary hair styling tool',
-    status: 'active',
-    progress: 60,
-  },
-  {
-    id: 12,
-    name: 'iPad Pro 12.9"',
-    category: 'electronics',
-    image: '📟',
-    price: 6500,
-    ticketsSold: 22,
-    ticketsTotal: 40,
-    endsIn: '8 days',
-    raffleDate: '2026-02-02',
-    description: 'Professional tablet for creative work',
-    status: 'active',
-    progress: 55,
-  },
-];
+import { useItems } from '@/lib/useItems';
+import { buyTicket } from '@/lib/useTickets';
+import { useAuthStore } from '@/lib/authStore';
 
 // Categories data - exported for reuse
 export const categories: Category[] = [
-  { id: 'all', name: 'All Items', count: 12 },
-  { id: 'electronics', name: 'Electronics', count: 6 },
-  { id: 'gaming', name: 'Gaming', count: 3 },
-  { id: 'accessories', name: 'Accessories', count: 3 },
+  { id: 'all', name: 'All Items', count: 0 },
+  { id: 'electronics', name: 'Electronics', count: 0 },
+  { id: 'gaming', name: 'Gaming', count: 0 },
+  { id: 'accessories', name: 'Accessories', count: 0 },
 ];
 
 // Helper function to filter and sort items
@@ -201,8 +32,7 @@ export const filterAndSortItems = (
     const searchMatch = item.name
       .toLowerCase()
       .includes(filters.searchTerm.toLowerCase());
-    const statusMatch = item.status === 'active';
-    return categoryMatch && searchMatch && statusMatch;
+    return categoryMatch && searchMatch;
   });
 
   // Sort items
@@ -229,18 +59,19 @@ export const calculateProgress = (
   ticketsSold: number,
   ticketsTotal: number,
 ): number => {
+  if (ticketsTotal === 0) return 0;
   return Math.round((ticketsSold / ticketsTotal) * 100);
 };
 
-// Helper function to get item status
-export const getItemStatus = (
-  ticketsSold: number,
-  ticketsTotal: number,
-  raffleDate: string,
-): 'active' | 'completed' | 'cancelled' => {
-  if (ticketsSold >= ticketsTotal) return 'completed';
-  // Add more logic here for date-based status if needed
-  return 'active';
+// Helper function to get time remaining
+const getEndsIn = (raffleDate: string): string => {
+  const now = new Date();
+  const end = new Date(raffleDate);
+  const diff = end.getTime() - now.getTime();
+  if (diff <= 0) return 'Ended';
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  if (days === 1) return '1 day';
+  return `${days} days`;
 };
 
 // Main component
@@ -252,11 +83,46 @@ export function PublicItemsPage() {
   });
 
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
+  const [buyingItemId, setBuyingItemId] = useState<number | null>(null);
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
-  // Filter and sort items
+  // Fetch items from API
+  const { items: apiItems, loading, error } = useItems({
+    category: filters.category !== 'all' ? filters.category : undefined,
+    search: filters.searchTerm || undefined,
+  });
+
+  // Map API items to the frontend Item type
+  const mappedItems: Item[] = useMemo(() => {
+    return apiItems.map((item, index) => {
+      const activeRaffle = item.raffles[0]; // First active raffle
+      const ticketsSold = activeRaffle?.ticketsSold ?? 0;
+      const ticketsTotal = activeRaffle?.ticketsTotal ?? 0;
+      return {
+        id: index + 1, // numeric id for sorting compatibility
+        _apiId: item.id, // preserve real id
+        _raffleId: activeRaffle?.id ?? null,
+        name: item.name,
+        category: item.category,
+        image: item.imageUrl?.startsWith('/uploads')
+          ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${item.imageUrl}`
+          : item.imageUrl || '📦',
+        price: activeRaffle?.ticketPrice ?? 0,
+        ticketsSold,
+        ticketsTotal,
+        endsIn: activeRaffle ? getEndsIn(activeRaffle.raffleDate) : 'N/A',
+        raffleDate: activeRaffle?.raffleDate ?? '',
+        description: item.description,
+        status: item.status === 'ACTIVE' ? 'active' : 'completed',
+        progress: calculateProgress(ticketsSold, ticketsTotal),
+      } as Item & { _apiId: string; _raffleId: string | null };
+    });
+  }, [apiItems]);
+
+  // Filter and sort on client side
   const filteredAndSortedItems = useMemo(() => {
-    return filterAndSortItems(initialItems, filters);
-  }, [filters]);
+    return filterAndSortItems(mappedItems, filters);
+  }, [mappedItems, filters]);
 
   // Handlers
   const handleFilterChange = (key: keyof FilterState, value: string) => {
@@ -267,10 +133,28 @@ export function PublicItemsPage() {
     setSelectedItem(item);
   };
 
-  const handleBuyTicket = (itemId: number) => {
-    // Handle ticket purchase logic
-    console.log('Buy ticket for item:', itemId);
-    // In a real app, you would navigate to purchase page or open purchase modal
+  const handleBuyTicket = async (itemId: number) => {
+    if (!isAuthenticated) {
+      window.location.href = '/login';
+      return;
+    }
+
+    const item = mappedItems.find((i) => i.id === itemId) as any;
+    if (!item?._raffleId) {
+      alert('No active raffle for this item');
+      return;
+    }
+
+    setBuyingItemId(itemId);
+    try {
+      await buyTicket(item._raffleId, 'wallet');
+      alert('Ticket purchased successfully! 🎉');
+      setSelectedItem(null);
+    } catch (err: any) {
+      alert(err.message || 'Failed to buy ticket');
+    } finally {
+      setBuyingItemId(null);
+    }
   };
 
   return (
@@ -303,14 +187,24 @@ export function PublicItemsPage() {
 
           {/* Main Content */}
           <div className="md:col-span-3">
-            {/* Results Count */}
-            <ResultsCount count={filteredAndSortedItems.length} />
-
-            {/* Items Grid */}
-            <ItemsGrid
-              items={filteredAndSortedItems}
-              onViewDetails={handleViewDetails}
-            />
+            {loading ? (
+              <div className="text-center py-16">
+                <div className="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto mb-4" />
+                <p className="text-gray-600">Loading items...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-16">
+                <p className="text-red-600">{error}</p>
+              </div>
+            ) : (
+              <>
+                <ResultsCount count={filteredAndSortedItems.length} />
+                <ItemsGrid
+                  items={filteredAndSortedItems}
+                  onViewDetails={handleViewDetails}
+                />
+              </>
+            )}
           </div>
         </div>
       </div>
