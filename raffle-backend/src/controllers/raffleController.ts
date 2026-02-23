@@ -65,7 +65,7 @@ export const getAllRaffles = async (req: Request, res: Response) => {
 // GET /api/raffles/:id — Public
 export const getRaffleById = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id: string = String(req.params.id);
 
         const raffle = await prisma.raffle.findUnique({
             where: { id },
@@ -175,7 +175,7 @@ export const createRaffle = async (req: Request, res: Response) => {
 // PUT /api/raffles/:id — Admin only
 export const updateRaffle = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id: string = String(req.params.id);
         const { ticketPrice, ticketsTotal, raffleDate, status } = req.body;
 
         const existing = await prisma.raffle.findUnique({ where: { id } });
@@ -227,7 +227,7 @@ export const updateRaffle = async (req: Request, res: Response) => {
 // POST /api/raffles/:id/start — Admin only, trigger raffle draw
 export const startRaffleDraw = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id: string = String(req.params.id);
 
         const result = await runRaffleDraw(id);
 
@@ -248,7 +248,7 @@ export const startRaffleDraw = async (req: Request, res: Response) => {
 // GET /api/raffles/:id/winners — Public
 export const getRaffleWinner = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id: string = String(req.params.id);
 
         const raffle = await prisma.raffle.findUnique({
             where: { id },

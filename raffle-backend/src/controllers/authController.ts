@@ -13,6 +13,7 @@ import {
     sendWelcomeEmail,
     sendPasswordResetEmail,
 } from '../services/brevo';
+import { logTransaction } from '../utils/transactions';
 
 // Generate unique user number: RAF-XXXXXX
 const generateUserNumber = (): string => {
@@ -162,6 +163,15 @@ export const verifyEmail = async (req: Request, res: Response) => {
                 await prisma.user.update({
                     where: { id: referrer.id },
                     data: { rafflePoints: { increment: 500 } },
+                });
+
+                // Log referral bonus transaction for audit trail
+                await logTransaction({
+                    userId: referrer.id,
+                    type: 'TASK_REWARD',
+                    amount: 500,
+                    status: 'COMPLETED',
+                    description: `Referral bonus: ${user.name} (${user.userNumber}) verified their email.`,
                 });
             }
         }

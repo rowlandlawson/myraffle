@@ -12,6 +12,7 @@ import adminRoutes from './routes/admin';
 import itemRoutes from './routes/items';
 import raffleRoutes from './routes/raffles';
 import ticketRoutes from './routes/tickets';
+import taskRoutes from './routes/tasks';
 
 // Load env vars
 dotenv.config();
@@ -51,6 +52,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/items', itemRoutes);
 app.use('/api/raffles', raffleRoutes);
 app.use('/api/tickets', ticketRoutes);
+app.use('/api/tasks', taskRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

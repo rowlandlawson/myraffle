@@ -67,7 +67,7 @@ export const getUserTickets = async (req: Request, res: Response) => {
 // GET /api/tickets/:id — Get single ticket
 export const getTicketById = async (req: Request, res: Response) => {
     try {
-        const { id } = req.params;
+        const id: string = String(req.params.id);
 
         const ticket = await prisma.ticket.findUnique({
             where: { id },

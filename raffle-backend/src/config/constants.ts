@@ -11,6 +11,7 @@ export const CONSTANTS = {
         REFERRAL_BONUS: 500,
         DAILY_LOGIN: 25,
         SURVEY_COMPLETE: 100,
+        POINTS_PER_NAIRA: 10, // 1,000 points = ₦100
     },
 
     // Token Expiry
