@@ -1,63 +1,63 @@
 import { env } from '../config/environment';
 
 interface EmailOptions {
-    to: string;
-    subject: string;
-    htmlContent: string;
+  to: string;
+  subject: string;
+  htmlContent: string;
 }
 
 const sendEmail = async (options: EmailOptions): Promise<boolean> => {
-    if (!env.BREVO_API_KEY) {
-        console.warn('[Email] BREVO_API_KEY not set. Skipping email send.');
-        console.log(`[Email] Would have sent to: ${options.to}`);
-        console.log(`[Email] Subject: ${options.subject}`);
-        return false;
+  if (!env.BREVO_API_KEY) {
+    console.warn('[Email] BREVO_API_KEY not set. Skipping email send.');
+    console.log(`[Email] Would have sent to: ${options.to}`);
+    console.log(`[Email] Subject: ${options.subject}`);
+    return false;
+  }
+
+  try {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': env.BREVO_API_KEY,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: {
+          name: env.BREVO_SENDER_NAME,
+          email: env.BREVO_SENDER_EMAIL,
+        },
+        to: [{ email: options.to }],
+        subject: options.subject,
+        htmlContent: options.htmlContent,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('[Email] Brevo API error:', errorData);
+      return false;
     }
 
-    try {
-        const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-            method: 'POST',
-            headers: {
-                'accept': 'application/json',
-                'api-key': env.BREVO_API_KEY,
-                'content-type': 'application/json',
-            },
-            body: JSON.stringify({
-                sender: {
-                    name: env.BREVO_SENDER_NAME,
-                    email: env.BREVO_SENDER_EMAIL,
-                },
-                to: [{ email: options.to }],
-                subject: options.subject,
-                htmlContent: options.htmlContent,
-            }),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            console.error('[Email] Brevo API error:', errorData);
-            return false;
-        }
-
-        console.log(`[Email] Sent successfully to ${options.to}`);
-        return true;
-    } catch (error) {
-        console.error('[Email] Failed to send:', error);
-        return false;
-    }
+    console.log(`[Email] Sent successfully to ${options.to}`);
+    return true;
+  } catch (error) {
+    console.error('[Email] Failed to send:', error);
+    return false;
+  }
 };
 
 export const sendVerificationEmail = async (
-    email: string,
-    name: string,
-    verificationToken: string
+  email: string,
+  name: string,
+  verificationToken: string
 ): Promise<boolean> => {
-    const verifyUrl = `${env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
+  const verifyUrl = `${env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
-    return sendEmail({
-        to: email,
-        subject: 'Verify Your RaffleHub Account',
-        htmlContent: `
+  return sendEmail({
+    to: email,
+    subject: 'Verify Your RaffleHub Account',
+    htmlContent: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
           <h1 style="color: #7c3aed; margin: 0;">RaffleHub</h1>
@@ -96,17 +96,17 @@ export const sendVerificationEmail = async (
         </p>
       </div>
     `,
-    });
+  });
 };
 
 export const sendWelcomeEmail = async (
-    email: string,
-    name: string
+  email: string,
+  name: string
 ): Promise<boolean> => {
-    return sendEmail({
-        to: email,
-        subject: 'Welcome to RaffleHub! 🎊',
-        htmlContent: `
+  return sendEmail({
+    to: email,
+    subject: 'Welcome to RaffleHub! 🎊',
+    htmlContent: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
           <h1 style="color: #7c3aed; margin: 0;">RaffleHub</h1>
@@ -141,20 +141,20 @@ export const sendWelcomeEmail = async (
         </p>
       </div>
     `,
-    });
+  });
 };
 
 export const sendPasswordResetEmail = async (
-    email: string,
-    name: string,
-    resetToken: string
+  email: string,
+  name: string,
+  resetToken: string
 ): Promise<boolean> => {
-    const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${resetToken}`;
+  const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
-    return sendEmail({
-        to: email,
-        subject: 'Reset Your RaffleHub Password',
-        htmlContent: `
+  return sendEmail({
+    to: email,
+    subject: 'Reset Your RaffleHub Password',
+    htmlContent: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
           <h1 style="color: #7c3aed; margin: 0;">RaffleHub</h1>
@@ -186,5 +186,59 @@ export const sendPasswordResetEmail = async (
         </p>
       </div>
     `,
-    });
+  });
+};
+
+export const sendRaffleWinnerEmail = async (
+  email: string,
+  name: string,
+  itemName: string,
+  itemValue: number
+): Promise<boolean> => {
+  return sendEmail({
+    to: email,
+    subject: '🎉 Congratulations! You Won a Raffle on RaffleHub!',
+    htmlContent: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #7c3aed; margin: 0;">RaffleHub</h1>
+        </div>
+        
+        <div style="text-align: center; margin-bottom: 20px;">
+          <span style="font-size: 64px;">🏆</span>
+        </div>
+        
+        <h2 style="color: #1f2937; text-align: center;">You're a Winner, ${name}!</h2>
+        
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6; text-align: center;">
+          Congratulations! You've won the raffle for:
+        </p>
+        
+        <div style="background: linear-gradient(135deg, #7c3aed 0%, #a855f7 100%); border-radius: 12px; padding: 24px; margin: 20px 0; text-align: center;">
+          <h3 style="color: white; margin: 0 0 8px 0; font-size: 22px;">${itemName}</h3>
+          <p style="color: rgba(255,255,255,0.9); margin: 0; font-size: 18px;">Worth ₦${itemValue.toLocaleString()}</p>
+        </div>
+        
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Our team will be in touch shortly to arrange the delivery of your prize. 
+          Please ensure your contact details are up to date in your profile.
+        </p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${env.FRONTEND_URL}/dashboard" 
+             style="background-color: #7c3aed; color: white; padding: 14px 32px; 
+                    text-decoration: none; border-radius: 8px; font-size: 16px; 
+                    font-weight: bold; display: inline-block;">
+            View Dashboard
+          </a>
+        </div>
+        
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
+        
+        <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+          © ${new Date().getFullYear()} RaffleHub. All rights reserved.
+        </p>
+      </div>
+    `,
+  });
 };

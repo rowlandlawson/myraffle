@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import path from 'path';
 import dotenv from 'dotenv';
 import { validateEnv, env } from './config/environment';
 import { errorHandler } from './middleware/errorHandler';
@@ -8,6 +9,9 @@ import userRoutes from './routes/users';
 import walletRoutes from './routes/wallet';
 import paymentRoutes from './routes/payments';
 import adminRoutes from './routes/admin';
+import itemRoutes from './routes/items';
+import raffleRoutes from './routes/raffles';
+import ticketRoutes from './routes/tickets';
 
 // Load env vars
 dotenv.config();
@@ -30,6 +34,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Serve uploaded files as static assets
+app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
 // Health Check
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'RaffleHub Backend is running' });
@@ -41,6 +48,9 @@ app.use('/api/users', userRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/items', itemRoutes);
+app.use('/api/raffles', raffleRoutes);
+app.use('/api/tickets', ticketRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
