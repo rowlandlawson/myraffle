@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Check, AlertCircle } from 'lucide-react';
-import { useWalletBalance, requestWithdrawal } from '@/lib/useWallet';
+import { useWalletBalance } from '@/lib/hooks/useWallet';
 import { api } from '@/lib/api';
 
 interface Bank {
@@ -21,7 +21,7 @@ export default function WithdrawPage() {
   const [error, setError] = useState<string | null>(null);
   const [banks, setBanks] = useState<Bank[]>([]);
 
-  const { balance, isLoading: balanceLoading } = useWalletBalance();
+  const { data: balance, isLoading: balanceLoading } = useWalletBalance();
   const walletBalance = balance?.walletBalance || 0;
 
   // Fetch banks from Paystack via backend (fallback to hardcoded list)
@@ -84,7 +84,7 @@ export default function WithdrawPage() {
     setError(null);
 
     try {
-      const result = await requestWithdrawal({
+      const result = await api.post('/api/wallet/withdraw', {
         amount: numAmount,
         bankCode,
         accountNumber,
@@ -195,8 +195,8 @@ export default function WithdrawPage() {
                           type="button"
                           onClick={() => setAmount(amt.toString())}
                           className={`py-2 rounded-lg font-bold transition ${amount === amt.toString()
-                              ? 'bg-red-600 text-white'
-                              : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                            ? 'bg-red-600 text-white'
+                            : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                             }`}
                         >
                           ₦{(amt / 1000).toFixed(0)}k

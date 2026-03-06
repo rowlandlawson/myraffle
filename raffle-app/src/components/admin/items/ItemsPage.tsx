@@ -7,7 +7,8 @@ import SearchFilters from '@/components/admin/items/SearchFilters';
 import ItemsTable from '@/components/admin/items/ItemsTable';
 import ItemsStats from '@/components/admin/items/ItemsStats';
 import { Item } from '@/types/items';
-import { useItems, createItem, deleteItem as deleteItemApi } from '@/lib/useItems';
+import { useItems } from '@/lib/hooks/useItems';
+import { api } from '@/lib/api';
 
 export function AdminItemsPage() {
   const [showUploadForm, setShowUploadForm] = useState(false);
@@ -17,11 +18,12 @@ export function AdminItemsPage() {
   });
 
   // Fetch items from API — show all statuses for admin
-  const { items: apiItems, loading, error, refetch } = useItems({
+  const { data: itemsData, isLoading: loading, error, refetch } = useItems({
     search: filters.searchTerm || undefined,
     status: filters.status !== 'all' ? filters.status.toUpperCase() : undefined,
     limit: 50,
   });
+  const apiItems = itemsData?.items ?? [];
 
   // Map API items to the admin Item type
   const items: Item[] = apiItems.map((item) => {
@@ -58,7 +60,7 @@ export function AdminItemsPage() {
   const handleDeleteItem = async (id: number) => {
     if (confirm('Are you sure you want to delete this item?')) {
       try {
-        await deleteItemApi(String(id));
+        await api.delete(`/api/items/${String(id)}`);
         refetch();
       } catch (err: any) {
         alert(err.message || 'Failed to delete item');
@@ -85,7 +87,7 @@ export function AdminItemsPage() {
         fd.append('image', formData.image);
       }
 
-      await createItem(fd);
+      await api.post('/api/items', fd);
       setShowUploadForm(false);
       refetch();
       alert('Item created successfully!');
@@ -130,7 +132,7 @@ export function AdminItemsPage() {
         </div>
       ) : error ? (
         <div className="text-center py-12">
-          <p className="text-red-600">{error}</p>
+          <p className="text-red-600">{error instanceof Error ? error.message : 'Failed to load items'}</p>
         </div>
       ) : (
         <>

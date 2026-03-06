@@ -5,17 +5,14 @@ import { Menu } from 'lucide-react';
 import { useState } from 'react';
 import Image from 'next/image';
 
-// TODO: Re-enable when NextAuth is set up
-// import { useSession, signOut } from "next-auth/react";
+import { useAuthStore } from '@/lib/authStore';
 
 export default function TopNav() {
-  // TODO: Replace with useSession() when NextAuth is configured
-  const session = null; // Mock: no session until NextAuth is set up
+  const { user, isAuthenticated, logout } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleSignOut = () => {
-    // TODO: Replace with signOut() from next-auth when configured
-    localStorage.removeItem('user_session');
+  const handleSignOut = async () => {
+    await logout();
     window.location.href = '/login';
   };
 
@@ -36,7 +33,7 @@ export default function TopNav() {
 
           {/* Auth Links */}
           <div className="flex items-center gap-4">
-            {!session ? (
+            {!isAuthenticated ? (
               <>
                 <Link
                   href="/login"
@@ -57,8 +54,20 @@ export default function TopNav() {
                   onClick={() => setIsOpen(!isOpen)}
                   className="flex items-center gap-2 text-gray-700 hover:text-red-600 px-3 py-2 rounded transition-colors"
                 >
-                  <Menu size={24} />
-                  <span className="font-medium">User</span>
+                  {user?.profileImage ? (
+                    <img
+                      src={user.profileImage}
+                      alt={user.name}
+                      className="w-8 h-8 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600 to-red-700 text-white flex items-center justify-center font-bold text-sm">
+                      {user?.name?.charAt(0) || 'U'}
+                    </div>
+                  )}
+                  <span className="font-medium hidden sm:block">
+                    {user?.name?.split(' ')[0] || 'User'}
+                  </span>
                 </button>
                 {isOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-lg shadow-xl py-1 z-50">

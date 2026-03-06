@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Search } from 'lucide-react';
 import TicketCard from '@/components/tickets/TicketCard';
 import TicketStatCard from '@/components/tickets/TicketStatCard';
-import { useTicketHistory } from '@/lib/useTickets';
+import { useTicketHistory } from '@/lib/hooks/useTickets';
 
 type TicketStatus = 'active' | 'won' | 'lost';
 
@@ -12,7 +12,9 @@ export default function TicketsPage() {
   const [filterStatus, setFilterStatus] = useState<TicketStatus | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
 
-  const { tickets: apiTickets, stats, loading, error } = useTicketHistory();
+  const { data: ticketData, isLoading: loading, error } = useTicketHistory();
+  const apiTickets = ticketData?.tickets ?? [];
+  const stats = ticketData?.stats ?? { total: 0, active: 0, won: 0, lost: 0 };
 
   // Map API tickets to the format TicketCard expects
   const allTickets = apiTickets.map((t) => {
@@ -132,7 +134,7 @@ export default function TicketsPage() {
           </div>
         ) : error ? (
           <div className="text-center py-12">
-            <p className="text-red-600">{error}</p>
+            <p className="text-red-600">{error instanceof Error ? error.message : 'Failed to load tickets'}</p>
           </div>
         ) : (
           <div className="space-y-4">

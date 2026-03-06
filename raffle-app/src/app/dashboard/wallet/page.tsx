@@ -4,7 +4,7 @@ import { useState } from 'react';
 import WalletBalanceCard from '@/components/wallet/WalletBalanceCard';
 import QuickActionCard from '@/components/wallet/QuickActionCard';
 import WalletTransactionRow from '@/components/wallet/WalletTransactionRow';
-import { useWalletBalance, useWalletTransactions } from '@/lib/useWallet';
+import { useWalletBalance, useWalletTransactions } from '@/lib/hooks/useWallet';
 
 type TransactionType =
   | 'deposit'
@@ -20,7 +20,7 @@ export default function WalletPage() {
   );
   const [filterType, setFilterType] = useState<TransactionType | 'all'>('all');
 
-  const { balance, isLoading: balanceLoading } = useWalletBalance();
+  const { data: balance, isLoading: balanceLoading } = useWalletBalance();
   const { data: txData, isLoading: txLoading } = useWalletTransactions();
 
   // Map backend transaction types to frontend types
@@ -192,14 +192,14 @@ export default function WalletPage() {
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg ${transaction.type === 'deposit'
-                        ? 'bg-green-100 text-green-700'
-                        : transaction.type === 'withdrawal'
-                          ? 'bg-red-100 text-red-700'
-                          : transaction.type === 'purchase'
-                            ? 'bg-blue-100 text-blue-700'
-                            : transaction.type === 'reward'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-purple-100 text-purple-700'
+                      ? 'bg-green-100 text-green-700'
+                      : transaction.type === 'withdrawal'
+                        ? 'bg-red-100 text-red-700'
+                        : transaction.type === 'purchase'
+                          ? 'bg-blue-100 text-blue-700'
+                          : transaction.type === 'reward'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-purple-100 text-purple-700'
                       }`}
                   >
                     {transaction.type === 'deposit'
@@ -233,8 +233,8 @@ export default function WalletPage() {
                 <span className="font-mono">{transaction.reference}</span>
                 <span
                   className={`px-2 py-1 rounded-full font-semibold ${transaction.status === 'completed'
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-yellow-100 text-yellow-700'
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-yellow-100 text-yellow-700'
                     }`}
                 >
                   {transaction.status === 'completed' ? '✓ Done' : '⏳ Pending'}

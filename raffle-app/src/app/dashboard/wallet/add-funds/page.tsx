@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check, Zap } from 'lucide-react';
-import { initiateDeposit } from '@/lib/useWallet';
+import { api } from '@/lib/api';
 
 export default function AddFundsPage() {
   const router = useRouter();
@@ -25,7 +25,7 @@ export default function AddFundsPage() {
     setError(null);
 
     try {
-      const result = await initiateDeposit(numAmount);
+      const result = await api.post<{ authorizationUrl: string; reference: string }>('/api/wallet/deposit', { amount: numAmount });
 
       if (result.success && result.data?.authorizationUrl) {
         // Redirect to Paystack checkout page
@@ -99,8 +99,8 @@ export default function AddFundsPage() {
                       type="button"
                       onClick={() => setAmount(amt.toString())}
                       className={`py-2 rounded-lg font-bold transition ${amount === amt.toString()
-                          ? 'bg-red-600 text-white'
-                          : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
                         }`}
                     >
                       ₦{(amt / 1000).toFixed(0)}k
@@ -120,8 +120,8 @@ export default function AddFundsPage() {
                   <div
                     onClick={() => setPaymentMethod('card')}
                     className={`flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-red-600 transition ${paymentMethod === 'card'
-                        ? 'border-red-600 bg-red-50'
-                        : 'border-gray-300'
+                      ? 'border-red-600 bg-red-50'
+                      : 'border-gray-300'
                       }`}
                   >
                     <input
@@ -146,8 +146,8 @@ export default function AddFundsPage() {
                   <div
                     onClick={() => setPaymentMethod('bank')}
                     className={`flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-red-600 transition ${paymentMethod === 'bank'
-                        ? 'border-red-600 bg-red-50'
-                        : 'border-gray-300'
+                      ? 'border-red-600 bg-red-50'
+                      : 'border-gray-300'
                       }`}
                   >
                     <input
@@ -172,8 +172,8 @@ export default function AddFundsPage() {
                   <div
                     onClick={() => setPaymentMethod('mobile')}
                     className={`flex items-center p-4 border-2 rounded-lg cursor-pointer hover:border-red-600 transition ${paymentMethod === 'mobile'
-                        ? 'border-red-600 bg-red-50'
-                        : 'border-gray-300'
+                      ? 'border-red-600 bg-red-50'
+                      : 'border-gray-300'
                       }`}
                   >
                     <input

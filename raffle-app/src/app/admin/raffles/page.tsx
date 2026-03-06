@@ -12,7 +12,8 @@ import {
   XCircle,
   Filter,
 } from 'lucide-react';
-import { useRaffles, startRaffleDraw } from '@/lib/useRaffles';
+import { useRaffles } from '@/lib/hooks/useRaffles';
+import { api } from '@/lib/api';
 
 type RaffleStatus = 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 
@@ -20,10 +21,11 @@ export default function AdminRafflesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<RaffleStatus | 'all'>('all');
 
-  const { raffles: apiRaffles, loading, error, refetch } = useRaffles({
+  const { data: rafflesData, isLoading: loading, error, refetch } = useRaffles({
     status: statusFilter !== 'all' ? statusFilter : undefined,
     limit: 50,
   });
+  const apiRaffles = rafflesData?.raffles ?? [];
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -53,7 +55,7 @@ export default function AdminRafflesPage() {
   const handleStartDraw = async (raffleId: string) => {
     if (!confirm('Are you sure you want to draw a winner for this raffle?')) return;
     try {
-      const res = await startRaffleDraw(raffleId);
+      const res = await api.post(`/api/raffles/${raffleId}/draw`);
       alert(res.message || 'Winner drawn successfully!');
       refetch();
     } catch (err: any) {
@@ -168,7 +170,7 @@ export default function AdminRafflesPage() {
           </div>
         ) : error ? (
           <div className="text-center py-12">
-            <p className="text-red-600">{error}</p>
+            <p className="text-red-600">{error instanceof Error ? error.message : 'Failed to load raffles'}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">

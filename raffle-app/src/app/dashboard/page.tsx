@@ -7,103 +7,93 @@ import StatCard from '@/components/dashboard/StatCard';
 import ActiveTicketCard from '@/components/dashboard/ActiveTicketCard';
 import TransactionItem from '@/components/dashboard/TransactionItem';
 import RecentItemCard from '@/components/dashboard/RecentItemCard';
-import TipsSection from '@/components/dashboard/TipsSection';
+import { useAuthStore } from '@/lib/authStore';
+import { useWalletTransactions } from '@/lib/hooks/useWallet';
+import { useTicketHistory } from '@/lib/hooks/useTickets';
+import { useRaffles } from '@/lib/hooks/useRaffles';
 
 export default function DashboardHome() {
-  // Mock user data
-  const user = {
-    name: 'John Doe',
-    userNumber: 'USER-98765',
-    walletBalance: 50000,
-    rafflePoints: 2500,
+  const { user } = useAuthStore();
+
+  const { data: txData, isLoading: txLoading } = useWalletTransactions(1, 5);
+  const { data: ticketData, isLoading: ticketsLoading } = useTicketHistory();
+  const { data: raffleData, isLoading: rafflesLoading } = useRaffles({ status: 'ACTIVE', limit: 4 });
+
+  const ticketStats = ticketData?.stats ?? { total: 0, active: 0, won: 0, lost: 0 };
+  const apiTickets = ticketData?.tickets ?? [];
+  const activeRaffles = raffleData?.raffles ?? [];
+
+  // Filter active tickets from history
+  const activeTickets = apiTickets
+    .filter(t => t.status === 'ACTIVE')
+    .slice(0, 3)
+    .map(t => {
+      const now = new Date();
+      const raffleEnd = new Date(t.raffle.raffleDate);
+      const daysLeft = Math.max(0, Math.ceil((raffleEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+      const imageUrl = t.raffle.item.imageUrl?.startsWith('/uploads')
+        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${t.raffle.item.imageUrl}`
+        : t.raffle.item.imageUrl || '📦';
+
+      return {
+        id: t.id as any,
+        item: t.raffle.item.name,
+        image: imageUrl,
+        ticketNumber: t.ticketNumber,
+        purchaseDate: new Date(t.createdAt).toLocaleDateString(),
+        status: t.status.toLowerCase(),
+        endsIn: `${daysLeft} days`,
+      };
+    });
+
+  // Map transactions
+  const mapTxType = (type: string) => {
+    const mapping: Record<string, 'deposit' | 'withdrawal' | 'purchase' | 'reward' | 'refund'> = {
+      DEPOSIT: 'deposit',
+      WITHDRAWAL: 'withdrawal',
+      TICKET_PURCHASE: 'purchase',
+      TASK_REWARD: 'reward',
+      RAFFLE_WIN: 'reward',
+      REFUND: 'refund',
+    };
+    return mapping[type] || 'deposit';
   };
 
-  // Mock recent transactions
-  const recentTransactions: {
-    id: number;
-    type: 'deposit' | 'withdrawal' | 'purchase' | 'reward';
-    description: string;
-    amount: number;
-    date: string;
-    status: 'completed' | 'pending';
-  }[] = [
-    {
-      id: 1,
-      type: 'deposit',
-      description: 'Deposit to wallet',
-      amount: 10000,
-      date: '2 hours ago',
-      status: 'completed',
-    },
-    {
-      id: 2,
-      type: 'purchase',
-      description: 'iPhone 15 Pro Max ticket',
-      amount: -5000,
-      date: '5 hours ago',
-      status: 'completed',
-    },
-    {
-      id: 3,
-      type: 'withdrawal',
-      description: 'Withdrawal request',
-      amount: -20000,
-      date: '1 day ago',
-      status: 'pending',
-    },
-    {
-      id: 4,
-      type: 'reward',
-      description: 'Task completed: Watch ad',
-      amount: 2500,
-      date: '2 days ago',
-      status: 'completed',
-    },
-  ];
+  const recentTransactions = (txData?.transactions || []).map(tx => ({
+    id: tx.id as any,
+    type: mapTxType(tx.type),
+    description: tx.description || `${tx.type} transaction`,
+    amount: tx.type === 'WITHDRAWAL' || tx.type === 'TICKET_PURCHASE' ? -tx.amount : tx.amount,
+    date: new Date(tx.createdAt).toLocaleDateString(),
+    status: tx.status === 'COMPLETED' ? 'completed' : 'pending' as const,
+  }));
 
-  // Mock active tickets
-  const activeTickets = [
-    {
-      id: 1,
-      item: 'iPhone 15 Pro Max',
-      image: '📱',
-      ticketNumber: '#12345',
-      purchaseDate: 'Today',
-      status: 'active',
-      endsIn: '2 days',
-    },
-    {
-      id: 2,
-      item: 'MacBook Pro 14"',
-      image: '💻',
-      ticketNumber: '#67890',
-      purchaseDate: 'Yesterday',
-      status: 'active',
-      endsIn: '5 days',
-    },
-    {
-      id: 3,
-      item: 'AirPods Pro Max',
-      image: '🎧',
-      ticketNumber: '#54321',
-      purchaseDate: '3 days ago',
-      status: 'active',
-      endsIn: '1 day',
-    },
-  ];
+  // Map available items
+  const availableItems = activeRaffles.map(r => {
+    const progress = Math.min(100, Math.round((r.ticketsSold / r.ticketsTotal) * 100));
+    const imageUrl = r.item.imageUrl?.startsWith('/uploads')
+      ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${r.item.imageUrl}`
+      : r.item.imageUrl || '📦';
 
-  // Mock available items
-  const availableItems = [
-    { id: 1, name: 'iPad Pro 12.9"', image: '📲', price: 4500, progress: 75 },
-    {
-      id: 2,
-      name: 'Apple Watch Ultra',
-      image: '⌚',
-      price: 2500,
-      progress: 60,
-    },
-    { id: 3, name: 'PlayStation 5', image: '🎮', price: 6000, progress: 100 },
-  ];
+    return {
+      id: r.id as any,
+      name: r.item.name,
+      image: imageUrl,
+      price: r.ticketPrice,
+      progress,
+    };
+  });
+
+  if (!user || txLoading || ticketsLoading || rafflesLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <span className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin"></span>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-20 md:pb-0">
@@ -145,7 +135,7 @@ export default function DashboardHome() {
 
         <StatCard
           title="Active Tickets"
-          value={activeTickets.length}
+          value={ticketStats.active}
           subtitle="Tickets in active raffles"
           icon={<span className="text-2xl">🎫</span>}
           borderColor="border-blue-600"
@@ -172,9 +162,13 @@ export default function DashboardHome() {
           </Link>
         </div>
         <div className="space-y-4">
-          {activeTickets.map((ticket) => (
-            <ActiveTicketCard key={ticket.id} ticket={ticket} />
-          ))}
+          {activeTickets.length > 0 ? (
+            activeTickets.map((ticket) => (
+              <ActiveTicketCard key={ticket.id} ticket={ticket} />
+            ))
+          ) : (
+            <p className="text-gray-500 text-center py-4">No active tickets. Buy a raffle ticket to get started!</p>
+          )}
         </div>
       </div>
 
@@ -194,9 +188,13 @@ export default function DashboardHome() {
             </Link>
           </div>
           <div className="space-y-4">
-            {availableItems.map((item) => (
-              <RecentItemCard key={item.id} item={item} />
-            ))}
+            {availableItems.length > 0 ? (
+              availableItems.map((item) => (
+                <RecentItemCard key={item.id} item={item as any} />
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">No active raffles right now.</p>
+            )}
           </div>
         </div>
 
@@ -214,14 +212,16 @@ export default function DashboardHome() {
             </Link>
           </div>
           <div className="space-y-4">
-            {recentTransactions.map((transaction) => (
-              <TransactionItem key={transaction.id} transaction={transaction} />
-            ))}
+            {recentTransactions.length > 0 ? (
+              recentTransactions.map((transaction) => (
+                <TransactionItem key={transaction.id} transaction={transaction as any} />
+              ))
+            ) : (
+              <p className="text-gray-500 text-center py-4">No recent transactions.</p>
+            )}
           </div>
         </div>
       </div>
-
-      <TipsSection />
     </div>
   );
 }

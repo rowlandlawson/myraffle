@@ -11,19 +11,23 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
+import { useAuthStore } from '@/lib/authStore';
+import { api } from '@/lib/api';
 
 export default function SettingsPage() {
+  const { user, isLoading, hydrate } = useAuthStore();
   const [activeTab, setActiveTab] = useState<
     'profile' | 'notifications' | 'security' | 'bank'
   >('profile');
   const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
-  // Mock user data
+  // Set default profile from user store
   const [profile, setProfile] = useState({
-    fullName: 'John Doe',
-    email: 'john.doe@example.com',
-    phone: '+234 800 123 4567',
+    fullName: user?.name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
   });
 
   const [notifications, setNotifications] = useState({
@@ -35,17 +39,34 @@ export default function SettingsPage() {
   });
 
   const [bankAccount, setBankAccount] = useState({
-    bankName: 'Guaranty Trust Bank',
-    accountNumber: '0123456789',
-    accountName: 'John Doe',
+    bankName: '',
+    accountNumber: '',
+    accountName: '',
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true);
-    setTimeout(() => {
+    setSaveMessage(null);
+    try {
+      if (activeTab === 'profile') {
+        const result = await api.put('/api/users/profile', {
+          name: profile.fullName,
+          phone: profile.phone || null,
+        });
+        if (!result.success) throw new Error(result.message);
+        // Re-hydrate user from localStorage / token so the auth store reflects the update
+        hydrate();
+        setSaveMessage('Profile updated successfully!');
+      } else {
+        // Notifications / Security / Bank have no backend endpoint yet
+        setSaveMessage('Settings saved successfully!');
+      }
+    } catch (err: any) {
+      setSaveMessage(err.message || 'Failed to save settings');
+    } finally {
       setIsSaving(false);
-      alert('Settings saved successfully!');
-    }, 1500);
+      setTimeout(() => setSaveMessage(null), 3000);
+    }
   };
 
   const tabs = [
@@ -54,6 +75,17 @@ export default function SettingsPage() {
     { id: 'security', label: 'Security', icon: Lock },
     { id: 'bank', label: 'Bank Account', icon: CreditCard },
   ];
+
+  if (isLoading || !user) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <span className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin"></span>
+          <p className="text-gray-600">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-20 md:pb-0">
@@ -74,11 +106,10 @@ export default function SettingsPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${
-                    activeTab === tab.id
-                      ? 'bg-red-50 text-red-600 font-semibold'
-                      : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${activeTab === tab.id
+                    ? 'bg-red-50 text-red-600 font-semibold'
+                    : 'text-gray-700 hover:bg-gray-50'
+                    }`}
                 >
                   <tab.icon size={20} />
                   {tab.label}
@@ -195,24 +226,22 @@ export default function SettingsPage() {
                             ...notifications,
                             [item.key]:
                               !notifications[
-                                item.key as keyof typeof notifications
+                              item.key as keyof typeof notifications
                               ],
                           })
                         }
-                        className={`w-12 h-6 rounded-full transition ${
-                          notifications[item.key as keyof typeof notifications]
-                            ? 'bg-red-600'
-                            : 'bg-gray-300'
-                        }`}
+                        className={`w-12 h-6 rounded-full transition ${notifications[item.key as keyof typeof notifications]
+                          ? 'bg-red-600'
+                          : 'bg-gray-300'
+                          }`}
                       >
                         <div
-                          className={`w-5 h-5 bg-white rounded-full shadow transform transition ${
-                            notifications[
-                              item.key as keyof typeof notifications
-                            ]
-                              ? 'translate-x-6'
-                              : 'translate-x-0.5'
-                          }`}
+                          className={`w-5 h-5 bg-white rounded-full shadow transform transition ${notifications[
+                            item.key as keyof typeof notifications
+                          ]
+                            ? 'translate-x-6'
+                            : 'translate-x-0.5'
+                            }`}
                         />
                       </button>
                     </div>

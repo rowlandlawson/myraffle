@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import TopNav from '@/components/navbar/TopNav';
+import { useRaffles } from '@/lib/hooks/useRaffles';
 import HeroSection from '@/components/landing/HeroSection';
 import FeaturesSection from '@/components/landing/FeaturesSection';
 import ItemsSection from '@/components/landing/ItemsSection';
@@ -14,69 +15,38 @@ import BottomNav from '@/components/navbar/BottomNav';
 export default function LandingPage() {
   const [activeTab, setActiveTab] = useState('active');
 
-  // Mock data for items
-  const items = [
-    {
-      id: 1,
-      name: 'iPhone 15 Pro Max',
-      image: '📱',
-      ticketPrice: 5000,
-      ticketsSold: 87,
-      ticketsTotal: 100,
-      status: 'active' as const,
-      endsIn: '2 days',
-    },
-    {
-      id: 2,
-      name: 'MacBook Pro 14"',
-      image: '💻',
-      ticketPrice: 8000,
-      ticketsSold: 45,
-      ticketsTotal: 50,
-      status: 'active' as const,
-      endsIn: '5 days',
-    },
-    {
-      id: 3,
-      name: 'AirPods Pro Max',
-      image: '🎧',
-      ticketPrice: 3000,
-      ticketsSold: 92,
-      ticketsTotal: 100,
-      status: 'active' as const,
-      endsIn: '1 day',
-    },
-    {
-      id: 4,
-      name: 'PlayStation 5',
-      image: '🎮',
-      ticketPrice: 6000,
-      ticketsSold: 100,
-      ticketsTotal: 100,
-      status: 'completed' as const,
-      endsIn: 'Completed',
-    },
-    {
-      id: 5,
-      name: 'Apple Watch Ultra',
-      image: '⌚',
-      ticketPrice: 2500,
-      ticketsSold: 60,
-      ticketsTotal: 80,
-      status: 'active' as const,
-      endsIn: '3 days',
-    },
-    {
-      id: 6,
-      name: 'iPad Pro 12.9"',
-      image: '📲',
-      ticketPrice: 4500,
-      ticketsSold: 75,
-      ticketsTotal: 100,
-      status: 'active' as const,
-      endsIn: '4 days',
-    },
-  ];
+  // Fetch live raffles
+  const { data: activeData, isLoading: activeLoading } = useRaffles({ status: 'ACTIVE' });
+  const { data: completedData, isLoading: completedLoading } = useRaffles({ status: 'COMPLETED' });
+  const activeRaffles = activeData?.raffles ?? [];
+  const completedRaffles = completedData?.raffles ?? [];
+
+  // Map API data to the format ItemsSection expects
+  const mapRaffleToItem = (r: any) => {
+    const now = new Date();
+    const raffleEnd = new Date(r.raffleDate);
+    const daysLeft = Math.max(0, Math.ceil((raffleEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+    const imageUrl = r.item.imageUrl?.startsWith('/uploads')
+      ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${r.item.imageUrl}`
+      : r.item.imageUrl || '📦';
+
+    return {
+      id: r.id,
+      name: r.item.name,
+      image: imageUrl,
+      ticketPrice: r.ticketPrice,
+      ticketsSold: r.ticketsSold,
+      ticketsTotal: r.ticketsTotal,
+      status: r.status.toLowerCase() as 'active' | 'completed',
+      endsIn: r.status === 'COMPLETED' ? 'Completed' : `${daysLeft} days`,
+    };
+  };
+
+  const activeItems = activeRaffles.map(mapRaffleToItem);
+  const completedItems = completedRaffles.map(mapRaffleToItem);
+
+  // For landing page, we'll combine them since ItemsSection filters by status itself
+  const items = [...activeItems, ...completedItems];
 
   // Mock data for winners
   const recentWinners = [

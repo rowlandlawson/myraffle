@@ -9,8 +9,8 @@ import ItemsGrid from '@/components/publicItems/ItemsGrid';
 import ItemDetailModal from '@/components/publicItems/ItemDetailModal';
 import ResultsCount from '@/components/publicItems/ResultsCount';
 import { Item, Category, FilterState } from '@/types/publicItems';
-import { useItems } from '@/lib/useItems';
-import { buyTicket } from '@/lib/useTickets';
+import { useItems } from '@/lib/hooks/useItems';
+import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/authStore';
 
 // Categories data - exported for reuse
@@ -87,10 +87,11 @@ export function PublicItemsPage() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   // Fetch items from API
-  const { items: apiItems, loading, error } = useItems({
+  const { data: itemsData, isLoading: loading, error } = useItems({
     category: filters.category !== 'all' ? filters.category : undefined,
     search: filters.searchTerm || undefined,
   });
+  const apiItems = itemsData?.items ?? [];
 
   // Map API items to the frontend Item type
   const mappedItems: Item[] = useMemo(() => {
@@ -147,7 +148,7 @@ export function PublicItemsPage() {
 
     setBuyingItemId(itemId);
     try {
-      await buyTicket(item._raffleId, 'wallet');
+      await api.post(`/api/tickets/${item._raffleId}/buy`, { paymentMethod: 'wallet' });
       alert('Ticket purchased successfully! 🎉');
       setSelectedItem(null);
     } catch (err: any) {
@@ -194,7 +195,7 @@ export function PublicItemsPage() {
               </div>
             ) : error ? (
               <div className="text-center py-16">
-                <p className="text-red-600">{error}</p>
+                <p className="text-red-600">{error instanceof Error ? error.message : 'Failed to load items'}</p>
               </div>
             ) : (
               <>

@@ -14,143 +14,123 @@ import TaskCard from '@/components/earnings/TaskCard';
 import ReferralSection from '@/components/earnings/ReferralSection';
 import WatchAdModal from '@/components/earnings/WatchAdModal';
 import EarningsStatCard from '@/components/earnings/EarningsStatCard';
+import { useAuthStore } from '@/lib/authStore';
+import { useTasks, useCompletedTasks, useCompleteTask } from '@/lib/hooks/useTasks';
+
+// Map task type from backend to icon URL
+const TASK_ICONS: Record<string, string> = {
+  WATCH_AD: 'https://img.icons8.com/3d-fluency/94/tv.png',
+  SOCIAL_SHARE: 'https://img.icons8.com/3d-fluency/94/whatsapp.png',
+  SURVEY: 'https://img.icons8.com/3d-fluency/94/clipboard.png',
+  DAILY_LOGIN: 'https://img.icons8.com/3d-fluency/94/fire-element.png',
+  REFERRAL: 'https://img.icons8.com/3d-fluency/94/handshake.png',
+};
 
 export default function EarningsPage() {
-  const [completedTasks, setCompletedTasks] = useState<Record<number, boolean>>(
-    {},
-  );
+  const { user } = useAuthStore();
+  const { data: tasks = [], isLoading: tasksLoading } = useTasks();
+  const { data: completedData, isLoading: completedLoading } = useCompletedTasks();
+  const completeTaskMutation = useCompleteTask();
+
   const [showWatchAd, setShowWatchAd] = useState(false);
   const [adTimer, setAdTimer] = useState(0);
+  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
+
+  const completedTaskIds = new Set(
+    (completedData?.completedTasks ?? []).map((ct) => ct.taskId),
+  );
 
   const userStats = {
-    totalPoints: 2500,
-    pointsThisWeek: 850,
-    tasksCompleted: 12,
-    referrals: 3,
+    totalPoints: user?.rafflePoints || 0,
+    totalPointsEarned: completedData?.summary.totalPointsEarned ?? 0,
+    tasksCompleted: completedData?.summary.totalTasksCompleted ?? 0,
+    referrals: (completedData?.completedTasks ?? []).filter(
+      (ct) => ct.task.type === 'REFERRAL',
+    ).length,
   };
 
-  const allTasks = [
-    {
-      id: 1,
-      type: 'watch_ad',
-      title: 'Watch Video Ad',
-      description: 'Watch a 30-second advertisement',
-      points: 10,
-      time: '30 seconds',
-      icon: 'https://img.icons8.com/3d-fluency/94/tv.png',
-    },
-    {
-      id: 2,
-      type: 'watch_ad',
-      title: 'Watch Sports Highlights',
-      description: 'Watch a 60-second sports video',
-      points: 20,
-      time: '60 seconds',
-      icon: 'https://img.icons8.com/3d-fluency/94/trophy.png',
-    },
-    {
-      id: 3,
-      type: 'watch_ad',
-      title: 'Product Review Video',
-      description: 'Watch a product review (90 seconds)',
-      points: 30,
-      time: '90 seconds',
-      icon: 'https://img.icons8.com/3d-fluency/94/star.png',
-    },
-    {
-      id: 4,
-      type: 'social_share',
-      title: 'Share on WhatsApp',
-      description: 'Share RaffleHub with your friends on WhatsApp',
-      points: 50,
-      time: '2 minutes',
-      icon: 'https://img.icons8.com/3d-fluency/94/whatsapp.png',
-      limit: '5 per day',
-    },
-    {
-      id: 5,
-      type: 'social_share',
-      title: 'Post on Facebook',
-      description: 'Share a post about RaffleHub on Facebook',
-      points: 50,
-      time: '2 minutes',
-      icon: 'https://img.icons8.com/3d-fluency/94/facebook-new.png',
-      limit: '3 per day',
-    },
-    {
-      id: 6,
-      type: 'survey',
-      title: 'Quick Survey',
-      description: 'Complete a 2-minute survey about your preferences',
-      points: 100,
-      time: '2 minutes',
-      icon: 'https://img.icons8.com/3d-fluency/94/clipboard.png',
-    },
-    {
-      id: 7,
-      type: 'daily_login',
-      title: 'Daily Login',
-      description: 'Login to RaffleHub every day',
-      points: 25,
-      time: 'Daily',
-      icon: 'https://img.icons8.com/3d-fluency/94/fire-element.png',
-    },
-    {
-      id: 8,
-      type: 'watch_ad',
-      title: 'Music Video',
-      description: 'Watch a 45-second music video',
-      points: 15,
-      time: '45 seconds',
-      icon: 'https://img.icons8.com/3d-fluency/94/music.png',
-    },
-    {
-      id: 9,
-      type: 'social_share',
-      title: 'Share on Twitter',
-      description: 'Tweet about RaffleHub with #RaffleHubNG',
-      points: 50,
-      time: '2 minutes',
-      icon: 'https://img.icons8.com/3d-fluency/94/twitterx.png',
-      limit: '2 per day',
-    },
-  ];
-
-  const handleCompleteTask = (taskId: number) => {
-    const task = allTasks.find((t) => t.id === taskId);
-    if (task?.type === 'watch_ad') {
+  const handleCompleteTask = async (taskId: string, taskType: string) => {
+    if (taskType === 'WATCH_AD') {
+      // Simulate watching an ad before completing
+      setCompletingTaskId(taskId);
       setShowWatchAd(true);
       setAdTimer(31);
       const interval = setInterval(() => {
         setAdTimer((prev) => {
           if (prev <= 1) {
             clearInterval(interval);
-            setCompletedTasks((prev) => ({ ...prev, [taskId]: true }));
             setShowWatchAd(false);
+            // Now actually complete the task via API
+            completeTaskMutation.mutate(taskId, {
+              onError: (err: any) => alert(err.message || 'Failed to complete task'),
+            });
+            setCompletingTaskId(null);
             return 0;
           }
           return prev - 1;
         });
       }, 1000);
     } else {
-      setCompletedTasks((prev) => ({ ...prev, [taskId]: true }));
+      setCompletingTaskId(taskId);
+      completeTaskMutation.mutate(taskId, {
+        onSuccess: () => setCompletingTaskId(null),
+        onError: (err: any) => {
+          alert(err.message || 'Failed to complete task');
+          setCompletingTaskId(null);
+        },
+      });
     }
   };
 
   const getTaskColor = (type: string) => {
     switch (type) {
-      case 'watch_ad':
+      case 'WATCH_AD':
         return 'from-blue-500 to-blue-600';
-      case 'social_share':
+      case 'SOCIAL_SHARE':
         return 'from-green-500 to-green-600';
-      case 'survey':
+      case 'SURVEY':
         return 'from-purple-500 to-purple-600';
-      case 'daily_login':
+      case 'DAILY_LOGIN':
         return 'from-orange-500 to-orange-600';
+      case 'REFERRAL':
+        return 'from-pink-500 to-pink-600';
       default:
         return 'from-gray-500 to-gray-600';
     }
   };
+
+  const getButtonLabel = (type: string) => {
+    switch (type) {
+      case 'WATCH_AD':
+        return 'Watch Now';
+      case 'SOCIAL_SHARE':
+        return 'Share Now';
+      case 'DAILY_LOGIN':
+        return 'Claim';
+      case 'SURVEY':
+        return 'Start Survey';
+      default:
+        return 'Complete';
+    }
+  };
+
+  // Group tasks by type for display
+  const watchAdTasks = tasks.filter((t) => t.type === 'WATCH_AD');
+  const socialTasks = tasks.filter((t) => t.type === 'SOCIAL_SHARE');
+  const otherTasks = tasks.filter((t) =>
+    ['SURVEY', 'DAILY_LOGIN'].includes(t.type),
+  );
+
+  if (tasksLoading || completedLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="flex flex-col items-center gap-3">
+          <span className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin"></span>
+          <p className="text-gray-600">Loading tasks...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 md:pb-0">
@@ -177,16 +157,16 @@ export default function EarningsPage() {
             borderColor="border-yellow-400"
           />
           <EarningsStatCard
-            title="This Week"
-            value={userStats.pointsThisWeek.toLocaleString()}
-            subtitle="Earned"
+            title="Earned"
+            value={userStats.totalPointsEarned.toLocaleString()}
+            subtitle="All time"
             icon={<Award size={20} className="text-green-500" />}
             borderColor="border-green-500"
           />
           <EarningsStatCard
             title="Tasks Done"
             value={userStats.tasksCompleted}
-            subtitle="Completed this month"
+            subtitle="Completed"
             icon={<CheckCircle size={24} className="text-blue-500" />}
             borderColor="border-blue-500"
           />
@@ -214,46 +194,62 @@ export default function EarningsPage() {
         {/* Task Categories */}
         <div className="space-y-8">
           {/* Watch Ads */}
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Play size={24} className="text-blue-500" /> Watch Videos
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {allTasks
-                .filter((t) => t.type === 'watch_ad')
-                .map((task) => (
+          {watchAdTasks.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Play size={24} className="text-blue-500" /> Watch Videos
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {watchAdTasks.map((task) => (
                   <TaskCard
                     key={task.id}
-                    task={task}
-                    isCompleted={!!completedTasks[task.id]}
+                    task={{
+                      id: task.id as any,
+                      type: task.type.toLowerCase(),
+                      title: task.title,
+                      description: task.description,
+                      points: task.points,
+                      time: '30 seconds',
+                      icon: TASK_ICONS[task.type] || TASK_ICONS.WATCH_AD,
+                    }}
+                    isCompleted={completedTaskIds.has(task.id)}
                     colorClass={getTaskColor(task.type)}
-                    onComplete={() => handleCompleteTask(task.id)}
-                    buttonLabel="Watch Now"
+                    onComplete={() => handleCompleteTask(task.id, task.type)}
+                    buttonLabel={getButtonLabel(task.type)}
                   />
                 ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Social Share */}
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Share2 size={24} className="text-green-500" /> Share & Earn
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {allTasks
-                .filter((t) => t.type === 'social_share')
-                .map((task) => (
+          {socialTasks.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Share2 size={24} className="text-green-500" /> Share & Earn
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {socialTasks.map((task) => (
                   <TaskCard
                     key={task.id}
-                    task={task}
-                    isCompleted={!!completedTasks[task.id]}
+                    task={{
+                      id: task.id as any,
+                      type: task.type.toLowerCase(),
+                      title: task.title,
+                      description: task.description,
+                      points: task.points,
+                      time: '2 minutes',
+                      icon: TASK_ICONS[task.type] || TASK_ICONS.SOCIAL_SHARE,
+                    }}
+                    isCompleted={completedTaskIds.has(task.id)}
                     colorClass={getTaskColor(task.type)}
-                    onComplete={() => handleCompleteTask(task.id)}
-                    buttonLabel="Share Now"
+                    onComplete={() => handleCompleteTask(task.id, task.type)}
+                    buttonLabel={getButtonLabel(task.type)}
                   />
                 ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Referral */}
           <div>
@@ -264,24 +260,41 @@ export default function EarningsPage() {
           </div>
 
           {/* Other Tasks */}
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-              <Award size={24} className="text-orange-500" /> Other Tasks
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {allTasks
-                .filter((t) => ['survey', 'daily_login'].includes(t.type))
-                .map((task) => (
+          {otherTasks.length > 0 && (
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-4 flex items-center gap-2">
+                <Award size={24} className="text-orange-500" /> Other Tasks
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {otherTasks.map((task) => (
                   <TaskCard
                     key={task.id}
-                    task={task}
-                    isCompleted={!!completedTasks[task.id]}
+                    task={{
+                      id: task.id as any,
+                      type: task.type.toLowerCase(),
+                      title: task.title,
+                      description: task.description,
+                      points: task.points,
+                      time: task.type === 'DAILY_LOGIN' ? 'Daily' : '2 minutes',
+                      icon: TASK_ICONS[task.type] || TASK_ICONS.DAILY_LOGIN,
+                    }}
+                    isCompleted={completedTaskIds.has(task.id)}
                     colorClass={getTaskColor(task.type)}
-                    onComplete={() => handleCompleteTask(task.id)}
+                    onComplete={() => handleCompleteTask(task.id, task.type)}
+                    buttonLabel={getButtonLabel(task.type)}
                   />
                 ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Empty state if no tasks */}
+          {tasks.length === 0 && (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">🎯</div>
+              <p className="text-gray-600 text-lg">No tasks available right now. Check back later!</p>
+            </div>
+          )}
         </div>
       </div>
 

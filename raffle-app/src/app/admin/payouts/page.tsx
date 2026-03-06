@@ -3,165 +3,82 @@
 import { useState } from 'react';
 import {
   Search,
-  Filter,
   CheckCircle,
   XCircle,
   Clock,
   AlertCircle,
   DollarSign,
 } from 'lucide-react';
+import { useAdminWithdrawals, useApproveWithdrawal, useRejectWithdrawal } from '@/lib/hooks/useAdmin';
 
-type PayoutStatus = 'pending' | 'approved' | 'rejected' | 'completed';
-
-interface Payout {
-  id: string;
-  userId: string;
-  userName: string;
-  bankName: string;
-  accountNumber: string;
-  amount: number;
-  status: PayoutStatus;
-  requestDate: string;
-  processedDate?: string;
-}
+type PayoutStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
 
 export default function AdminPayoutsPage() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<PayoutStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [page, setPage] = useState(1);
 
-  const [payouts, setPayouts] = useState<Payout[]>([
-    {
-      id: 'PAY-001',
-      userId: 'USR-001',
-      userName: 'John Doe',
-      bankName: 'GTBank',
-      accountNumber: '0123456789',
-      amount: 50000,
-      status: 'pending',
-      requestDate: '2026-01-29',
-    },
-    {
-      id: 'PAY-002',
-      userId: 'USR-002',
-      userName: 'Jane Smith',
-      bankName: 'Access Bank',
-      accountNumber: '1234567890',
-      amount: 25000,
-      status: 'pending',
-      requestDate: '2026-01-29',
-    },
-    {
-      id: 'PAY-003',
-      userId: 'USR-003',
-      userName: 'Mike Johnson',
-      bankName: 'Zenith Bank',
-      accountNumber: '2345678901',
-      amount: 100000,
-      status: 'approved',
-      requestDate: '2026-01-28',
-      processedDate: '2026-01-29',
-    },
-    {
-      id: 'PAY-004',
-      userId: 'USR-004',
-      userName: 'Sarah Wilson',
-      bankName: 'UBA',
-      accountNumber: '3456789012',
-      amount: 15000,
-      status: 'completed',
-      requestDate: '2026-01-27',
-      processedDate: '2026-01-28',
-    },
-    {
-      id: 'PAY-005',
-      userId: 'USR-005',
-      userName: 'David Brown',
-      bankName: 'Fidelity Bank',
-      accountNumber: '4567890123',
-      amount: 200000,
-      status: 'rejected',
-      requestDate: '2026-01-26',
-      processedDate: '2026-01-26',
-    },
-    {
-      id: 'PAY-006',
-      userId: 'USR-001',
-      userName: 'John Doe',
-      bankName: 'GTBank',
-      accountNumber: '0123456789',
-      amount: 30000,
-      status: 'completed',
-      requestDate: '2026-01-25',
-      processedDate: '2026-01-26',
-    },
-  ]);
-
-  const filteredPayouts = payouts.filter((payout) => {
-    const matchesSearch =
-      payout.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payout.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      payout.accountNumber.includes(searchTerm);
-    const matchesStatus =
-      statusFilter === 'all' || payout.status === statusFilter;
-    return matchesSearch && matchesStatus;
+  const { data, isLoading, error } = useAdminWithdrawals({
+    page,
+    limit: 20,
+    status: statusFilter !== 'all' ? statusFilter : undefined,
   });
 
-  const handleApprove = (id: string) => {
-    setPayouts(
-      payouts.map((p) =>
-        p.id === id
-          ? {
-              ...p,
-              status: 'approved' as PayoutStatus,
-              processedDate: new Date().toISOString().split('T')[0],
-            }
-          : p,
-      ),
-    );
-  };
+  const approveWithdrawal = useApproveWithdrawal();
+  const rejectWithdrawal = useRejectWithdrawal();
 
-  const handleReject = (id: string) => {
-    setPayouts(
-      payouts.map((p) =>
-        p.id === id
-          ? {
-              ...p,
-              status: 'rejected' as PayoutStatus,
-              processedDate: new Date().toISOString().split('T')[0],
-            }
-          : p,
-      ),
-    );
-  };
+  const withdrawals = data?.withdrawals ?? [];
+  const pagination = data?.pagination;
 
-  const getStatusBadge = (status: PayoutStatus) => {
-    const config = {
-      pending: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Clock },
-      approved: { bg: 'bg-blue-100', text: 'text-blue-800', icon: CheckCircle },
-      completed: {
-        bg: 'bg-green-100',
-        text: 'text-green-800',
-        icon: CheckCircle,
-      },
-      rejected: { bg: 'bg-red-100', text: 'text-red-800', icon: XCircle },
-    };
-    const { bg, text, icon: Icon } = config[status];
+  // Client-side search filter (backend doesn't have search on withdrawals)
+  const filteredWithdrawals = withdrawals.filter((w) => {
+    if (!searchTerm) return true;
+    const term = searchTerm.toLowerCase();
     return (
-      <span
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold ${bg} ${text}`}
-      >
+      w.user.name.toLowerCase().includes(term) ||
+      w.id.toLowerCase().includes(term) ||
+      w.accountNumber.includes(term)
+    );
+  });
+
+  const handleApprove = async (id: string) => {
+    if (confirm('Are you sure you want to approve this withdrawal?')) {
+      approveWithdrawal.mutate(id, {
+        onError: (err: any) => alert(err.message || 'Failed to approve withdrawal'),
+      });
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    if (confirm('Are you sure you want to reject this withdrawal? The amount will be refunded to the user\'s wallet.')) {
+      rejectWithdrawal.mutate(id, {
+        onError: (err: any) => alert(err.message || 'Failed to reject withdrawal'),
+      });
+    }
+  };
+
+  const getStatusBadge = (status: string) => {
+    const config: Record<string, { bg: string; text: string; icon: typeof Clock }> = {
+      PENDING: { bg: 'bg-yellow-100', text: 'text-yellow-800', icon: Clock },
+      APPROVED: { bg: 'bg-blue-100', text: 'text-blue-800', icon: CheckCircle },
+      COMPLETED: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircle },
+      REJECTED: { bg: 'bg-red-100', text: 'text-red-800', icon: XCircle },
+    };
+    const { bg, text, icon: Icon } = config[status] || config.PENDING;
+    return (
+      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold ${bg} ${text}`}>
         <Icon size={12} />
-        {status.charAt(0).toUpperCase() + status.slice(1)}
+        {status.charAt(0) + status.slice(1).toLowerCase()}
       </span>
     );
   };
 
-  const pendingTotal = payouts
-    .filter((p) => p.status === 'pending')
+  const pendingTotal = filteredWithdrawals
+    .filter((p) => p.status === 'PENDING')
     .reduce((sum, p) => sum + p.amount, 0);
-  const pendingCount = payouts.filter((p) => p.status === 'pending').length;
-  const completedTotal = payouts
-    .filter((p) => p.status === 'completed')
+  const pendingCount = filteredWithdrawals.filter((p) => p.status === 'PENDING').length;
+  const completedTotal = filteredWithdrawals
+    .filter((p) => p.status === 'COMPLETED')
     .reduce((sum, p) => sum + p.amount, 0);
 
   return (
@@ -182,9 +99,7 @@ export default function AdminPayoutsPage() {
             <div>
               <p className="text-sm text-gray-600">Pending Requests</p>
               <p className="text-2xl font-bold text-gray-900">{pendingCount}</p>
-              <p className="text-sm text-gray-500">
-                ₦{pendingTotal.toLocaleString()}
-              </p>
+              <p className="text-sm text-gray-500">₦{pendingTotal.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -195,10 +110,7 @@ export default function AdminPayoutsPage() {
             </div>
             <div>
               <p className="text-sm text-gray-600">Completed Payouts</p>
-              <p className="text-2xl font-bold text-gray-900">
-                ₦{completedTotal.toLocaleString()}
-              </p>
-              <p className="text-sm text-gray-500">This month</p>
+              <p className="text-2xl font-bold text-gray-900">₦{completedTotal.toLocaleString()}</p>
             </div>
           </div>
         </div>
@@ -208,9 +120,8 @@ export default function AdminPayoutsPage() {
               <Clock size={24} className="text-blue-600" />
             </div>
             <div>
-              <p className="text-sm text-gray-600">Avg. Processing Time</p>
-              <p className="text-2xl font-bold text-gray-900">24h</p>
-              <p className="text-sm text-gray-500">Target: 48h</p>
+              <p className="text-sm text-gray-600">Total Requests</p>
+              <p className="text-2xl font-bold text-gray-900">{pagination?.total ?? 0}</p>
             </div>
           </div>
         </div>
@@ -231,118 +142,101 @@ export default function AdminPayoutsPage() {
           </div>
           <select
             value={statusFilter}
-            onChange={(e) =>
-              setStatusFilter(e.target.value as PayoutStatus | 'all')
-            }
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
             className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
           >
             <option value="all">All Status</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="completed">Completed</option>
-            <option value="rejected">Rejected</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="REJECTED">Rejected</option>
           </select>
         </div>
 
-        {/* Table */}
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                  Request ID
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                  User
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                  Bank Details
-                </th>
-                <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">
-                  Amount
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                  Date
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                  Status
-                </th>
-                <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredPayouts.map((payout) => (
-                <tr key={payout.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-4 font-mono text-sm text-gray-900">
-                    {payout.id}
-                  </td>
-                  <td className="px-4 py-4">
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {payout.userName}
-                      </p>
-                      <p className="text-xs text-gray-500">{payout.userId}</p>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4">
-                    <div>
-                      <p className="font-semibold text-gray-900">
-                        {payout.bankName}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {payout.accountNumber}
-                      </p>
-                    </div>
-                  </td>
-                  <td className="px-4 py-4 text-right font-bold text-gray-900">
-                    ₦{payout.amount.toLocaleString()}
-                  </td>
-                  <td className="px-4 py-4">
-                    <p className="text-sm text-gray-900">
-                      {payout.requestDate}
-                    </p>
-                    {payout.processedDate && (
-                      <p className="text-xs text-gray-500">
-                        Processed: {payout.processedDate}
-                      </p>
-                    )}
-                  </td>
-                  <td className="px-4 py-4">{getStatusBadge(payout.status)}</td>
-                  <td className="px-4 py-4">
-                    {payout.status === 'pending' && (
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleApprove(payout.id)}
-                          className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200 transition"
-                        >
-                          Approve
-                        </button>
-                        <button
-                          onClick={() => handleReject(payout.id)}
-                          className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition"
-                        >
-                          Reject
-                        </button>
-                      </div>
-                    )}
-                    {payout.status !== 'pending' && (
-                      <button className="text-gray-600 hover:text-gray-700 text-sm">
-                        View
-                      </button>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {filteredPayouts.length === 0 && (
+        {isLoading ? (
           <div className="text-center py-12">
-            <p className="text-gray-600 text-lg">No payouts found</p>
+            <div className="animate-spin w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full mx-auto mb-4" />
+            <p className="text-gray-600">Loading payouts...</p>
           </div>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-red-600">{error instanceof Error ? error.message : 'Failed to load'}</p>
+          </div>
+        ) : (
+          <>
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50 border-b border-gray-200">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">ID</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">User</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Bank Details</th>
+                    <th className="px-4 py-3 text-right text-sm font-semibold text-gray-700">Amount</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Date</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                    <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredWithdrawals.map((w) => (
+                    <tr key={w.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-4 font-mono text-sm text-gray-900">
+                        {w.id.slice(0, 10)}
+                      </td>
+                      <td className="px-4 py-4">
+                        <div>
+                          <p className="font-semibold text-gray-900">{w.user.name}</p>
+                          <p className="text-xs text-gray-500">{w.user.email}</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4">
+                        <div>
+                          <p className="font-semibold text-gray-900">{w.accountName || 'N/A'}</p>
+                          <p className="text-xs text-gray-500">{w.accountNumber} ({w.bankCode})</p>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 text-right font-bold text-gray-900">
+                        ₦{w.amount.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-4">
+                        <p className="text-sm text-gray-900">
+                          {new Date(w.createdAt).toLocaleDateString()}
+                        </p>
+                      </td>
+                      <td className="px-4 py-4">{getStatusBadge(w.status)}</td>
+                      <td className="px-4 py-4">
+                        {w.status === 'PENDING' && (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleApprove(w.id)}
+                              disabled={approveWithdrawal.isPending}
+                              className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200 transition disabled:opacity-50"
+                            >
+                              Approve
+                            </button>
+                            <button
+                              onClick={() => handleReject(w.id)}
+                              disabled={rejectWithdrawal.isPending}
+                              className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 transition disabled:opacity-50"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {filteredWithdrawals.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-600 text-lg">No payouts found</p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

@@ -8,9 +8,13 @@
     "dev": "bun run --watch src/server.ts",
     "build": "bun build src/server.ts --outdir ./dist --target bun",
     "start": "bun run dist/server.js",
+    "seed": "bun run prisma/seed.ts",
     "prisma:generate": "bunx prisma generate",
     "prisma:migrate": "bunx prisma migrate dev",
     "prisma:studio": "bunx prisma studio"
+  },
+  "prisma": {
+    "seed": "bun run prisma/seed.ts"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",

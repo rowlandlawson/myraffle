@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, ReactNode } from 'react';
+import { useState, ReactNode, useEffect } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/lib/authStore';
 import {
   Menu,
   X,
@@ -15,16 +17,21 @@ import {
 } from 'lucide-react';
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const router = useRouter();
+  const { user, isAuthenticated, isLoading, logout } = useAuthStore();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Mock user data
-  const user = {
-    name: 'John Doe',
-    userNumber: 'USER-98765',
-    email: 'john@example.com',
-    walletBalance: 50000,
-    rafflePoints: 2500,
+  // Redirect if not authenticated
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.push('/login');
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  const handleLogout = async () => {
+    await logout();
+    router.push('/login');
   };
 
   const menuItems = [
@@ -34,6 +41,14 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     { label: 'Earnings', href: '/dashboard/earnings', icon: Zap },
     { label: 'Settings', href: '/dashboard/settings', icon: Settings },
   ];
+
+  if (isLoading || !user) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -135,7 +150,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
           {/* Logout Button */}
           <div className="p-6 border-t border-gray-200">
-            <button className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition font-semibold">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition font-semibold"
+            >
               <LogOut size={20} />
               {sidebarOpen && 'Logout'}
             </button>
