@@ -1,4 +1,5 @@
 import { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
 import { prisma } from '../config/database';
 
 // GET /api/users/profile
@@ -150,3 +151,42 @@ export const activateUser = async (req: Request, res: Response) => {
         res.status(500).json({ success: false, message: 'Failed to activate user.' });
     }
 };
+
+// PUT /api/users/change-password
+export const changePassword = async (req: Request, res: Response) => {
+    try {
+        const { currentPassword, newPassword } = req.body;
+        const userId = req.user!.userId;
+
+        if (!currentPassword || !newPassword) {
+            res.status(400).json({ success: false, message: 'Current and new password are required.' });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found.' });
+            return;
+        }
+
+        const isPasswordValid = await bcrypt.compare(currentPassword, user.password);
+        if (!isPasswordValid) {
+            res.status(400).json({ success: false, message: 'Current password is incorrect.' });
+            return;
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: { password: hashedPassword },
+        });
+
+        res.status(200).json({ success: true, message: 'Password updated successfully.' });
+    } catch (error) {
+        console.error('[User] Change password error:', error);
+        res.status(500).json({ success: false, message: 'Failed to change password. Please try again later.' });
+    }
+};
+

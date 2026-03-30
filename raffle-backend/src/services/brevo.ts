@@ -56,17 +56,17 @@ export const sendVerificationEmail = async (
 
   return sendEmail({
     to: email,
-    subject: 'Verify Your RaffleHub Account',
+    subject: 'Verify Your myRaffle Account',
     htmlContent: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #7c3aed; margin: 0;">RaffleHub</h1>
+          <h1 style="color: #7c3aed; margin: 0;">myRaffle</h1>
         </div>
         
         <h2 style="color: #1f2937;">Welcome, ${name}! 🎉</h2>
         
         <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
-          Thank you for signing up for RaffleHub! Before you can start participating in raffles,
+          Thank you for signing up for myRaffle! Before you can start participating in raffles,
           please verify your email address by clicking the button below.
         </p>
         
@@ -92,7 +92,47 @@ export const sendVerificationEmail = async (
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
         
         <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-          © ${new Date().getFullYear()} RaffleHub. All rights reserved.
+          © ${new Date().getFullYear()} myRaffle. All rights reserved.
+        </p>
+      </div>
+    `,
+  });
+};
+
+export const sendEmailOTP = async (
+  email: string,
+  name: string,
+  code: string,
+): Promise<boolean> => {
+  return sendEmail({
+    to: email,
+    subject: `${code} — Your myRaffle Verification Code`,
+    htmlContent: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #dc2626; margin: 0;">myRaffle</h1>
+        </div>
+        
+        <h2 style="color: #1f2937;">Hi ${name}, verify your email</h2>
+        
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Enter the code below to verify your email address:
+        </p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <div style="background: #f3f4f6; border-radius: 12px; padding: 20px; display: inline-block; letter-spacing: 8px; font-size: 32px; font-weight: bold; color: #1f2937; font-family: monospace;">
+            ${code}
+          </div>
+        </div>
+        
+        <p style="color: #6b7280; font-size: 14px;">
+          This code expires in 10 minutes. If you didn't create an account, you can safely ignore this email.
+        </p>
+        
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
+        
+        <p style="color: #9ca3af; font-size: 12px; text-align: center;">
+          © ${new Date().getFullYear()} myRaffle. All rights reserved.
         </p>
       </div>
     `,
@@ -105,11 +145,11 @@ export const sendWelcomeEmail = async (
 ): Promise<boolean> => {
   return sendEmail({
     to: email,
-    subject: 'Welcome to RaffleHub! 🎊',
+    subject: 'Welcome to myRaffle!',
     htmlContent: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #7c3aed; margin: 0;">RaffleHub</h1>
+          <h1 style="color: #7c3aed; margin: 0;">myRaffle</h1>
         </div>
         
         <h2 style="color: #1f2937;">Your email has been verified! 🎉</h2>
@@ -137,7 +177,7 @@ export const sendWelcomeEmail = async (
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
         
         <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-          © ${new Date().getFullYear()} RaffleHub. All rights reserved.
+          © ${new Date().getFullYear()} myRaffle. All rights reserved.
         </p>
       </div>
     `,
@@ -153,11 +193,11 @@ export const sendPasswordResetEmail = async (
 
   return sendEmail({
     to: email,
-    subject: 'Reset Your RaffleHub Password',
+    subject: 'Reset Your myRaffle Password',
     htmlContent: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #7c3aed; margin: 0;">RaffleHub</h1>
+          <h1 style="color: #7c3aed; margin: 0;">myRaffle</h1>
         </div>
         
         <h2 style="color: #1f2937;">Password Reset Request</h2>
@@ -182,7 +222,7 @@ export const sendPasswordResetEmail = async (
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
         
         <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-          © ${new Date().getFullYear()} RaffleHub. All rights reserved.
+          © ${new Date().getFullYear()} myRaffle. All rights reserved.
         </p>
       </div>
     `,
@@ -197,11 +237,11 @@ export const sendRaffleWinnerEmail = async (
 ): Promise<boolean> => {
   return sendEmail({
     to: email,
-    subject: '🎉 Congratulations! You Won a Raffle on RaffleHub!',
+    subject: '🎉 Congratulations! You Won a Raffle on myRaffle!',
     htmlContent: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #7c3aed; margin: 0;">RaffleHub</h1>
+          <h1 style="color: #7c3aed; margin: 0;">myRaffle</h1>
         </div>
         
         <div style="text-align: center; margin-bottom: 20px;">
@@ -236,7 +276,7 @@ export const sendRaffleWinnerEmail = async (
         <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 30px 0;" />
         
         <p style="color: #9ca3af; font-size: 12px; text-align: center;">
-          © ${new Date().getFullYear()} RaffleHub. All rights reserved.
+          © ${new Date().getFullYear()} myRaffle. All rights reserved.
         </p>
       </div>
     `,

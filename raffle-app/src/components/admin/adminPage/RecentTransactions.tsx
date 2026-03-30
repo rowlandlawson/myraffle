@@ -1,147 +1,82 @@
-'use client';
-
-import Link from 'next/link';
-import Card from '@/components/ui/Card';
-
-interface Transaction {
-  id: number;
-  type: 'deposit' | 'withdrawal' | 'ticket_sale' | 'payout';
-  user: string;
-  amount: number;
-  date: string;
-  status: 'completed' | 'pending';
-}
+import React from 'react';
+import { ArrowUpRight, ArrowDownRight, Clock } from 'lucide-react';
+import type { AdminTransaction } from '@/lib/hooks/useAdmin';
 
 interface RecentTransactionsProps {
-  transactions: Transaction[];
+    transactions: AdminTransaction[];
 }
 
-const getTransactionIcon = (type: Transaction['type']): string => {
-  switch (type) {
-    case 'deposit':
-      return '⬇️';
-    case 'withdrawal':
-      return '⬆️';
-    case 'ticket_sale':
-      return '🎫';
-    case 'payout':
-      return '💰';
-    default:
-      return '💳';
-  }
-};
-
-export default function RecentTransactions({
-  transactions,
-}: RecentTransactionsProps) {
-  return (
-    <Card>
-      <div className="flex items-center justify-between mb-4 md:mb-6">
-        <h2 className="text-lg md:text-2xl font-bold text-gray-900">
-          Recent Transactions
-        </h2>
-        <Link
-          href="/admin/transactions"
-          className="text-red-600 font-semibold hover:text-red-700 text-sm md:text-base"
-        >
-          View All →
-        </Link>
-      </div>
-
-      {/* Mobile Card Layout */}
-      <div className="md:hidden space-y-3">
-        {transactions.map((tx) => (
-          <div
-            key={tx.id}
-            className="bg-gray-50 rounded-lg p-3 border border-gray-200"
-          >
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-2">
-                <span className="text-xl">{getTransactionIcon(tx.type)}</span>
-                <span className="font-semibold text-gray-900 text-sm">
-                  {tx.user}
-                </span>
-              </div>
-              <span
-                className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                  tx.status === 'completed'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-yellow-100 text-yellow-700'
-                }`}
-              >
-                {tx.status === 'completed' ? '✓ Done' : '⏳ Pending'}
-              </span>
+export default function RecentTransactions({ transactions }: RecentTransactionsProps) {
+    if (!transactions || transactions.length === 0) {
+        return (
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Transactions</h2>
+                <div className="text-sm text-gray-500 text-center py-8">
+                    No recent transactions found
+                </div>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="font-bold text-gray-900">
-                ₦{tx.amount.toLocaleString()}
-              </span>
-              <span className="text-gray-500 text-xs">{tx.date}</span>
-            </div>
-          </div>
-        ))}
-      </div>
+        );
+    }
 
-      {/* Desktop Table Layout */}
-      <div className="hidden md:block overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-4 lg:px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                Type
-              </th>
-              <th className="px-4 lg:px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                User
-              </th>
-              <th className="px-4 lg:px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                Amount
-              </th>
-              <th className="px-4 lg:px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                Date
-              </th>
-              <th className="px-4 lg:px-6 py-3 text-left text-sm font-semibold text-gray-700">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {transactions.map((tx) => (
-              <tr
-                key={tx.id}
-                className="border-b border-gray-200 hover:bg-gray-50 transition"
-              >
-                <td className="px-4 lg:px-6 py-3 lg:py-4">
-                  <span className="text-xl lg:text-2xl">
-                    {getTransactionIcon(tx.type)}
-                  </span>
-                </td>
-                <td className="px-4 lg:px-6 py-3 lg:py-4">
-                  <div className="font-semibold text-gray-900 text-sm lg:text-base">
-                    {tx.user}
-                  </div>
-                </td>
-                <td className="px-4 lg:px-6 py-3 lg:py-4 font-bold text-gray-900 text-sm lg:text-base">
-                  ₦{tx.amount.toLocaleString()}
-                </td>
-                <td className="px-4 lg:px-6 py-3 lg:py-4 text-gray-600 text-sm lg:text-base">
-                  {tx.date}
-                </td>
-                <td className="px-4 lg:px-6 py-3 lg:py-4">
-                  <span
-                    className={`inline-block px-2 lg:px-3 py-1 rounded-full text-xs font-semibold ${
-                      tx.status === 'completed'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-yellow-100 text-yellow-700'
-                    }`}
-                  >
-                    {tx.status === 'completed' ? '✓ Done' : '⏳ Pending'}
-                  </span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Card>
-  );
+    const getTypeStyle = (type: string) => {
+        switch (type) {
+            case 'DEPOSIT':
+            case 'RAFFLE_WIN':
+            case 'TASK_REWARD':
+                return { color: 'text-green-600', bg: 'bg-green-50', icon: ArrowDownRight };
+            case 'WITHDRAWAL':
+            case 'TICKET_PURCHASE':
+                return { color: 'text-red-600', bg: 'bg-red-50', icon: ArrowUpRight };
+            default:
+                return { color: 'text-gray-600', bg: 'bg-gray-50', icon: Clock };
+        }
+    };
+
+    const getStatusBadge = (status: string) => {
+        const styles: Record<string, string> = {
+            COMPLETED: 'bg-green-100 text-green-700',
+            PENDING: 'bg-yellow-100 text-yellow-700',
+            FAILED: 'bg-red-100 text-red-700',
+        };
+        return styles[status] || 'bg-gray-100 text-gray-700';
+    };
+
+    return (
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Transactions</h2>
+            <div className="space-y-2">
+                {transactions.slice(0, 8).map((tx) => {
+                    const style = getTypeStyle(tx.type);
+                    const Icon = style.icon;
+                    const date = new Date(tx.createdAt).toLocaleDateString('en-NG', {
+                        month: 'short', day: 'numeric',
+                    });
+
+                    return (
+                        <div key={tx.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 transition">
+                            <div className={`w-9 h-9 rounded-lg ${style.bg} flex items-center justify-center`}>
+                                <Icon size={16} className={style.color} />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">
+                                    {tx.type.replace(/_/g, ' ')}
+                                </p>
+                                <p className="text-xs text-gray-500 truncate">
+                                    {tx.user.name} · {date}
+                                </p>
+                            </div>
+                            <div className="text-right">
+                                <p className={`text-sm font-bold ${style.color}`}>
+                                    ₦{tx.amount.toLocaleString()}
+                                </p>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${getStatusBadge(tx.status)}`}>
+                                    {tx.status}
+                                </span>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        </div>
+    );
 }

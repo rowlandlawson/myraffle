@@ -16,26 +16,25 @@ export default function AuthLayout({
   logoLink = '/',
 }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen bg-white flex items-center justify-center px-4">
-      <div className="relative w-full max-w-md">
-        {/* Logo Section */}
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-sm">
+        {/* Logo */}
         {showLogo && (
-          <div className="text-center mb-8">
+          <div className="text-center -mb-4">
             <Link href={logoLink} className="inline-block">
               <Image
                 src="/images/logo.png"
-                alt="RaffleHub"
-                width={180}
-                height={60}
-                className="mx-auto h-16 w-auto"
+                alt="MyRaffle"
+                width={160}
+                height={50}
+                className="mx-auto h-40 w-auto"
               />
             </Link>
-            <p className="text-gray-500 mt-2">Win big, play fair</p>
           </div>
         )}
 
-        {/* Form Card */}
-        <div className="bg-white border border-gray-200 rounded-2xl p-8 shadow-xl">
+        {/* Card */}
+        <div className="bg-white border border-gray-200 rounded-xl p-6 sm:p-8">
           {children}
         </div>
       </div>

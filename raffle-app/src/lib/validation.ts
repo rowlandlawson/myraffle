@@ -27,12 +27,13 @@ export const registerSchema = z
       .string()
       .min(1, 'Email is required')
       .email('Please enter a valid email address'),
-    phone: z
+    whatsapp: z
       .string()
-      .min(1, 'Phone number is required')
+      .min(1, 'WhatsApp number is required')
+      .min(10, 'Please enter a valid WhatsApp number')
       .regex(
-        /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/,
-        'Please enter a valid phone number',
+        /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,8}$/,
+        'Please enter a valid WhatsApp number',
       ),
     password: z
       .string()
@@ -90,8 +91,8 @@ export const withdrawSchema = z.object({
   bankCode: z.string().min(1, 'Bank is required'),
   accountNumber: z
     .string()
-    .min(10, 'Account number must be 10 digits')
-    .max(10, 'Account number must be 10 digits'),
+    .min(10, 'User Number must be 10 digits')
+    .max(10, 'User Number must be 10 digits'),
   accountName: z.string().min(2, 'Account name is required'),
 });
 

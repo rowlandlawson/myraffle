@@ -10,6 +10,7 @@ import {
   Save,
   Shield,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function AdminSettingsPage() {
   const [activeTab, setActiveTab] = useState<
@@ -47,7 +48,7 @@ export default function AdminSettingsPage() {
     setIsSaving(true);
     setTimeout(() => {
       setIsSaving(false);
-      alert('Settings saved successfully!');
+      toast.success('Settings saved successfully!');
     }, 1500);
   };
 
@@ -77,11 +78,10 @@ export default function AdminSettingsPage() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${
-                    activeTab === tab.id
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${activeTab === tab.id
                       ? 'bg-red-50 text-red-600 font-semibold'
                       : 'text-gray-700 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   <tab.icon size={20} />
                   {tab.label}
@@ -187,18 +187,16 @@ export default function AdminSettingsPage() {
                           maintenanceMode: !generalSettings.maintenanceMode,
                         })
                       }
-                      className={`w-12 h-6 rounded-full transition ${
-                        generalSettings.maintenanceMode
+                      className={`w-12 h-6 rounded-full transition ${generalSettings.maintenanceMode
                           ? 'bg-red-600'
                           : 'bg-gray-300'
-                      }`}
+                        }`}
                     >
                       <div
-                        className={`w-5 h-5 bg-white rounded-full shadow transform transition ${
-                          generalSettings.maintenanceMode
+                        className={`w-5 h-5 bg-white rounded-full shadow transform transition ${generalSettings.maintenanceMode
                             ? 'translate-x-6'
                             : 'translate-x-0.5'
-                        }`}
+                          }`}
                       />
                     </button>
                   </div>
@@ -401,26 +399,24 @@ export default function AdminSettingsPage() {
                             ...notificationSettings,
                             [item.key]:
                               !notificationSettings[
-                                item.key as keyof typeof notificationSettings
+                              item.key as keyof typeof notificationSettings
                               ],
                           })
                         }
-                        className={`w-12 h-6 rounded-full transition ${
-                          notificationSettings[
+                        className={`w-12 h-6 rounded-full transition ${notificationSettings[
                             item.key as keyof typeof notificationSettings
                           ]
                             ? 'bg-red-600'
                             : 'bg-gray-300'
-                        }`}
+                          }`}
                       >
                         <div
-                          className={`w-5 h-5 bg-white rounded-full shadow transform transition ${
-                            notificationSettings[
+                          className={`w-5 h-5 bg-white rounded-full shadow transform transition ${notificationSettings[
                               item.key as keyof typeof notificationSettings
                             ]
                               ? 'translate-x-6'
                               : 'translate-x-0.5'
-                          }`}
+                            }`}
                         />
                       </button>
                     </div>

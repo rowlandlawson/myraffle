@@ -6,25 +6,47 @@ import {
     generateRefreshToken,
     generateVerificationToken,
     generateResetToken,
+    generateOTPCode,
     verifyRefreshToken,
+    generateTempToken,
+    verifyTempToken,
 } from '../services/jwt';
 import {
     sendVerificationEmail,
+    sendEmailOTP,
     sendWelcomeEmail,
     sendPasswordResetEmail,
 } from '../services/brevo';
+import { sendWhatsAppOTP, sendSMSOTP } from '../services/infobip';
 import { logTransaction } from '../utils/transactions';
+import {
+    generateSecret,
+    generateQRCodeURL,
+    verifyTOTPToken,
+    generateAndSend2FAEmailOTP,
+} from '../services/twoFactor';
 
-// Generate unique user number: RAF-XXXXXX
+// Generate unique User Number: RAF-XXXXXX
 const generateUserNumber = (): string => {
     const randomNum = Math.floor(100000 + Math.random() * 900000);
     return `RAF-${randomNum}`;
 };
 
+// OTP expiry: 10 minutes
+const OTP_EXPIRY_MS = 10 * 60 * 1000;
+
 // POST /api/auth/register
 export const register = async (req: Request, res: Response) => {
     try {
         const { name, email, password, phone, referralCode } = req.body;
+
+        if (!phone) {
+            res.status(400).json({
+                success: false,
+                message: 'WhatsApp number is required.',
+            });
+            return;
+        }
 
         // Check if email already exists
         const existingUser = await prisma.user.findUnique({ where: { email } });
@@ -40,7 +62,7 @@ export const register = async (req: Request, res: Response) => {
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // Generate unique user number
+        // Generate unique User Number
         let userNumber = generateUserNumber();
         let numberExists = await prisma.user.findUnique({ where: { userNumber } });
         while (numberExists) {
@@ -48,9 +70,10 @@ export const register = async (req: Request, res: Response) => {
             numberExists = await prisma.user.findUnique({ where: { userNumber } });
         }
 
-        // Generate email verification token
-        const verificationToken = generateVerificationToken();
-        const verificationTokenExpiry = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        // Generate OTP codes for both channels
+        const emailCode = generateOTPCode();
+        const whatsappCode = generateOTPCode();
+        const codeExpiry = new Date(Date.now() + OTP_EXPIRY_MS);
 
         // Handle referral
         let referredBy: string | null = null;
@@ -73,19 +96,26 @@ export const register = async (req: Request, res: Response) => {
                 phone: phone || null,
                 referredBy,
                 emailVerified: false,
-                verificationToken,
-                verificationTokenExpiry,
+                whatsappVerified: false,
+                emailVerificationCode: emailCode,
+                emailCodeExpiry: codeExpiry,
+                whatsappVerificationCode: whatsappCode,
+                whatsappCodeExpiry: codeExpiry,
             },
         });
 
-        // Send verification email
-        await sendVerificationEmail(email, name, verificationToken);
+        // Send OTPs via both channels
+        await Promise.all([
+            sendEmailOTP(email, name, emailCode),
+            sendWhatsAppOTP(phone, whatsappCode),
+        ]);
 
         res.status(201).json({
             success: true,
             message:
-                'Account created! Please check your email to verify your account before logging in.',
+                'Account created! Please verify your email and WhatsApp number.',
             data: {
+                userId: user.id,
                 userNumber: user.userNumber,
                 email: user.email,
                 name: user.name,
@@ -100,7 +130,353 @@ export const register = async (req: Request, res: Response) => {
     }
 };
 
-// POST /api/auth/verify-email
+// POST /api/auth/verify-email-otp
+export const verifyEmailOTP = async (req: Request, res: Response) => {
+    try {
+        const { userId, code } = req.body;
+
+        if (!userId || !code) {
+            res.status(400).json({
+                success: false,
+                message: 'User ID and verification code are required.',
+            });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found.' });
+            return;
+        }
+
+        if (user.emailVerified) {
+            res.status(400).json({
+                success: false,
+                message: 'Email is already verified.',
+                alreadyVerified: true,
+            });
+            return;
+        }
+
+        if (!user.emailVerificationCode || user.emailVerificationCode !== code) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid verification code.',
+            });
+            return;
+        }
+
+        if (user.emailCodeExpiry && user.emailCodeExpiry < new Date()) {
+            res.status(400).json({
+                success: false,
+                message: 'Verification code has expired. Please request a new one.',
+            });
+            return;
+        }
+
+        // Mark email as verified
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                emailVerified: true,
+                emailVerificationCode: null,
+                emailCodeExpiry: null,
+            },
+        });
+
+        // Check if both channels are now verified
+        const bothVerified = user.whatsappVerified; // email is now true
+        if (bothVerified) {
+            await handleFullVerification(user);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Email verified successfully!',
+            data: { bothVerified },
+        });
+    } catch (error) {
+        console.error('[Auth] Verify email OTP error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to verify email.',
+        });
+    }
+};
+
+// POST /api/auth/verify-whatsapp-otp
+export const verifyWhatsAppOTP = async (req: Request, res: Response) => {
+    try {
+        const { userId, code } = req.body;
+
+        if (!userId || !code) {
+            res.status(400).json({
+                success: false,
+                message: 'User ID and verification code are required.',
+            });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found.' });
+            return;
+        }
+
+        if (user.whatsappVerified) {
+            res.status(400).json({
+                success: false,
+                message: 'Phone is already verified.',
+                alreadyVerified: true,
+            });
+            return;
+        }
+
+        if (!user.whatsappVerificationCode || user.whatsappVerificationCode !== code) {
+            res.status(400).json({
+                success: false,
+                message: 'Invalid verification code.',
+            });
+            return;
+        }
+
+        if (user.whatsappCodeExpiry && user.whatsappCodeExpiry < new Date()) {
+            res.status(400).json({
+                success: false,
+                message: 'Verification code has expired. Please request a new one.',
+            });
+            return;
+        }
+
+        // Mark WhatsApp as verified
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                whatsappVerified: true,
+                whatsappVerificationCode: null,
+                whatsappCodeExpiry: null,
+            },
+        });
+
+        // Check if both channels are now verified
+        const bothVerified = user.emailVerified; // whatsapp is now true
+        if (bothVerified) {
+            await handleFullVerification(user);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Phone verified successfully!',
+            data: { bothVerified },
+        });
+    } catch (error) {
+        console.error('[Auth] Verify WhatsApp OTP error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to verify WhatsApp.',
+        });
+    }
+};
+
+// POST /api/auth/resend-email-otp
+export const resendEmailOTP = async (req: Request, res: Response) => {
+    try {
+        const { userId } = req.body;
+
+        if (!userId) {
+            res.status(400).json({ success: false, message: 'User ID is required.' });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+
+        if (!user) {
+            res.status(200).json({
+                success: true,
+                message: 'If the account exists, a new code has been sent.',
+            });
+            return;
+        }
+
+        if (user.emailVerified) {
+            res.status(400).json({
+                success: false,
+                message: 'Email is already verified.',
+            });
+            return;
+        }
+
+        const emailCode = generateOTPCode();
+        const codeExpiry = new Date(Date.now() + OTP_EXPIRY_MS);
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { emailVerificationCode: emailCode, emailCodeExpiry: codeExpiry },
+        });
+
+        await sendEmailOTP(user.email, user.name, emailCode);
+
+        res.status(200).json({
+            success: true,
+            message: 'A new verification code has been sent to your email.',
+        });
+    } catch (error) {
+        console.error('[Auth] Resend email OTP error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to resend verification code.',
+        });
+    }
+};
+
+// POST /api/auth/resend-whatsapp-otp
+export const resendWhatsAppOTP = async (req: Request, res: Response) => {
+    try {
+        const { userId } = req.body;
+
+        if (!userId) {
+            res.status(400).json({ success: false, message: 'User ID is required.' });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+
+        if (!user) {
+            res.status(200).json({
+                success: true,
+                message: 'If the account exists, a new code has been sent.',
+            });
+            return;
+        }
+
+        if (user.whatsappVerified) {
+            res.status(400).json({
+                success: false,
+                message: 'Phone is already verified.',
+            });
+            return;
+        }
+
+        if (!user.phone) {
+            res.status(400).json({
+                success: false,
+                message: 'No WhatsApp number on file.',
+            });
+            return;
+        }
+
+        const whatsappCode = generateOTPCode();
+        const codeExpiry = new Date(Date.now() + OTP_EXPIRY_MS);
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { whatsappVerificationCode: whatsappCode, whatsappCodeExpiry: codeExpiry },
+        });
+
+        await sendWhatsAppOTP(user.phone, whatsappCode);
+
+        res.status(200).json({
+            success: true,
+            message: 'A new verification code has been sent to your phone (WhatsApp/SMS).',
+        });
+    } catch (error) {
+        console.error('[Auth] Resend WhatsApp OTP error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to resend verification code.',
+        });
+    }
+};
+
+// POST /api/auth/resend-sms-otp
+export const resendSMSOTP = async (req: Request, res: Response) => {
+    try {
+        const { userId } = req.body;
+
+        if (!userId) {
+            res.status(400).json({ success: false, message: 'User ID is required.' });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+
+        if (!user) {
+            res.status(200).json({
+                success: true,
+                message: 'If the account exists, a new code has been sent.',
+            });
+            return;
+        }
+
+        if (user.whatsappVerified) {
+            res.status(400).json({
+                success: false,
+                message: 'Phone is already verified.',
+            });
+            return;
+        }
+
+        if (!user.phone) {
+            res.status(400).json({
+                success: false,
+                message: 'No phone number on file.',
+            });
+            return;
+        }
+
+        const smsCode = generateOTPCode();
+        const codeExpiry = new Date(Date.now() + OTP_EXPIRY_MS);
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { whatsappVerificationCode: smsCode, whatsappCodeExpiry: codeExpiry },
+        });
+
+        await sendSMSOTP(user.phone, smsCode);
+
+        res.status(200).json({
+            success: true,
+            message: 'A new verification code has been sent via SMS.',
+        });
+    } catch (error) {
+        console.error('[Auth] Resend SMS OTP error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to resend verification code.',
+        });
+    }
+};
+
+// Helper: handle actions after both channels are verified
+async function handleFullVerification(user: any) {
+    // Award referral bonus if applicable
+    if (user.referredBy) {
+        const referrer = await prisma.user.findUnique({
+            where: { userNumber: user.referredBy },
+        });
+        if (referrer) {
+            await prisma.user.update({
+                where: { id: referrer.id },
+                data: { rafflePoints: { increment: 500 } },
+            });
+
+            await logTransaction({
+                userId: referrer.id,
+                type: 'TASK_REWARD',
+                amount: 500,
+                status: 'COMPLETED',
+                description: `Referral bonus: ${user.name} (${user.userNumber}) completed verification.`,
+            });
+        }
+    }
+
+    // Send welcome email
+    await sendWelcomeEmail(user.email, user.name);
+}
+
+// Legacy: POST /api/auth/verify-email (keep for backward compatibility)
 export const verifyEmail = async (req: Request, res: Response) => {
     try {
         const { token } = req.body;
@@ -144,7 +520,6 @@ export const verifyEmail = async (req: Request, res: Response) => {
             return;
         }
 
-        // Mark email as verified
         await prisma.user.update({
             where: { id: user.id },
             data: {
@@ -154,30 +529,9 @@ export const verifyEmail = async (req: Request, res: Response) => {
             },
         });
 
-        // Award referral bonus if applicable
-        if (user.referredBy) {
-            const referrer = await prisma.user.findUnique({
-                where: { userNumber: user.referredBy },
-            });
-            if (referrer) {
-                await prisma.user.update({
-                    where: { id: referrer.id },
-                    data: { rafflePoints: { increment: 500 } },
-                });
-
-                // Log referral bonus transaction for audit trail
-                await logTransaction({
-                    userId: referrer.id,
-                    type: 'TASK_REWARD',
-                    amount: 500,
-                    status: 'COMPLETED',
-                    description: `Referral bonus: ${user.name} (${user.userNumber}) verified their email.`,
-                });
-            }
+        if (user.whatsappVerified) {
+            await handleFullVerification(user);
         }
-
-        // Send welcome email
-        await sendWelcomeEmail(user.email, user.name);
 
         res.status(200).json({
             success: true,
@@ -192,7 +546,7 @@ export const verifyEmail = async (req: Request, res: Response) => {
     }
 };
 
-// POST /api/auth/resend-verification
+// POST /api/auth/resend-verification (legacy)
 export const resendVerification = async (req: Request, res: Response) => {
     try {
         const { email } = req.body;
@@ -200,7 +554,6 @@ export const resendVerification = async (req: Request, res: Response) => {
         const user = await prisma.user.findUnique({ where: { email } });
 
         if (!user) {
-            // Don't reveal whether the email exists
             res.status(200).json({
                 success: true,
                 message: 'If that email is registered, a verification link has been sent.',
@@ -253,12 +606,15 @@ export const login = async (req: Request, res: Response) => {
             return;
         }
 
-        // Check if email is verified
-        if (!user.emailVerified) {
+        // Check if both email and WhatsApp are verified
+        if (!user.emailVerified || !user.whatsappVerified) {
             res.status(403).json({
                 success: false,
-                message: 'Please verify your email before logging in. Check your inbox for the verification link.',
+                message: 'Please complete verification (email & WhatsApp) before logging in.',
                 needsVerification: true,
+                userId: user.id,
+                emailVerified: user.emailVerified,
+                whatsappVerified: user.whatsappVerified,
             });
             return;
         }
@@ -282,7 +638,36 @@ export const login = async (req: Request, res: Response) => {
             return;
         }
 
-        // Generate tokens
+        // Check if 2FA is enabled
+        if (user.twoFactorEnabled && user.twoFactorMethod) {
+            // Generate a short-lived temp token for the 2FA verification step
+            const tempToken = generateTempToken(user.id, user.twoFactorMethod);
+
+            // For EMAIL method, send an OTP now
+            if (user.twoFactorMethod === 'EMAIL') {
+                const { code, expiry } = await generateAndSend2FAEmailOTP(user.email, user.name);
+                await prisma.user.update({
+                    where: { id: user.id },
+                    data: {
+                        emailVerificationCode: code,
+                        emailCodeExpiry: expiry,
+                    },
+                });
+            }
+
+            res.status(200).json({
+                success: true,
+                message: 'Two-factor authentication required.',
+                data: {
+                    requires2FA: true,
+                    tempToken,
+                    method: user.twoFactorMethod,
+                },
+            });
+            return;
+        }
+
+        // No 2FA — generate tokens directly
         const accessToken = generateAccessToken(user.id, user.role);
         const refreshToken = generateRefreshToken(user.id, user.role);
 
@@ -332,10 +717,8 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
             return;
         }
 
-        // Verify refresh token
         const decoded = verifyRefreshToken(refreshToken);
 
-        // Check if the token matches the one stored in the database
         const user = await prisma.user.findUnique({
             where: { id: decoded.userId },
         });
@@ -348,11 +731,9 @@ export const refreshAccessToken = async (req: Request, res: Response) => {
             return;
         }
 
-        // Generate new tokens
         const newAccessToken = generateAccessToken(user.id, user.role);
         const newRefreshToken = generateRefreshToken(user.id, user.role);
 
-        // Update refresh token in database
         await prisma.user.update({
             where: { id: user.id },
             data: { refreshToken: newRefreshToken },
@@ -412,6 +793,9 @@ export const getCurrentUser = async (req: Request, res: Response) => {
                 role: true,
                 status: true,
                 emailVerified: true,
+                whatsappVerified: true,
+                twoFactorEnabled: true,
+                twoFactorMethod: true,
                 createdAt: true,
             },
         });
@@ -444,7 +828,6 @@ export const forgotPassword = async (req: Request, res: Response) => {
 
         const user = await prisma.user.findUnique({ where: { email } });
 
-        // Always return success to prevent email enumeration
         if (!user) {
             res.status(200).json({
                 success: true,
@@ -454,7 +837,7 @@ export const forgotPassword = async (req: Request, res: Response) => {
         }
 
         const resetToken = generateResetToken();
-        const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+        const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000);
 
         await prisma.user.update({
             where: { id: user.id },
@@ -529,5 +912,295 @@ export const resetPassword = async (req: Request, res: Response) => {
             success: false,
             message: 'Failed to reset password.',
         });
+    }
+};
+
+// ─── 2FA ENDPOINTS ────────────────────────────────────────
+
+// POST /api/auth/2fa/setup
+export const setup2FA = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user!.userId;
+        const { method } = req.body; // 'EMAIL' or 'TOTP'
+
+        if (!method || !['EMAIL', 'TOTP'].includes(method)) {
+            res.status(400).json({ success: false, message: 'Invalid 2FA method. Use EMAIL or TOTP.' });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found.' });
+            return;
+        }
+
+        if (method === 'TOTP') {
+            const secret = generateSecret();
+            const qrCodeDataUrl = await generateQRCodeURL(secret, user.email);
+
+            await prisma.user.update({
+                where: { id: userId },
+                data: { twoFactorSecret: secret, twoFactorMethod: 'TOTP' },
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'Scan the QR code with your authenticator app, then enter the code to confirm.',
+                data: { method: 'TOTP', qrCode: qrCodeDataUrl, secret },
+            });
+        } else {
+            const { code, expiry } = await generateAndSend2FAEmailOTP(user.email, user.name);
+
+            await prisma.user.update({
+                where: { id: userId },
+                data: {
+                    twoFactorMethod: 'EMAIL',
+                    emailVerificationCode: code,
+                    emailCodeExpiry: expiry,
+                },
+            });
+
+            res.status(200).json({
+                success: true,
+                message: 'A verification code has been sent to your email.',
+                data: { method: 'EMAIL' },
+            });
+        }
+    } catch (error) {
+        console.error('[Auth] 2FA setup error:', error);
+        res.status(500).json({ success: false, message: 'Failed to setup 2FA.' });
+    }
+};
+
+// POST /api/auth/2fa/confirm
+export const confirm2FA = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user!.userId;
+        const { code } = req.body;
+
+        if (!code) {
+            res.status(400).json({ success: false, message: 'Verification code is required.' });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user || !user.twoFactorMethod) {
+            res.status(400).json({ success: false, message: 'Please run 2FA setup first.' });
+            return;
+        }
+
+        let isValid = false;
+
+        if (user.twoFactorMethod === 'TOTP') {
+            if (!user.twoFactorSecret) {
+                res.status(400).json({ success: false, message: 'TOTP secret not found.' });
+                return;
+            }
+            isValid = verifyTOTPToken(code, user.twoFactorSecret);
+        } else {
+            if (!user.emailVerificationCode || !user.emailCodeExpiry) {
+                res.status(400).json({ success: false, message: 'No OTP code found.' });
+                return;
+            }
+            if (new Date() > user.emailCodeExpiry) {
+                res.status(400).json({ success: false, message: 'Code expired. Please run setup again.' });
+                return;
+            }
+            isValid = user.emailVerificationCode === code;
+        }
+
+        if (!isValid) {
+            res.status(400).json({ success: false, message: 'Invalid verification code.' });
+            return;
+        }
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                twoFactorEnabled: true,
+                emailVerificationCode: null,
+                emailCodeExpiry: null,
+            },
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Two-factor authentication has been enabled!',
+        });
+    } catch (error) {
+        console.error('[Auth] 2FA confirm error:', error);
+        res.status(500).json({ success: false, message: 'Failed to confirm 2FA.' });
+    }
+};
+
+// POST /api/auth/2fa/verify — during login
+export const verify2FA = async (req: Request, res: Response) => {
+    try {
+        const { tempToken, code } = req.body;
+
+        if (!tempToken || !code) {
+            res.status(400).json({ success: false, message: 'Token and code are required.' });
+            return;
+        }
+
+        let decoded;
+        try {
+            decoded = verifyTempToken(tempToken);
+        } catch {
+            res.status(401).json({ success: false, message: 'Session expired. Please log in again.' });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+        if (!user || !user.twoFactorEnabled) {
+            res.status(400).json({ success: false, message: 'Invalid account.' });
+            return;
+        }
+
+        let isValid = false;
+
+        if (user.twoFactorMethod === 'TOTP') {
+            if (!user.twoFactorSecret) {
+                res.status(400).json({ success: false, message: 'TOTP not configured.' });
+                return;
+            }
+            isValid = verifyTOTPToken(code, user.twoFactorSecret);
+        } else if (user.twoFactorMethod === 'EMAIL') {
+            if (!user.emailVerificationCode || !user.emailCodeExpiry) {
+                res.status(400).json({ success: false, message: 'No OTP code found.' });
+                return;
+            }
+            if (new Date() > user.emailCodeExpiry) {
+                res.status(400).json({ success: false, message: 'Code expired.' });
+                return;
+            }
+            isValid = user.emailVerificationCode === code;
+        }
+
+        if (!isValid) {
+            res.status(400).json({ success: false, message: 'Invalid verification code.' });
+            return;
+        }
+
+        const accessToken = generateAccessToken(user.id, user.role);
+        const refreshToken = generateRefreshToken(user.id, user.role);
+
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                refreshToken,
+                emailVerificationCode: null,
+                emailCodeExpiry: null,
+            },
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Login successful.',
+            data: {
+                accessToken,
+                refreshToken,
+                user: {
+                    id: user.id,
+                    userNumber: user.userNumber,
+                    email: user.email,
+                    name: user.name,
+                    phone: user.phone,
+                    walletBalance: user.walletBalance,
+                    rafflePoints: user.rafflePoints,
+                    role: user.role,
+                },
+            },
+        });
+    } catch (error) {
+        console.error('[Auth] 2FA verify error:', error);
+        res.status(500).json({ success: false, message: 'Failed to verify 2FA.' });
+    }
+};
+
+// POST /api/auth/2fa/resend
+export const resend2FACode = async (req: Request, res: Response) => {
+    try {
+        const { tempToken } = req.body;
+
+        if (!tempToken) {
+            res.status(400).json({ success: false, message: 'Token is required.' });
+            return;
+        }
+
+        let decoded;
+        try {
+            decoded = verifyTempToken(tempToken);
+        } catch {
+            res.status(401).json({ success: false, message: 'Session expired.' });
+            return;
+        }
+
+        if (decoded.method !== 'EMAIL') {
+            res.status(400).json({ success: false, message: 'Resend only for email 2FA.' });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found.' });
+            return;
+        }
+
+        const { code, expiry } = await generateAndSend2FAEmailOTP(user.email, user.name);
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { emailVerificationCode: code, emailCodeExpiry: expiry },
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'New code sent to your email.',
+        });
+    } catch (error) {
+        console.error('[Auth] 2FA resend error:', error);
+        res.status(500).json({ success: false, message: 'Failed to resend code.' });
+    }
+};
+
+// DELETE /api/auth/2fa/disable
+export const disable2FA = async (req: Request, res: Response) => {
+    try {
+        const userId = req.user!.userId;
+        const { password } = req.body;
+
+        if (!password) {
+            res.status(400).json({ success: false, message: 'Password is required.' });
+            return;
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            res.status(404).json({ success: false, message: 'User not found.' });
+            return;
+        }
+
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+        if (!isPasswordValid) {
+            res.status(401).json({ success: false, message: 'Incorrect password.' });
+            return;
+        }
+
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                twoFactorEnabled: false,
+                twoFactorMethod: null,
+                twoFactorSecret: null,
+            },
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Two-factor authentication has been disabled.',
+        });
+    } catch (error) {
+        console.error('[Auth] 2FA disable error:', error);
+        res.status(500).json({ success: false, message: 'Failed to disable 2FA.' });
     }
 };

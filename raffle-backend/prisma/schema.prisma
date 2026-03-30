@@ -60,12 +60,24 @@ enum WithdrawalStatus {
   COMPLETED
 }
 
+enum DeliveryStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  DELIVERED
+}
+
 enum TaskType {
-  WATCH_AD
+  WATCH_AD_VIDEO
+  WATCH_AD_PICTURE
+  WATCH_AD_BANNER
   REFERRAL
   SURVEY
   SOCIAL_SHARE
   DAILY_LOGIN
+  SOCIAL_LIKE
+  SOCIAL_COMMENT
+  SOCIAL_FOLLOW
 }
 
 // Models
@@ -81,16 +93,28 @@ model User {
   rafflePoints  Int       @default(0)
   role          Role      @default(USER)
   status        UserStatus @default(ACTIVE)
-  referredBy    String?   // User number of referrer
+  referredBy    String?   // User Number of referrer
 
   // Email Verification
   emailVerified          Boolean   @default(false)
   verificationToken      String?   @unique
   verificationTokenExpiry DateTime?
+  emailVerificationCode  String?
+  emailCodeExpiry        DateTime?
+
+  // WhatsApp Verification
+  whatsappVerified          Boolean   @default(false)
+  whatsappVerificationCode  String?
+  whatsappCodeExpiry        DateTime?
 
   // Password Reset
   resetPasswordToken      String?   @unique
   resetPasswordTokenExpiry DateTime?
+
+  // 2FA Fields
+  twoFactorEnabled Boolean @default(false)
+  twoFactorMethod  String?
+  twoFactorSecret  String?
 
   // Refresh Token
   refreshToken  String?
@@ -136,6 +160,11 @@ model Raffle {
   winner       User?        @relation(fields: [winnerUserId], references: [id])
   status       RaffleStatus @default(SCHEDULED)
   
+  // Delivery tracking
+  deliveryStatus    DeliveryStatus @default(PENDING)
+  deliveryNote      String?
+  deliveryUpdatedAt DateTime?
+
   tickets      Ticket[]
 
   createdAt    DateTime     @default(now())
@@ -199,6 +228,15 @@ model Task {
   description String
   points      Int
   isActive    Boolean  @default(true)
+  priority    Int      @default(0)
+  isPinned    Boolean  @default(false)
+  
+  actionUrl   String?
+  platform    String?
+  adDuration  Int?
+  maxCompletions Int?
+  dailyLimit  Int?
+  expiresAt   DateTime?
   
   completions UserTask[]
 
@@ -219,3 +257,14 @@ model UserTask {
 
   @@map("user_tasks")
 }
+
+model PageVisit {
+  id        String   @id @default(cuid())
+  path      String
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  @@map("page_visits")
+}
+

@@ -9,11 +9,14 @@ import {
   UserX,
 } from 'lucide-react';
 import { useAdminUsers, useSuspendUser, useActivateUser } from '@/lib/hooks/useAdmin';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import toast from 'react-hot-toast';
 
 export default function AdminUsersPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [userToSuspend, setUserToSuspend] = useState<string | null>(null);
 
   const { data, isLoading, error } = useAdminUsers({
     page,
@@ -28,17 +31,28 @@ export default function AdminUsersPage() {
   const users = data?.users ?? [];
   const pagination = data?.pagination;
 
-  const handleSuspend = async (userId: string) => {
-    if (confirm('Are you sure you want to suspend this user?')) {
-      suspendUser.mutate(userId, {
-        onError: (err: any) => alert(err.message || 'Failed to suspend user'),
-      });
-    }
+  const handleSuspend = (userId: string) => {
+    setUserToSuspend(userId);
   };
 
-  const handleActivate = async (userId: string) => {
+  const confirmSuspend = () => {
+    if (!userToSuspend) return;
+    suspendUser.mutate(userToSuspend, {
+      onSuccess: () => {
+        toast.success('User suspended successfully');
+        setUserToSuspend(null);
+      },
+      onError: (err: any) => {
+        toast.error(err.message || 'Failed to suspend user');
+        setUserToSuspend(null);
+      },
+    });
+  };
+
+  const handleActivate = (userId: string) => {
     activateUser.mutate(userId, {
-      onError: (err: any) => alert(err.message || 'Failed to activate user'),
+      onSuccess: () => toast.success('User activated successfully'),
+      onError: (err: any) => toast.error(err.message || 'Failed to activate user'),
     });
   };
 
@@ -109,7 +123,7 @@ export default function AdminUsersPage() {
             <Search size={20} className="absolute left-3 top-3 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by name, email, or user number..."
+              placeholder="Search by name, email, or User Number..."
               value={searchTerm}
               onChange={(e) => { setSearchTerm(e.target.value); setPage(1); }}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
@@ -229,6 +243,16 @@ export default function AdminUsersPage() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={!!userToSuspend}
+        title="Suspend User"
+        message="Are you sure you want to suspend this user? They will not be able to log in or participate in raffles."
+        confirmLabel="Suspend"
+        onConfirm={confirmSuspend}
+        onCancel={() => setUserToSuspend(null)}
+        variant="danger"
+      />
     </div>
   );
 }

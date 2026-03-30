@@ -5,8 +5,9 @@ export const CONSTANTS = {
 
     // Points System (1000 points = 100 Naira)
     POINTS: {
-        WATCH_AD_30S: 10,
-        WATCH_AD_60S: 20,
+        WATCH_AD_VIDEO: 200,
+        WATCH_AD_PICTURE: 100,
+        WATCH_AD_BANNER: 50,
         WHATSAPP_SHARE: 50,
         REFERRAL_BONUS: 500,
         DAILY_LOGIN: 25,

@@ -39,6 +39,21 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     }
 };
 
+/** Like requireAuth, but does NOT reject — just sets req.user if token is valid */
+export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        const token = authHeader.split(' ')[1];
+        try {
+            const decoded = verifyAccessToken(token!);
+            req.user = decoded;
+        } catch {
+            // Ignore invalid tokens — treat as anonymous
+        }
+    }
+    next();
+};
+
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || req.user.role !== 'ADMIN') {
         res.status(403).json({

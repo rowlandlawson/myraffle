@@ -292,3 +292,79 @@ export function useActivateUser() {
         },
     });
 }
+
+// ─── Wins Management ────────────────────────────────────────
+
+export const winsKeys = {
+    all: ['admin', 'wins'] as const,
+    list: (params: Record<string, unknown>) => [...winsKeys.all, params] as const,
+};
+
+export function useAdminWins(params?: {
+    page?: number;
+    deliveryStatus?: string;
+}) {
+    return useQuery({
+        queryKey: winsKeys.list(params ?? {}),
+        queryFn: async () => {
+            const query = new URLSearchParams();
+            if (params?.page) query.set('page', String(params.page));
+            if (params?.deliveryStatus && params.deliveryStatus !== 'all')
+                query.set('deliveryStatus', params.deliveryStatus);
+
+            const qs = query.toString();
+            const res = await api.get<{ wins: any[]; pagination: any }>(
+                `/api/admin/wins${qs ? `?${qs}` : ''}`,
+            );
+            return {
+                wins: res.data?.wins ?? [],
+                pagination: res.data?.pagination ?? null,
+            };
+        },
+    });
+}
+
+export function useUpdateDeliveryStatus() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ raffleId, deliveryStatus, deliveryNote }: {
+            raffleId: string;
+            deliveryStatus: string;
+            deliveryNote?: string;
+        }) => {
+            const result = await api.put(`/api/admin/wins/${raffleId}/delivery`, {
+                deliveryStatus,
+                deliveryNote,
+            });
+            if (!result.success) throw new Error(result.message);
+            return result;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: winsKeys.all });
+        },
+    });
+}
+
+// ─── Visitor Analytics ──────────────────────────────────────
+
+export function useAdminVisitors(startDate?: string, endDate?: string) {
+    return useQuery({
+        queryKey: [...adminKeys.all, 'visitors', startDate, endDate] as const,
+        queryFn: async () => {
+            const query = new URLSearchParams();
+            if (startDate) query.set('startDate', startDate);
+            if (endDate) query.set('endDate', endDate);
+            const qs = query.toString();
+
+            const res = await api.get<{
+                totalVisits: number;
+                uniqueVisitors: number;
+                visitsByDay: { date: string; visits: number }[];
+                visitsByPath: { path: string; visits: number }[];
+            }>(`/api/admin/analytics/visitors${qs ? `?${qs}` : ''}`);
+
+            if (!res.success || !res.data) throw new Error(res.message);
+            return res.data;
+        },
+    });
+}

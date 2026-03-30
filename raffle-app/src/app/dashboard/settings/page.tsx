@@ -10,18 +10,21 @@ import {
   Save,
   Eye,
   EyeOff,
+  Shield,
+  Mail,
+  Smartphone,
 } from 'lucide-react';
 import { useAuthStore } from '@/lib/authStore';
 import { api } from '@/lib/api';
+import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
   const { user, isLoading, hydrate } = useAuthStore();
   const [activeTab, setActiveTab] = useState<
-    'profile' | 'notifications' | 'security' | 'bank'
+    'profile' | 'notifications' | 'security'
   >('profile');
   const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
   // Set default profile from user store
   const [profile, setProfile] = useState({
@@ -38,15 +41,88 @@ export default function SettingsPage() {
     weeklyDigest: true,
   });
 
-  const [bankAccount, setBankAccount] = useState({
-    bankName: '',
-    accountNumber: '',
-    accountName: '',
+  const [securityData, setSecurityData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
   });
+
+  const [is2FAEnabled, setIs2FAEnabled] = useState(user?.twoFactorEnabled || false);
+  const [twoFAStep, setTwoFAStep] = useState<'idle' | 'choose' | 'setup' | 'confirm' | 'disable'>('idle');
+  const [twoFAMethod, setTwoFAMethod] = useState<'EMAIL' | 'TOTP'>('EMAIL');
+  const [twoFAQRCode, setTwoFAQRCode] = useState<string | null>(null);
+  const [twoFASecret, setTwoFASecret] = useState<string | null>(null);
+  const [twoFACode, setTwoFACode] = useState('');
+  const [twoFALoading, setTwoFALoading] = useState(false);
+  const [disablePassword, setDisablePassword] = useState('');
+
+  const handleSetup2FA = async (method: 'EMAIL' | 'TOTP') => {
+    setTwoFALoading(true);
+    setTwoFAMethod(method);
+    try {
+      const result = await api.post<{ method: string; qrCode?: string; secret?: string }>('/api/auth/2fa/setup', { method });
+      if (!result.success) throw new Error(result.message);
+      if (method === 'TOTP' && result.data) {
+        setTwoFAQRCode(result.data.qrCode || null);
+        setTwoFASecret(result.data.secret || null);
+      }
+      setTwoFAStep('confirm');
+      toast.success(result.message);
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to start 2FA setup.');
+    } finally {
+      setTwoFALoading(false);
+    }
+  };
+
+  const handleConfirm2FA = async () => {
+    if (!twoFACode || twoFACode.length < 6) {
+      toast.error('Enter a valid 6-digit code.');
+      return;
+    }
+    setTwoFALoading(true);
+    try {
+      const result = await api.post('/api/auth/2fa/confirm', { code: twoFACode });
+      if (!result.success) throw new Error(result.message);
+      setIs2FAEnabled(true);
+      setTwoFAStep('idle');
+      setTwoFACode('');
+      setTwoFAQRCode(null);
+      setTwoFASecret(null);
+      hydrate();
+      toast.success('2FA enabled successfully!');
+    } catch (err: any) {
+      toast.error(err.message || 'Invalid code.');
+    } finally {
+      setTwoFALoading(false);
+    }
+  };
+
+  const handleDisable2FA = async () => {
+    if (!disablePassword) {
+      toast.error('Password is required to disable 2FA.');
+      return;
+    }
+    setTwoFALoading(true);
+    try {
+      const result = await api.post('/api/auth/2fa/disable', { password: disablePassword });
+      if (!result.success) throw new Error(result.message);
+      setIs2FAEnabled(false);
+      setTwoFAStep('idle');
+      setDisablePassword('');
+      hydrate();
+      toast.success('2FA has been disabled.');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to disable 2FA.');
+    } finally {
+      setTwoFALoading(false);
+    }
+  };
 
   const handleSave = async () => {
     setIsSaving(true);
-    setSaveMessage(null);
+    let successCount = 0;
+
     try {
       if (activeTab === 'profile') {
         const result = await api.put('/api/users/profile', {
@@ -54,26 +130,54 @@ export default function SettingsPage() {
           phone: profile.phone || null,
         });
         if (!result.success) throw new Error(result.message);
-        // Re-hydrate user from localStorage / token so the auth store reflects the update
         hydrate();
-        setSaveMessage('Profile updated successfully!');
+        toast.success('Profile updated successfully!');
+      } else if (activeTab === 'security') {
+        if (securityData.currentPassword && securityData.newPassword) {
+          if (securityData.newPassword !== securityData.confirmPassword) {
+            throw new Error('New passwords do not match');
+          }
+
+          if (securityData.newPassword.length < 6) {
+             throw new Error('Password must be at least 6 characters');
+          }
+
+          const result = await api.put('/api/users/change-password', {
+            currentPassword: securityData.currentPassword,
+            newPassword: securityData.newPassword,
+          });
+
+          if (!result.success) throw new Error(result.message);
+          
+          setSecurityData({
+            currentPassword: '',
+            newPassword: '',
+            confirmPassword: '',
+          });
+          toast.success('Password changed successfully!');
+        } else if (securityData.currentPassword || securityData.newPassword) {
+           throw new Error('Please fill in both current and new passwords to change it.');
+        } else {
+           toast.success('Security settings saved!');
+        }
       } else {
-        // Notifications / Security / Bank have no backend endpoint yet
-        setSaveMessage('Settings saved successfully!');
+        toast.success('Settings saved successfully!');
       }
     } catch (err: any) {
-      setSaveMessage(err.message || 'Failed to save settings');
+      toast.error(err.message || 'Failed to save settings');
     } finally {
       setIsSaving(false);
-      setTimeout(() => setSaveMessage(null), 3000);
     }
   };
+
+
+
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Lock },
-    { id: 'bank', label: 'Bank Account', icon: CreditCard },
+    { id: 'bank', label: 'Bank Account', icon: CreditCard, disabled: true },
   ];
 
   if (isLoading || !user) {
@@ -105,14 +209,21 @@ export default function SettingsPage() {
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-left transition ${activeTab === tab.id
-                    ? 'bg-red-50 text-red-600 font-semibold'
-                    : 'text-gray-700 hover:bg-gray-50'
-                    }`}
+                  disabled={tab.disabled}
+                  onClick={() => !tab.disabled && setActiveTab(tab.id as typeof activeTab)}
+                  className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition ${
+                    activeTab === tab.id
+                      ? 'bg-red-50 text-red-600 font-semibold'
+                      : tab.disabled
+                      ? 'opacity-50 cursor-not-allowed text-gray-400'
+                      : 'text-gray-700 hover:bg-gray-50'
+                  }`}
                 >
-                  <tab.icon size={20} />
-                  {tab.label}
+                  <div className="flex items-center gap-3">
+                    <tab.icon size={20} />
+                    {tab.label}
+                  </div>
+                  {tab.disabled && <Lock size={14} className="text-gray-400" />}
                 </button>
               ))}
             </nav>
@@ -266,6 +377,8 @@ export default function SettingsPage() {
                       <input
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Enter current password"
+                        value={securityData.currentPassword}
+                        onChange={(e) => setSecurityData({ ...securityData, currentPassword: e.target.value })}
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
                       />
                       <button
@@ -287,8 +400,10 @@ export default function SettingsPage() {
                       New Password
                     </label>
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       placeholder="Enter new password"
+                      value={securityData.newPassword}
+                      onChange={(e) => setSecurityData({ ...securityData, newPassword: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
                     />
                   </div>
@@ -298,96 +413,175 @@ export default function SettingsPage() {
                       Confirm New Password
                     </label>
                     <input
-                      type="password"
+                      type={showPassword ? 'text' : 'password'}
                       placeholder="Confirm new password"
+                      value={securityData.confirmPassword}
+                      onChange={(e) => setSecurityData({ ...securityData, confirmPassword: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
                     />
                   </div>
                 </div>
 
                 <div className="pt-6 border-t border-gray-200">
-                  <h3 className="font-semibold text-gray-900 mb-4">
+                  <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <Shield size={18} />
                     Two-Factor Authentication
                   </h3>
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+
+                  {/* Status card */}
+                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-4">
                     <div>
-                      <p className="font-semibold text-gray-900">Enable 2FA</p>
+                      <p className="font-semibold text-gray-900">
+                        {is2FAEnabled ? '2FA is Active' : '2FA is Disabled'}
+                      </p>
                       <p className="text-sm text-gray-600">
-                        Add an extra layer of security
+                        {is2FAEnabled
+                          ? `Using ${user?.twoFactorMethod === 'TOTP' ? 'Authenticator App' : 'Email OTP'}`
+                          : 'Add an extra layer of security to your account'}
                       </p>
                     </div>
-                    <button className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition">
-                      Enable
-                    </button>
+                    {is2FAEnabled ? (
+                      <button
+                        onClick={() => setTwoFAStep('disable')}
+                        className="px-4 py-2 font-semibold rounded-lg bg-gray-200 text-gray-700 hover:bg-gray-300 transition"
+                      >
+                        Disable
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => setTwoFAStep('choose')}
+                        className="px-4 py-2 font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+                      >
+                        Enable
+                      </button>
+                    )}
                   </div>
+
+                  {/* Method selection */}
+                  {twoFAStep === 'choose' && (
+                    <div className="border border-gray-200 rounded-xl p-4 space-y-3">
+                      <p className="text-sm font-semibold text-gray-700">Choose your 2FA method:</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button
+                          onClick={() => handleSetup2FA('EMAIL')}
+                          disabled={twoFALoading}
+                          className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-xl hover:border-red-400 hover:bg-red-50/30 transition disabled:opacity-50"
+                        >
+                          <Mail size={24} className="text-red-600" />
+                          <div className="text-left">
+                            <p className="font-semibold text-gray-900">Email OTP</p>
+                            <p className="text-xs text-gray-500">Code sent to your email on each login</p>
+                          </div>
+                        </button>
+                        <button
+                          onClick={() => handleSetup2FA('TOTP')}
+                          disabled={twoFALoading}
+                          className="flex items-center gap-3 p-4 border-2 border-gray-200 rounded-xl hover:border-red-400 hover:bg-red-50/30 transition disabled:opacity-50"
+                        >
+                          <Smartphone size={24} className="text-red-600" />
+                          <div className="text-left">
+                            <p className="font-semibold text-gray-900">Authenticator App</p>
+                            <p className="text-xs text-gray-500">Google Authenticator, Authy, etc.</p>
+                          </div>
+                        </button>
+                      </div>
+                      <button
+                        onClick={() => setTwoFAStep('idle')}
+                        className="text-sm text-gray-500 hover:text-gray-700"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Confirm step */}
+                  {twoFAStep === 'confirm' && (
+                    <div className="border border-gray-200 rounded-xl p-4 space-y-4">
+                      {twoFAMethod === 'TOTP' && twoFAQRCode && (
+                        <div className="text-center space-y-3">
+                          <p className="text-sm font-semibold text-gray-700">
+                            Scan this QR code with your authenticator app:
+                          </p>
+                          <img
+                            src={twoFAQRCode}
+                            alt="2FA QR Code"
+                            className="mx-auto w-48 h-48 border rounded-lg"
+                          />
+                          {twoFASecret && (
+                            <div className="bg-gray-100 p-2 rounded text-xs font-mono text-gray-600 break-all">
+                              Manual key: {twoFASecret}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {twoFAMethod === 'EMAIL' && (
+                        <p className="text-sm text-gray-600">
+                          A 6-digit verification code has been sent to <strong>{user?.email}</strong>.
+                        </p>
+                      )}
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                          Enter verification code
+                        </label>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          value={twoFACode}
+                          onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          placeholder="000000"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-xl font-mono tracking-widest focus:outline-none focus:border-red-600"
+                        />
+                      </div>
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleConfirm2FA}
+                          disabled={twoFALoading || twoFACode.length < 6}
+                          className="px-6 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+                        >
+                          {twoFALoading ? 'Verifying...' : 'Confirm & Enable'}
+                        </button>
+                        <button
+                          onClick={() => { setTwoFAStep('idle'); setTwoFACode(''); }}
+                          className="px-6 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Disable step */}
+                  {twoFAStep === 'disable' && (
+                    <div className="border border-red-200 bg-red-50/30 rounded-xl p-4 space-y-4">
+                      <p className="text-sm text-gray-700">
+                        Enter your password to disable two-factor authentication.
+                      </p>
+                      <input
+                        type="password"
+                        value={disablePassword}
+                        onChange={(e) => setDisablePassword(e.target.value)}
+                        placeholder="Your current password"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
+                      />
+                      <div className="flex gap-3">
+                        <button
+                          onClick={handleDisable2FA}
+                          disabled={twoFALoading || !disablePassword}
+                          className="px-6 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition disabled:opacity-50"
+                        >
+                          {twoFALoading ? 'Disabling...' : 'Disable 2FA'}
+                        </button>
+                        <button
+                          onClick={() => { setTwoFAStep('idle'); setDisablePassword(''); }}
+                          className="px-6 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
-
-            {/* Bank Account Tab */}
-            {activeTab === 'bank' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Bank Account Details
-                </h2>
-                <p className="text-gray-600">
-                  Your bank account for withdrawals
-                </p>
-
-                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="font-semibold text-green-800">
-                      Verified Account
-                    </span>
-                  </div>
-                  <p className="text-sm text-green-700">
-                    Your bank account has been verified and is ready for
-                    withdrawals.
-                  </p>
-                </div>
-
-                <div className="grid gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Bank Name
-                    </label>
-                    <input
-                      type="text"
-                      value={bankAccount.bankName}
-                      readOnly
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Account Number
-                    </label>
-                    <input
-                      type="text"
-                      value={bankAccount.accountNumber}
-                      readOnly
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Account Name
-                    </label>
-                    <input
-                      type="text"
-                      value={bankAccount.accountName}
-                      readOnly
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-600"
-                    />
-                  </div>
-                </div>
-
-                <button className="text-red-600 font-semibold hover:text-red-700 transition">
-                  + Add Another Bank Account
-                </button>
               </div>
             )}
 

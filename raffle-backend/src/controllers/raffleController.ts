@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { runRaffleDraw } from '../services/raffle';
+import { uploadToCloudinary } from '../services/cloudinary';
 
 // GET /api/raffles — Public, paginated, filterable by status
 export const getAllRaffles = async (req: Request, res: Response) => {
@@ -295,5 +296,102 @@ export const getRaffleWinner = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('[Raffles] Get winner error:', error);
         res.status(500).json({ success: false, message: 'Failed to get raffle winner.' });
+    }
+};
+
+// GET /api/raffles/my-wins — Authenticated user's won raffles with delivery tracking
+export const getMyWins = async (req: Request, res: Response) => {
+    try {
+        const userId = (req as any).user?.id;
+        if (!userId) {
+            res.status(401).json({ success: false, message: 'Not authenticated.' });
+            return;
+        }
+
+        const wins = await prisma.raffle.findMany({
+            where: {
+                winnerUserId: userId,
+                status: 'COMPLETED',
+            },
+            include: {
+                item: {
+                    select: {
+                        id: true,
+                        name: true,
+                        imageUrl: true,
+                        value: true,
+                        category: true,
+                    },
+                },
+            },
+            orderBy: { updatedAt: 'desc' },
+        });
+
+        res.status(200).json({
+            success: true,
+            data: wins,
+        });
+    } catch (error) {
+        console.error('[Raffles] Get my wins error:', error);
+        res.status(500).json({ success: false, message: 'Failed to get your wins.' });
+    }
+};
+
+// POST /api/raffles/create — Admin only, combined Item & Raffle creation
+export const createRaffleWithItem = async (req: Request, res: Response) => {
+    try {
+        const { name, description, value, category, ticketPrice, totalTickets, raffleDate } = req.body;
+
+        if (!req.file) {
+            res.status(400).json({ success: false, message: 'Item image is required.' });
+            return;
+        }
+
+        let imageUrl: string;
+        try {
+            imageUrl = await uploadToCloudinary(req.file.buffer, 'raffle-items');
+        } catch (uploadErr) {
+            console.error('[Raffles] Cloudinary upload error:', uploadErr);
+            res.status(500).json({ success: false, message: 'Image upload failed.' });
+            return;
+        }
+
+        const result = await prisma.$transaction(async (tx) => {
+            const item = await tx.item.create({
+                data: {
+                    name,
+                    description: description || name,
+                    imageUrl,
+                    value: parseFloat(value),
+                    category,
+                    status: 'ACTIVE',
+                },
+            });
+
+            const raffle = await tx.raffle.create({
+                data: {
+                    itemId: item.id,
+                    ticketPrice: parseFloat(ticketPrice),
+                    ticketsTotal: parseInt(totalTickets, 10),
+                    raffleDate: new Date(raffleDate),
+                    status: 'SCHEDULED',
+                },
+                include: {
+                    item: true
+                }
+            });
+
+            return raffle;
+        });
+
+        res.status(201).json({
+            success: true,
+            message: 'Raffle and Item created successfully.',
+            data: result,
+        });
+
+    } catch (error) {
+        console.error('[Raffles] Create raffle with item error:', error);
+        res.status(500).json({ success: false, message: 'Failed to create raffle.' });
     }
 };

@@ -47,7 +47,7 @@ export default function WithdrawPage() {
 
   const handleValidateAccount = () => {
     if (!bankCode || !accountNumber) {
-      setError('Please select a bank and enter account number');
+      setError('Please select a bank and enter User Number');
       return;
     }
     setShowValidation(true);
@@ -225,10 +225,10 @@ export default function WithdrawPage() {
                 </select>
               </div>
 
-              {/* Account Number */}
+              {/* User Number */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Account Number
+                  User Number
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -239,7 +239,7 @@ export default function WithdrawPage() {
                         e.target.value.replace(/\D/g, '').slice(0, 10),
                       )
                     }
-                    placeholder="Enter 10-digit account number"
+                    placeholder="Enter 10-digit User Number"
                     className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
                   />
                   <button

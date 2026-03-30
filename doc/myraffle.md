@@ -42,7 +42,7 @@ Key Differentiators
 
 🌟 Key Features
 For Regular Users
-FeatureDescriptionUser AccountsCreate account with email, get unique user numberWallet SystemDeposit funds, withdraw earnings, track balanceRaffle TicketsBuy tickets for items, limited to 1 ticket per itemEarn PointsWatch ads, share referrals, complete surveys, daily loginFree ParticipationUse earned points to buy tickets without spending moneyTicket HistoryTrack all tickets, see past wins/lossesRaffle Points1,000 points = ₦100 value, not withdrawable, spend-onlyWinners BoardSee recent winners and their prizes
+FeatureDescriptionUser AccountsCreate account with email, get unique User NumberWallet SystemDeposit funds, withdraw earnings, track balanceRaffle TicketsBuy tickets for items, limited to 1 ticket per itemEarn PointsWatch ads, share referrals, complete surveys, daily loginFree ParticipationUse earned points to buy tickets without spending moneyTicket HistoryTrack all tickets, see past wins/lossesRaffle Points1,000 points = ₦100 value, not withdrawable, spend-onlyWinners BoardSee recent winners and their prizes
 For Admins
 FeatureDescriptionItem ManagementUpload items, set prices, manage rafflesRaffle SchedulingSet raffle dates, auto-start optionsUser ManagementView users, suspend accounts, track activityRevenue TrackingMonitor deposits, sales, payoutsAnalyticsReal-time stats, charts, reportsTransaction MonitoringView all transactions, dispute handlingWinner ManagementVerify winners, contact info, audit trailPayout ProcessingProcess withdrawals, manage payouts
 For The Platform

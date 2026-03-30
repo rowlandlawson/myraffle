@@ -9,6 +9,7 @@ interface WalletTransactionRowProps {
   transaction: {
     id: number | string;
     type: TransactionType;
+    rawType?: string;
     description: string;
     amount: number;
     date: string;
@@ -80,15 +81,18 @@ export default function WalletTransactionRow({
         <div
           className={`font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-gray-900'}`}
         >
-          {transaction.amount > 0 ? '+' : ''}₦
-          {Math.abs(transaction.amount).toLocaleString()}
+          {transaction.rawType === 'TASK_REWARD' || transaction.type === 'reward' ? (
+            <>{transaction.amount > 0 ? '+' : ''}{Math.abs(transaction.amount).toLocaleString()} <span className="text-xs">⭐ pts</span></>
+          ) : (
+            <>{transaction.amount > 0 ? '+' : ''}₦{Math.abs(transaction.amount).toLocaleString()}</>
+          )}
         </div>
       </td>
       <td className="px-4 py-4 text-center">
         <span
           className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${transaction.status === 'completed'
-              ? 'bg-green-100 text-green-700'
-              : 'bg-yellow-100 text-yellow-700'
+            ? 'bg-green-100 text-green-700'
+            : 'bg-yellow-100 text-yellow-700'
             }`}
         >
           {transaction.status === 'completed' ? '✓ Done' : '⏳ Pending'}

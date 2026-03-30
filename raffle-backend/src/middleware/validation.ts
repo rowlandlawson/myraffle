@@ -32,8 +32,17 @@ export const registerSchema = z.object({
         .min(8, 'Password must be at least 8 characters')
         .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
         .regex(/[0-9]/, 'Password must contain at least one number'),
-    phone: z.string().optional(),
+    phone: z.string().min(10, 'WhatsApp number is required'),
     referralCode: z.string().optional(),
+});
+
+export const verifyOTPSchema = z.object({
+    userId: z.string().min(1, 'User ID is required'),
+    code: z.string().min(4, 'Code must be at least 4 digits').max(6, 'Code must be at most 6 digits'),
+});
+
+export const resendOTPSchema = z.object({
+    userId: z.string().min(1, 'User ID is required'),
 });
 
 export const loginSchema = z.object({
@@ -71,7 +80,7 @@ export const withdrawalSchema = z.object({
         .number({ message: 'Amount must be a number' })
         .min(500, 'Minimum withdrawal is ₦500'),
     bankCode: z.string().min(1, 'Bank code is required'),
-    accountNumber: z.string().min(10, 'Account number must be at least 10 digits'),
+    accountNumber: z.string().min(10, 'User Number must be at least 10 digits'),
     accountName: z.string().min(2, 'Account name is required'),
 });
 

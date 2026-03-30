@@ -3,9 +3,10 @@ import Image from 'next/image';
 interface WatchAdModalProps {
   isOpen: boolean;
   adTimer: number;
+  totalDuration: number;
 }
 
-export default function WatchAdModal({ isOpen, adTimer }: WatchAdModalProps) {
+export default function WatchAdModal({ isOpen, adTimer, totalDuration }: WatchAdModalProps) {
   if (!isOpen) return null;
 
   return (
@@ -31,7 +32,7 @@ export default function WatchAdModal({ isOpen, adTimer }: WatchAdModalProps) {
         <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-6">
           <div
             className="bg-red-600 h-full transition-all"
-            style={{ width: `${((31 - adTimer) / 31) * 100}%` }}
+            style={{ width: `${((totalDuration - adTimer) / totalDuration) * 100}%` }}
           />
         </div>
 

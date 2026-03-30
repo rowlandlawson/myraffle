@@ -1,19 +1,7 @@
 import multer from 'multer';
-import path from 'path';
-import crypto from 'crypto';
 
-// Storage configuration
-const storage = multer.diskStorage({
-    destination: (_req, _file, cb) => {
-        cb(null, 'uploads/');
-    },
-    filename: (_req, file, cb) => {
-        // Generate a unique filename: timestamp-random.ext
-        const uniqueSuffix = `${Date.now()}-${crypto.randomBytes(6).toString('hex')}`;
-        const ext = path.extname(file.originalname).toLowerCase();
-        cb(null, `${uniqueSuffix}${ext}`);
-    },
-});
+// Use memory storage so we get a buffer for Cloudinary upload
+const storage = multer.memoryStorage();
 
 // File filter — only allow images
 const fileFilter = (
@@ -34,6 +22,6 @@ export const upload = multer({
     storage,
     fileFilter,
     limits: {
-        fileSize: 5 * 1024 * 1024, // 5 MB
+        fileSize: 10 * 1024 * 1024, // 10 MB (safety net — client compresses before upload)
     },
 });

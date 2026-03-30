@@ -39,16 +39,25 @@ const refreshAccessToken = async (): Promise<string | null> => {
     if (!refreshToken) return null;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+        const response = await fetch(`${API_BASE_URL}/api/auth/refresh-token`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ refreshToken }),
         });
 
-        const result: ApiResponse<{ accessToken: string }> = await response.json();
+        if (!response.ok) {
+            clearTokens();
+            return null;
+        }
+
+        const result: ApiResponse<{ accessToken: string; refreshToken?: string }> = await response.json();
 
         if (result.success && result.data?.accessToken) {
             localStorage.setItem('accessToken', result.data.accessToken);
+            // The backend also rotates the refresh token
+            if (result.data.refreshToken) {
+                localStorage.setItem('refreshToken', result.data.refreshToken);
+            }
             return result.data.accessToken;
         }
 
@@ -69,8 +78,11 @@ async function apiFetch<T = unknown>(
 ): Promise<ApiResponse<T>> {
     const accessToken = getAccessToken();
 
+    const isFormData = options.body instanceof FormData;
+
     const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
+        // Don't set Content-Type for FormData — browser sets it with boundary
+        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
         ...(options.headers as Record<string, string>),
     };
 
@@ -79,6 +91,7 @@ async function apiFetch<T = unknown>(
     }
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        cache: 'no-store',
         ...options,
         headers,
     });
@@ -109,15 +122,20 @@ export const api = {
     post: <T = unknown>(endpoint: string, body?: unknown) =>
         apiFetch<T>(endpoint, {
             method: 'POST',
-            body: body ? JSON.stringify(body) : undefined,
+            body: body instanceof FormData
+                ? body
+                : body ? JSON.stringify(body) : undefined,
         }),
 
     put: <T = unknown>(endpoint: string, body?: unknown) =>
         apiFetch<T>(endpoint, {
             method: 'PUT',
-            body: body ? JSON.stringify(body) : undefined,
+            body: body instanceof FormData
+                ? body
+                : body ? JSON.stringify(body) : undefined,
         }),
 
     delete: <T = unknown>(endpoint: string) =>
         apiFetch<T>(endpoint, { method: 'DELETE' }),
 };
+

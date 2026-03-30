@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/database';
+import { uploadToCloudinary } from '../services/cloudinary';
 
 // GET /api/items — Public, paginated, filterable
 export const getAllItems = async (req: Request, res: Response) => {
@@ -100,13 +101,21 @@ export const createItem = async (req: Request, res: Response) => {
     try {
         const { name, description, value, category } = req.body;
 
-        // Image URL from multer
+        // Image from multer (memory storage)
         if (!req.file) {
             res.status(400).json({ success: false, message: 'Item image is required.' });
             return;
         }
 
-        const imageUrl = `/uploads/${req.file.filename}`;
+        // Upload to Cloudinary
+        let imageUrl: string;
+        try {
+            imageUrl = await uploadToCloudinary(req.file.buffer, 'raffle-items');
+        } catch (uploadErr) {
+            console.error('[Items] Cloudinary upload error:', uploadErr);
+            res.status(500).json({ success: false, message: 'Image upload failed.' });
+            return;
+        }
 
         const item = await prisma.item.create({
             data: {
@@ -151,9 +160,15 @@ export const updateItem = async (req: Request, res: Response) => {
         if (category) updateData.category = category;
         if (status) updateData.status = status;
 
-        // If a new image was uploaded
+        // If a new image was uploaded, upload to Cloudinary
         if (req.file) {
-            updateData.imageUrl = `/uploads/${req.file.filename}`;
+            try {
+                updateData.imageUrl = await uploadToCloudinary(req.file.buffer, 'raffle-items');
+            } catch (uploadErr) {
+                console.error('[Items] Cloudinary upload error:', uploadErr);
+                res.status(500).json({ success: false, message: 'Image upload failed.' });
+                return;
+            }
         }
 
         const item = await prisma.item.update({

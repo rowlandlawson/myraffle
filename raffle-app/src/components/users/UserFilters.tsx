@@ -23,7 +23,7 @@ export default function UserFilters({
             <Search size={20} className="absolute left-3 top-3 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by name, email, or user number..."
+              placeholder="Search by name, email, or User Number..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"

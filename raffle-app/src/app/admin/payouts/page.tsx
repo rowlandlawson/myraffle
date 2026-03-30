@@ -10,6 +10,8 @@ import {
   DollarSign,
 } from 'lucide-react';
 import { useAdminWithdrawals, useApproveWithdrawal, useRejectWithdrawal } from '@/lib/hooks/useAdmin';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import toast from 'react-hot-toast';
 
 type PayoutStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
 
@@ -17,6 +19,7 @@ export default function AdminPayoutsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [page, setPage] = useState(1);
+  const [confirmAction, setConfirmAction] = useState<{ id: string; type: 'approve' | 'reject' } | null>(null);
 
   const { data, isLoading, error } = useAdminWithdrawals({
     page,
@@ -41,18 +44,38 @@ export default function AdminPayoutsPage() {
     );
   });
 
-  const handleApprove = async (id: string) => {
-    if (confirm('Are you sure you want to approve this withdrawal?')) {
-      approveWithdrawal.mutate(id, {
-        onError: (err: any) => alert(err.message || 'Failed to approve withdrawal'),
-      });
-    }
+  const handleApprove = (id: string) => {
+    setConfirmAction({ id, type: 'approve' });
   };
 
-  const handleReject = async (id: string) => {
-    if (confirm('Are you sure you want to reject this withdrawal? The amount will be refunded to the user\'s wallet.')) {
-      rejectWithdrawal.mutate(id, {
-        onError: (err: any) => alert(err.message || 'Failed to reject withdrawal'),
+  const handleReject = (id: string) => {
+    setConfirmAction({ id, type: 'reject' });
+  };
+
+  const executeConfirmAction = () => {
+    if (!confirmAction) return;
+
+    if (confirmAction.type === 'approve') {
+      approveWithdrawal.mutate(confirmAction.id, {
+        onSuccess: () => {
+          toast.success('Withdrawal approved successfully');
+          setConfirmAction(null);
+        },
+        onError: (err: any) => {
+          toast.error(err.message || 'Failed to approve withdrawal');
+          setConfirmAction(null);
+        },
+      });
+    } else {
+      rejectWithdrawal.mutate(confirmAction.id, {
+        onSuccess: () => {
+          toast.success('Withdrawal rejected and refunded');
+          setConfirmAction(null);
+        },
+        onError: (err: any) => {
+          toast.error(err.message || 'Failed to reject withdrawal');
+          setConfirmAction(null);
+        },
       });
     }
   };
@@ -134,7 +157,7 @@ export default function AdminPayoutsPage() {
             <Search size={20} className="absolute left-3 top-3 text-gray-400" />
             <input
               type="text"
-              placeholder="Search by name, ID, or account number..."
+              placeholder="Search by name, ID, or User Number..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
@@ -239,6 +262,20 @@ export default function AdminPayoutsPage() {
           </>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={!!confirmAction}
+        title={confirmAction?.type === 'approve' ? 'Approve Withdrawal' : 'Reject Withdrawal'}
+        message={
+          confirmAction?.type === 'approve'
+            ? 'Are you sure you want to approve this withdrawal? Funds should be manually transferred first.'
+            : 'Are you sure you want to reject this withdrawal? The amount will be refunded to the user\'s wallet.'
+        }
+        confirmLabel={confirmAction?.type === 'approve' ? 'Approve' : 'Reject'}
+        onConfirm={executeConfirmAction}
+        onCancel={() => setConfirmAction(null)}
+        variant={confirmAction?.type === 'approve' ? 'info' : 'danger'}
+      />
     </div>
   );
 }

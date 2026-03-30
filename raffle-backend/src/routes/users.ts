@@ -5,6 +5,7 @@ import {
     getUserStatistics,
     suspendUser,
     activateUser,
+    changePassword,
 } from '../controllers/userController';
 import { requireAuth, requireAdmin } from '../middleware/auth';
 import { validate, updateProfileSchema } from '../middleware/validation';
@@ -14,6 +15,7 @@ const router = Router();
 // Protected routes (authenticated users)
 router.get('/profile', requireAuth, getProfile);
 router.put('/profile', requireAuth, validate(updateProfileSchema), updateProfile);
+router.put('/change-password', requireAuth, changePassword);
 router.get('/statistics', requireAuth, getUserStatistics);
 
 // Admin-only routes

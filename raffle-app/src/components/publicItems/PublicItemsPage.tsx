@@ -12,6 +12,7 @@ import { Item, Category, FilterState } from '@/types/publicItems';
 import { useItems } from '@/lib/hooks/useItems';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/authStore';
+import toast from 'react-hot-toast';
 
 // Categories data - exported for reuse
 export const categories: Category[] = [
@@ -142,17 +143,17 @@ export function PublicItemsPage() {
 
     const item = mappedItems.find((i) => i.id === itemId) as any;
     if (!item?._raffleId) {
-      alert('No active raffle for this item');
+      toast.error('No active raffle for this item');
       return;
     }
 
     setBuyingItemId(itemId);
     try {
       await api.post(`/api/tickets/${item._raffleId}/buy`, { paymentMethod: 'wallet' });
-      alert('Ticket purchased successfully! 🎉');
+      toast.success('Ticket purchased successfully! 🎉');
       setSelectedItem(null);
     } catch (err: any) {
-      alert(err.message || 'Failed to buy ticket');
+      toast.error(err.message || 'Failed to buy ticket');
     } finally {
       setBuyingItemId(null);
     }

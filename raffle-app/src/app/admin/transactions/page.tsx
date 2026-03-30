@@ -171,15 +171,19 @@ export default function AdminTransactionsPage() {
                       <td className="px-4 py-4">{getTypeBadge(tx.type)}</td>
                       <td className="px-4 py-4 text-right">
                         <span className={`font-semibold flex items-center justify-end gap-1 ${['DEPOSIT', 'TASK_REWARD', 'RAFFLE_WIN', 'REFUND'].includes(tx.type)
-                            ? 'text-green-600'
-                            : 'text-red-600'
+                          ? 'text-green-600'
+                          : 'text-red-600'
                           }`}>
                           {['DEPOSIT', 'TASK_REWARD', 'RAFFLE_WIN', 'REFUND'].includes(tx.type) ? (
                             <ArrowDownLeft size={14} />
                           ) : (
                             <ArrowUpRight size={14} />
                           )}
-                          ₦{tx.amount.toLocaleString()}
+                          {tx.type === 'TASK_REWARD' ? (
+                            <>{tx.amount.toLocaleString()} <span className="text-xs">⭐ pts</span></>
+                          ) : (
+                            <>₦{tx.amount.toLocaleString()}</>
+                          )}
                         </span>
                       </td>
                       <td className="px-4 py-4">

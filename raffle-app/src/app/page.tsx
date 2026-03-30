@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import TopNav from '@/components/navbar/TopNav';
+import { useAuthStore } from '@/lib/authStore';
 import { useRaffles } from '@/lib/hooks/useRaffles';
-import HeroSection from '@/components/landing/HeroSection';
-import FeaturesSection from '@/components/landing/FeaturesSection';
+import PromoBanner from '@/components/landing/PromoBanner';
 import ItemsSection from '@/components/landing/ItemsSection';
+import FeaturesSection from '@/components/landing/FeaturesSection';
 import WinnersSection from '@/components/landing/WinnersSection';
 import HowItWorksSection from '@/components/landing/HowItWorksSection';
 import CTASection from '@/components/landing/CTASection';
@@ -14,6 +15,7 @@ import BottomNav from '@/components/navbar/BottomNav';
 
 export default function LandingPage() {
   const [activeTab, setActiveTab] = useState('active');
+  const { isAuthenticated } = useAuthStore();
 
   // Fetch live raffles
   const { data: activeData, isLoading: activeLoading } = useRaffles({ status: 'ACTIVE' });
@@ -45,7 +47,7 @@ export default function LandingPage() {
   const activeItems = activeRaffles.map(mapRaffleToItem);
   const completedItems = completedRaffles.map(mapRaffleToItem);
 
-  // For landing page, we'll combine them since ItemsSection filters by status itself
+  // Combine them since ItemsSection filters by status itself
   const items = [...activeItems, ...completedItems];
 
   // Mock data for winners
@@ -79,13 +81,14 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white">
       <TopNav />
-      <HeroSection />
-      <FeaturesSection />
+      <PromoBanner isAuthenticated={isAuthenticated} />
       <ItemsSection
         items={items}
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        isAuthenticated={isAuthenticated}
       />
+      <FeaturesSection />
       <WinnersSection winners={recentWinners} />
       <HowItWorksSection />
       <CTASection />

@@ -1,3 +1,5 @@
+'use client';
+
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -24,17 +26,17 @@ export default function Footer() {
           <h4 className="font-bold mb-4">Quick Links</h4>
           <ul className="space-y-2 text-gray-400 text-sm">
             <li>
-              <a href="#items" className="hover:text-red-500 transition">
+              <a href="#items" className="hover:text-red-600 transition">
                 Items
               </a>
             </li>
             <li>
-              <a href="#winners" className="hover:text-red-500 transition">
+              <a href="#winners" className="hover:text-red-600 transition">
                 Winners
               </a>
             </li>
             <li>
-              <a href="#how" className="hover:text-red-500 transition">
+              <a href="#how" className="hover:text-red-600 transition">
                 How It Works
               </a>
             </li>
@@ -45,17 +47,17 @@ export default function Footer() {
           <h4 className="font-bold mb-4">Legal</h4>
           <ul className="space-y-2 text-gray-400 text-sm">
             <li>
-              <Link href="#" className="hover:text-red-500 transition">
+              <Link href="#" className="hover:text-red-600 transition">
                 Terms of Service
               </Link>
             </li>
             <li>
-              <Link href="#" className="hover:text-red-500 transition">
+              <Link href="#" className="hover:text-red-600 transition">
                 Privacy Policy
               </Link>
             </li>
             <li>
-              <Link href="#" className="hover:text-red-500 transition">
+              <Link href="#" className="hover:text-red-600 transition">
                 Contact Us
               </Link>
             </li>
@@ -66,17 +68,17 @@ export default function Footer() {
           <h4 className="font-bold mb-4">Follow Us</h4>
           <ul className="space-y-2 text-gray-400 text-sm">
             <li>
-              <Link href="#" className="hover:text-red-500 transition">
+              <Link href="#" className="hover:text-red-600 transition">
                 Twitter
               </Link>
             </li>
             <li>
-              <Link href="#" className="hover:text-red-500 transition">
+              <Link href="#" className="hover:text-red-600 transition">
                 Instagram
               </Link>
             </li>
             <li>
-              <Link href="#" className="hover:text-red-500 transition">
+              <Link href="#" className="hover:text-red-600 transition">
                 Facebook
               </Link>
             </li>

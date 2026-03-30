@@ -6,9 +6,10 @@ import UploadForm from '@/components/admin/items/UploadForm';
 import SearchFilters from '@/components/admin/items/SearchFilters';
 import ItemsTable from '@/components/admin/items/ItemsTable';
 import ItemsStats from '@/components/admin/items/ItemsStats';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { Item } from '@/types/items';
-import { useItems } from '@/lib/hooks/useItems';
-import { api } from '@/lib/api';
+import { useItems, useCreateItem, useDeleteItem } from '@/lib/hooks/useItems';
+import toast from 'react-hot-toast';
 
 export function AdminItemsPage() {
   const [showUploadForm, setShowUploadForm] = useState(false);
@@ -17,13 +18,20 @@ export function AdminItemsPage() {
     status: 'all',
   });
 
+  // Delete confirmation state
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+
   // Fetch items from API — show all statuses for admin
-  const { data: itemsData, isLoading: loading, error, refetch } = useItems({
+  const { data: itemsData, isLoading: loading, error } = useItems({
     search: filters.searchTerm || undefined,
     status: filters.status !== 'all' ? filters.status.toUpperCase() : undefined,
     limit: 50,
   });
   const apiItems = itemsData?.items ?? [];
+
+  // Mutations
+  const createItem = useCreateItem();
+  const deleteItem = useDeleteItem();
 
   // Map API items to the admin Item type
   const items: Item[] = apiItems.map((item) => {
@@ -57,14 +65,20 @@ export function AdminItemsPage() {
   });
 
   // Handlers
-  const handleDeleteItem = async (id: number) => {
-    if (confirm('Are you sure you want to delete this item?')) {
-      try {
-        await api.delete(`/api/items/${String(id)}`);
-        refetch();
-      } catch (err: any) {
-        alert(err.message || 'Failed to delete item');
-      }
+  const handleDeleteItem = (id: number) => {
+    const item = items.find((i) => i.id === id);
+    setDeleteTarget({ id, name: item?.name ?? 'this item' });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    try {
+      await deleteItem.mutateAsync(String(deleteTarget.id));
+      toast.success('Item deleted successfully');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to delete item');
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -87,12 +101,11 @@ export function AdminItemsPage() {
         fd.append('image', formData.image);
       }
 
-      await api.post('/api/items', fd);
+      await createItem.mutateAsync(fd);
       setShowUploadForm(false);
-      refetch();
-      alert('Item created successfully!');
+      toast.success('Item created successfully!');
     } catch (err: any) {
-      alert(err.message || 'Failed to create item');
+      toast.error(err.message || 'Failed to create item');
     }
   };
 
@@ -145,6 +158,18 @@ export function AdminItemsPage() {
           <ItemsStats items={items} />
         </>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!deleteTarget}
+        title="Delete Item"
+        message={`Are you sure you want to delete "${deleteTarget?.name}"? This action cannot be undone.`}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

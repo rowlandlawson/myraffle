@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../middleware/auth';
+import { requireAuth, optionalAuth } from '../middleware/auth';
 import {
     getAvailableTasks,
     getTaskById,
@@ -9,8 +9,8 @@ import {
 
 const router = Router();
 
-// Public routes
-router.get('/', getAvailableTasks);
+// Tasks list: optionalAuth so logged-in users get a curated drip-feed
+router.get('/', optionalAuth, getAvailableTasks);
 router.get('/completed', requireAuth, getCompletedTasks);
 router.get('/:id', getTaskById);
 

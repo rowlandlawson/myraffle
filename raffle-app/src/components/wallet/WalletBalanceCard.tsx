@@ -18,7 +18,12 @@ export default function WalletBalanceCard({
   return (
     <div className="bg-gradient-to-br from-red-600 to-red-700 rounded-2xl p-6 md:p-8 text-white shadow-lg">
       <div className="mb-4">
-        <p className="text-red-100 text-sm font-semibold">CURRENT BALANCE</p>
+        <div className="flex items-center gap-2">
+          <p className="text-red-100 text-sm font-semibold">CURRENT BALANCE</p>
+          <span className="inline-flex items-center gap-1 bg-white/20 text-white/90 text-[10px] font-bold px-2 py-0.5 rounded-full">
+            🔒 Locked
+          </span>
+        </div>
         <h1 className="text-3xl md:text-5xl font-bold">
           ₦{balance.toLocaleString()}
         </h1>

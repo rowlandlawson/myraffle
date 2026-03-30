@@ -46,6 +46,7 @@ export default function WalletPage() {
     return {
       id: tx.id,
       type: mapType(tx.type),
+      rawType: tx.type,
       description: tx.description || `${tx.type} transaction`,
       amount:
         tx.type === 'WITHDRAWAL' || tx.type === 'TICKET_PURCHASE'
@@ -77,6 +78,17 @@ export default function WalletPage() {
 
   return (
     <div className="space-y-8 pb-20 md:pb-0">
+      {/* Wallet Lock Banner */}
+      <div className="bg-gradient-to-r from-slate-100 to-slate-50 border border-slate-200 rounded-2xl p-5 flex items-center gap-4">
+        <div className="w-12 h-12 bg-slate-200 rounded-full flex items-center justify-center text-2xl shrink-0">
+          🔒
+        </div>
+        <div>
+          <h3 className="font-bold text-slate-700 text-sm">Wallet is Currently Locked</h3>
+          <p className="text-xs text-slate-500 mt-0.5">Cash deposits & withdrawals are coming soon! Your points and transaction history are still visible.</p>
+        </div>
+      </div>
+
       <WalletBalanceCard
         balance={balance?.walletBalance || 0}
         totalDeposited="—"
@@ -85,24 +97,34 @@ export default function WalletPage() {
         totalEarnings="—"
       />
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <QuickActionCard
-          href="/dashboard/wallet/add-funds"
-          icon="💳"
-          title="Add Funds"
-          description="Deposit money to your wallet"
-          borderColor="border-green-600"
-          iconBgColor="bg-green-100"
-        />
-        <QuickActionCard
-          href="/dashboard/wallet/withdraw"
-          icon="🏦"
-          title="Withdraw"
-          description="Request withdrawal to your bank"
-          borderColor="border-blue-600"
-          iconBgColor="bg-blue-100"
-        />
+      {/* Quick Actions — Locked */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 opacity-50 pointer-events-none">
+        <div className="relative">
+          <QuickActionCard
+            href="#"
+            icon="💳"
+            title="Add Funds"
+            description="Deposit money to your wallet"
+            borderColor="border-gray-300"
+            iconBgColor="bg-gray-100"
+          />
+          <div className="absolute inset-0 bg-white/40 rounded-xl flex items-center justify-center">
+            <span className="text-2xl">🔒</span>
+          </div>
+        </div>
+        <div className="relative">
+          <QuickActionCard
+            href="#"
+            icon="🏦"
+            title="Withdraw"
+            description="Request withdrawal to your bank"
+            borderColor="border-gray-300"
+            iconBgColor="bg-gray-100"
+          />
+          <div className="absolute inset-0 bg-white/40 rounded-xl flex items-center justify-center">
+            <span className="text-2xl">🔒</span>
+          </div>
+        </div>
       </div>
 
       {/* Transaction Filters */}
@@ -224,8 +246,11 @@ export default function WalletPage() {
                 <div
                   className={`font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-gray-900'}`}
                 >
-                  {transaction.amount > 0 ? '+' : ''}₦
-                  {Math.abs(transaction.amount).toLocaleString()}
+                  {transaction.rawType === 'TASK_REWARD' ? (
+                    <>{transaction.amount > 0 ? '+' : ''}{Math.abs(transaction.amount).toLocaleString()} <span className="text-xs">⭐ pts</span></>
+                  ) : (
+                    <>{transaction.amount > 0 ? '+' : ''}₦{Math.abs(transaction.amount).toLocaleString()}</>
+                  )}
                 </div>
               </div>
 

@@ -14,6 +14,15 @@ export interface ApiTask {
     points: number;
     isActive: boolean;
     createdAt: string;
+    actionUrl?: string;
+    platform?: string;
+    adDuration?: number;
+    dailyLimit?: number;
+    isPinned?: boolean;
+    priority?: number;
+    // Drip-feed metadata (only present for logged-in users)
+    completedToday?: boolean;
+    recentlyCompleted?: boolean;
 }
 
 export interface CompletedTask {
@@ -31,11 +40,14 @@ export interface CompletedTask {
     };
 }
 
+// ─── Types ──────────────────────────────────────────────────
+export type StatsRange = 'today' | 'week' | 'month' | 'year' | 'all';
+
 // ─── Query Keys ─────────────────────────────────────────────
 export const taskKeys = {
     all: ['tasks'] as const,
     available: () => [...taskKeys.all, 'available'] as const,
-    completed: () => [...taskKeys.all, 'completed'] as const,
+    completed: (range?: StatsRange) => [...taskKeys.all, 'completed', range ?? 'all'] as const,
 };
 
 // ─── Hooks ──────────────────────────────────────────────────
@@ -55,20 +67,21 @@ export function useTasks() {
 }
 
 /** Fetch user's completed tasks from GET /api/tasks/completed */
-export function useCompletedTasks() {
+export function useCompletedTasks(range: StatsRange = 'all') {
     return useQuery({
-        queryKey: taskKeys.completed(),
+        queryKey: taskKeys.completed(range),
         queryFn: async () => {
             const res = await api.get<{
                 completedTasks: CompletedTask[];
                 summary: {
                     totalTasksCompleted: number;
                     totalPointsEarned: number;
+                    range: string;
                 };
-            }>('/api/tasks/completed');
+            }>(`/api/tasks/completed?range=${range}`);
             return {
                 completedTasks: res.data?.completedTasks ?? [],
-                summary: res.data?.summary ?? { totalTasksCompleted: 0, totalPointsEarned: 0 },
+                summary: res.data?.summary ?? { totalTasksCompleted: 0, totalPointsEarned: 0, range },
             };
         },
     });

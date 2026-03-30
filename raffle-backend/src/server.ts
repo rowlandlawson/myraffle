@@ -4,6 +4,8 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { validateEnv, env } from './config/environment';
 import { errorHandler } from './middleware/errorHandler';
+import { generalLimiter } from './middleware/rateLimiter';
+import { visitorTracking } from './middleware/visitorMiddleware';
 import authRoutes from './routes/auth';
 import userRoutes from './routes/users';
 import walletRoutes from './routes/wallet';
@@ -13,6 +15,7 @@ import itemRoutes from './routes/items';
 import raffleRoutes from './routes/raffles';
 import ticketRoutes from './routes/tickets';
 import taskRoutes from './routes/tasks';
+import webhookRoutes from './routes/webhooks';
 
 // Load env vars
 dotenv.config();
@@ -38,6 +41,12 @@ app.use(express.urlencoded({ extended: true }));
 // Serve uploaded files as static assets
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 
+// Visitor tracking (logs visits for analytics)
+app.use(visitorTracking);
+
+// Global rate limiter for all API routes
+app.use('/api', generalLimiter);
+
 // Health Check
 app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'RaffleHub Backend is running' });
@@ -53,6 +62,7 @@ app.use('/api/items', itemRoutes);
 app.use('/api/raffles', raffleRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/webhooks', webhookRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

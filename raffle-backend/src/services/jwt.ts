@@ -7,6 +7,11 @@ interface TokenPayload {
     role: string;
 }
 
+export interface TempTokenPayload {
+    userId: string;
+    method: string;
+}
+
 export const generateAccessToken = (userId: string, role: string): string => {
     return jwt.sign(
         { userId, role } as TokenPayload,
@@ -31,10 +36,26 @@ export const verifyRefreshToken = (token: string): TokenPayload => {
     return jwt.verify(token, env.JWT_REFRESH_SECRET) as TokenPayload;
 };
 
+export const generateTempToken = (userId: string, method: string): string => {
+    return jwt.sign(
+        { userId, method } as TempTokenPayload,
+        env.JWT_SECRET,
+        { expiresIn: '5m' }
+    );
+};
+
+export const verifyTempToken = (token: string): TempTokenPayload => {
+    return jwt.verify(token, env.JWT_SECRET) as TempTokenPayload;
+};
+
 export const generateVerificationToken = (): string => {
     return crypto.randomUUID();
 };
 
 export const generateResetToken = (): string => {
     return crypto.randomUUID();
+};
+
+export const generateOTPCode = (): string => {
+    return Math.floor(100000 + Math.random() * 900000).toString();
 };

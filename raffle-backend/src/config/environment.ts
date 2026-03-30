@@ -22,7 +22,7 @@ export const validateEnv = () => {
 
 export const env = {
     PORT: process.env.PORT || 5000,
-    NODE_ENV: process.env.NODE_ENV || 'development',
+    NODE_ENV: process.env.NODE_ENV,
     DATABASE_URL: process.env.DATABASE_URL!,
     JWT_SECRET: process.env.JWT_SECRET!,
     JWT_REFRESH_SECRET: process.env.JWT_REFRESH_SECRET!,
@@ -31,5 +31,8 @@ export const env = {
     PAYSTACK_PUBLIC_KEY: process.env.PAYSTACK_PUBLIC_KEY,
     BREVO_API_KEY: process.env.BREVO_API_KEY,
     BREVO_SENDER_EMAIL: process.env.BREVO_SENDER_EMAIL,
-    BREVO_SENDER_NAME: process.env.BREVO_SENDER_NAME || 'RaffleHub',
+    BREVO_SENDER_NAME: process.env.BREVO_SENDER_NAME,
+    INFOBIP_API_KEY: process.env.INFOBIP_API_KEY,
+    INFOBIP_BASE_URL: process.env.INFOBIP_BASE_URL,
+    INFOBIP_SENDER: process.env.INFOBIP_SENDER,
 };
