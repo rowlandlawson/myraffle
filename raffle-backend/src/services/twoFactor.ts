@@ -1,19 +1,22 @@
 // src/services/twoFactor.ts
 // Two-Factor Authentication service — supports Email OTP and TOTP (Authenticator App)
-// Uses otplib v14+ API
+// Uses otplib v13+ OTP class for TOTP token generation and verification
 
-import { generateSecret as otplibGenerateSecret, generateSync, verifySync, generateURI } from 'otplib';
-import QRCode from 'qrcode';
+import { OTP } from 'otplib';
+import * as QRCode from 'qrcode';
 import { generateOTPCode } from './jwt';
 import { sendEmailOTP } from './brevo';
 
 const APP_NAME = 'RaffleHub';
 
+// Create a configured OTP instance with TOTP strategy
+const otp = new OTP({ strategy: 'totp' });
+
 // ─── TOTP (Authenticator App) ───────────────────────────────
 
 /** Generate a new TOTP secret for authenticator app setup */
 export function generateSecret(): string {
-    return otplibGenerateSecret();
+    return otp.generateSecret();
 }
 
 /** Generate a QR code data URI for scanning with Google Authenticator / Authy */
@@ -21,18 +24,14 @@ export async function generateQRCodeURL(
     secret: string,
     userEmail: string,
 ): Promise<string> {
-    const otpauth = generateURI({
-        secret,
-        issuer: APP_NAME,
-        label: userEmail,
-    });
+    const otpauth = otp.generateURI({ secret, label: userEmail, issuer: APP_NAME });
     return QRCode.toDataURL(otpauth);
 }
 
 /** Verify a TOTP code against a secret */
-export function verifyTOTPToken(token: string, secret: string): boolean {
+export async function verifyTOTPToken(token: string, secret: string): Promise<boolean> {
     try {
-        const result = verifySync({ token, secret });
+        const result = await otp.verify({ token, secret });
         return result.valid;
     } catch {
         return false;
@@ -62,3 +61,4 @@ export async function generateAndSend2FAEmailOTP(
 
     return { code, expiry };
 }
+

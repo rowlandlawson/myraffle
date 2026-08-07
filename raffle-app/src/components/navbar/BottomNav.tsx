@@ -2,45 +2,59 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Zap, Menu } from 'lucide-react';
-import { useState } from 'react';
-import HamburgerMenu from '@/components/navbar/HamburgerMenu';
+import { Home, Trophy, Ticket, Wallet, ShoppingBag } from 'lucide-react';
+
+const navItems = [
+  { label: 'Home', href: '/', icon: Home },
+  { label: 'Items', href: '/items', icon: ShoppingBag },
+  { label: 'Tickets', href: '/login', icon: Ticket },
+  { label: 'Wallet', href: '/login', icon: Wallet },
+  { label: 'Wins', href: '/login', icon: Trophy },
+];
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const isActive = (path: string) =>
-    pathname === path || pathname.startsWith(path);
+  const isActive = (path: string) => {
+    if (path === '/') return pathname === '/';
+    return pathname === path || pathname.startsWith(path);
+  };
 
   return (
     <>
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-[60]">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 z-[60] md:hidden shadow-lg">
         <div className="flex justify-around items-center h-16">
-          <Link
-            href="/dashboard"
-            className={`flex flex-col items-center justify-center w-1/2 h-full gap-1 ${
-              isActive('/dashboard') ? 'text-red-600' : 'text-gray-600'
-            }`}
-          >
-            <Home size={24} />
-            <span className="text-xs">Home</span>
-          </Link>
-
-          <button
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="flex flex-col items-center justify-center w-1/2 h-full gap-1 text-gray-600"
-          >
-            <Menu size={24} />
-            <span className="text-xs">Menu</span>
-          </button>
+          {navItems.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${active ? 'text-red-600' : 'text-gray-400'
+                  }`}
+              >
+                <item.icon
+                  size={22}
+                  strokeWidth={active ? 2.5 : 1.8}
+                  className={active ? 'text-red-600' : 'text-gray-400'}
+                />
+                <span
+                  className={`text-[10px] font-semibold ${active ? 'text-red-600' : 'text-gray-400'
+                    }`}
+                >
+                  {item.label}
+                </span>
+                {active && (
+                  <div className="absolute bottom-0 w-8 h-0.5 bg-red-600 rounded-full" />
+                )}
+              </Link>
+            );
+          })}
         </div>
       </nav>
 
-      {isMenuOpen && <HamburgerMenu onClose={() => setIsMenuOpen(false)} />}
-
-      {/* Spacer for navbar */}
-      <div className="h-16" />
+      {/* Spacer for mobile navbar */}
+      <div className="h-16 md:hidden" />
     </>
   );
 }

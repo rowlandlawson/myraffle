@@ -97,7 +97,14 @@ export function useCreateItem() {
         mutationFn: async (formData: FormData) => {
             const token =
                 typeof window !== 'undefined' ? localStorage.getItem('accessToken') : null;
-            const res = await fetch(`${API_URL}/api/items`, {
+            
+            // Check if this formData contains raffle fields (ticketPrice, totalTickets, raffleDate)
+            const hasRaffleFields = formData.has('ticketPrice') && formData.has('totalTickets') && formData.has('raffleDate');
+            
+            // Use the appropriate endpoint based on whether we're creating a raffle or just an item
+            const endpoint = hasRaffleFields ? '/api/raffles/create' : '/api/items';
+            
+            const res = await fetch(`${API_URL}${endpoint}`, {
                 method: 'POST',
                 headers: token ? { Authorization: `Bearer ${token}` } : {},
                 body: formData,
@@ -108,6 +115,9 @@ export function useCreateItem() {
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: itemKeys.all });
+            // Also invalidate raffles queries if we created a raffle
+            queryClient.invalidateQueries({ queryKey: ['raffles'] });
+
         },
     });
 }

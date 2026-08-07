@@ -19,6 +19,7 @@ import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { convertNairaToPoints } from '@/lib/constants';
+import RafflePointsIcon from '@/components/ui/RafflePointsIcon';
 
 type RaffleStatus = 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
 
@@ -120,7 +121,7 @@ export default function AdminRafflesPage() {
   const handleStartDraw = async () => {
     if (!drawRaffleId) return;
     try {
-      const res = await api.post(`/api/raffles/${drawRaffleId}/draw`);
+      const res = await api.post(`/api/raffles/${drawRaffleId}/start`);
       toast.success(res.message || 'Winner drawn successfully!');
       refetch();
     } catch (err: any) {
@@ -462,7 +463,10 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
     fd.append('image', imageFile);
 
     try {
-      await api.post('/api/raffles/create', fd);
+      const result = await api.post('/api/raffles/create', fd);
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to create raffle.');
+      }
       toast.success('Raffle and item created successfully!');
       onSuccess();
     } catch (err: any) {
@@ -587,8 +591,8 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
                     required
                     disabled={isSubmitting}
                   />
-                  {pointsValue > 0 && (
-                    <p className="text-xs text-yellow-600 mt-1">⭐ ≈ {pointsValue.toLocaleString()} pts</p>
+                    {pointsValue > 0 && (
+                    <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1"><RafflePointsIcon size={12} className="text-yellow-500" /> ≈ {pointsValue.toLocaleString()} pts</p>
                   )}
                 </div>
                 <div>
@@ -628,8 +632,8 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
                   disabled={isSubmitting}
                 />
                 {ticketPointsValue > 0 && (
-                  <p className="text-xs text-yellow-600 mt-1">
-                    ⭐ ≈ {ticketPointsValue.toLocaleString()} pts per ticket
+                    <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1">
+                     <RafflePointsIcon size={12} className="text-yellow-500" /> ≈ {ticketPointsValue.toLocaleString()} pts per ticket
                   </p>
                 )}
               </div>

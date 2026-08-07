@@ -35,6 +35,21 @@ export async function uploadToCloudinary(
                 if (!result) {
                     return reject(new Error('No result from Cloudinary'));
                 }
+                
+                // Debug logging
+                console.log('[Cloudinary] Upload result:', {
+                    secure_url: result.secure_url,
+                    url: result.url,
+                    public_id: result.public_id,
+                    version: result.version,
+                });
+                
+                // Use secure_url which should always be HTTPS
+                if (!result.secure_url) {
+                    console.error('[Cloudinary] No secure_url in response:', result);
+                    return reject(new Error('Cloudinary did not return a secure URL'));
+                }
+                
                 resolve(result.secure_url);
             }
         );

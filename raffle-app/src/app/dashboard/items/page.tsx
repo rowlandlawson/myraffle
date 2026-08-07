@@ -2,9 +2,11 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Search, ShoppingBag, Star, Lock } from 'lucide-react';
+import { Search, ShoppingBag, Lock } from 'lucide-react';
+import RafflePointsIcon from '@/components/ui/RafflePointsIcon';
 import { useRaffles } from '@/lib/hooks/useRaffles';
 import { convertNairaToPoints, CASH_PAYMENT_ENABLED } from '@/lib/constants';
+import { resolveImageUrl } from '@/lib/imageUrl';
 
 export default function DashboardItemsPage() {
     const [search, setSearch] = useState('');
@@ -79,9 +81,7 @@ export default function DashboardItemsPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {filteredRaffles.map((raffle) => {
                         const progress = Math.min(100, Math.round((raffle.ticketsSold / raffle.ticketsTotal) * 100));
-                        const imageUrl = raffle.item.imageUrl?.startsWith('/uploads')
-                            ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${raffle.item.imageUrl}`
-                            : raffle.item.imageUrl;
+                        const imageUrl = resolveImageUrl(raffle.item.imageUrl);
                         const pointsValue = convertNairaToPoints(raffle.item.value);
                         const ticketPointsPrice = convertNairaToPoints(raffle.ticketPrice);
                         const daysLeft = Math.max(0, Math.ceil((new Date(raffle.raffleDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)));
@@ -115,7 +115,7 @@ export default function DashboardItemsPage() {
                                     <div className="flex items-center justify-between text-xs">
                                         <span className="text-gray-500">Value: ₦{raffle.item.value.toLocaleString()}</span>
                                         <span className="font-semibold text-yellow-600 flex items-center gap-1">
-                                            <Star size={12} /> {pointsValue.toLocaleString()} pts
+                                            <RafflePointsIcon size={12} /> {pointsValue.toLocaleString()} pts
                                         </span>
                                     </div>
 

@@ -996,7 +996,7 @@ export const confirm2FA = async (req: Request, res: Response) => {
                 res.status(400).json({ success: false, message: 'TOTP secret not found.' });
                 return;
             }
-            isValid = verifyTOTPToken(code, user.twoFactorSecret);
+            isValid = await verifyTOTPToken(code, user.twoFactorSecret);
         } else {
             if (!user.emailVerificationCode || !user.emailCodeExpiry) {
                 res.status(400).json({ success: false, message: 'No OTP code found.' });
@@ -1064,7 +1064,7 @@ export const verify2FA = async (req: Request, res: Response) => {
                 res.status(400).json({ success: false, message: 'TOTP not configured.' });
                 return;
             }
-            isValid = verifyTOTPToken(code, user.twoFactorSecret);
+            isValid = await verifyTOTPToken(code, user.twoFactorSecret);
         } else if (user.twoFactorMethod === 'EMAIL') {
             if (!user.emailVerificationCode || !user.emailCodeExpiry) {
                 res.status(400).json({ success: false, message: 'No OTP code found.' });

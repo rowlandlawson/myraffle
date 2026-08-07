@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   User,
   Bell,
@@ -17,14 +17,24 @@ import {
 import { useAuthStore } from '@/lib/authStore';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
+import { useSearchParams } from 'next/navigation';
 
 export default function SettingsPage() {
   const { user, isLoading, hydrate } = useAuthStore();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<
     'profile' | 'notifications' | 'security'
   >('profile');
   const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+
+  // Read ?tab= query param on mount to auto-select tab
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab === 'security' || tab === 'notifications' || tab === 'profile') {
+      setActiveTab(tab);
+    }
+  }, [searchParams]);
 
   // Set default profile from user store
   const [profile, setProfile] = useState({

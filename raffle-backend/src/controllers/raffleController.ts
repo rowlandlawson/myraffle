@@ -12,7 +12,15 @@ export const getAllRaffles = async (req: Request, res: Response) => {
         const status = req.query.status as string | undefined;
 
         const where: any = {};
-        if (status) where.status = status;
+        if (status) {
+            // When requesting ACTIVE raffles, also include SCHEDULED ones
+            // so newly uploaded items show up on the homepage
+            if (status === 'ACTIVE') {
+                where.status = { in: ['ACTIVE', 'SCHEDULED'] };
+            } else {
+                where.status = status;
+            }
+        }
 
         const [raffles, total] = await Promise.all([
             prisma.raffle.findMany({
@@ -348,12 +356,36 @@ export const createRaffleWithItem = async (req: Request, res: Response) => {
         }
 
         let imageUrl: string;
-        try {
-            imageUrl = await uploadToCloudinary(req.file.buffer, 'raffle-items');
-        } catch (uploadErr) {
-            console.error('[Raffles] Cloudinary upload error:', uploadErr);
-            res.status(500).json({ success: false, message: 'Image upload failed.' });
-            return;
+
+        // Try Cloudinary first; fall back to local /uploads if not configured
+        const hasCloudinary = process.env.CLOUDINARY_CLOUD_NAME &&
+            process.env.CLOUDINARY_API_KEY &&
+            process.env.CLOUDINARY_API_SECRET;
+
+        if (hasCloudinary) {
+            try {
+                imageUrl = await uploadToCloudinary(req.file.buffer, 'raffle-items');
+            } catch (uploadErr) {
+                console.error('[Raffles] Cloudinary upload error:', uploadErr);
+                res.status(500).json({ success: false, message: 'Image upload failed.' });
+                return;
+            }
+        } else {
+            // Local fallback — save to /uploads/items/
+            const fs = await import('fs/promises');
+            const path = await import('path');
+            const crypto = await import('crypto');
+
+            const uploadsDir = path.join(process.cwd(), 'uploads', 'items');
+            await fs.mkdir(uploadsDir, { recursive: true });
+
+            const ext = req.file.originalname.split('.').pop() || 'jpg';
+            const filename = `${crypto.randomUUID()}.${ext}`;
+            const filepath = path.join(uploadsDir, filename);
+
+            await fs.writeFile(filepath, req.file.buffer);
+            imageUrl = `/uploads/items/${filename}`;
+            console.log('[Raffles] Saved item image locally:', imageUrl);
         }
 
         const result = await prisma.$transaction(async (tx) => {
@@ -374,7 +406,7 @@ export const createRaffleWithItem = async (req: Request, res: Response) => {
                     ticketPrice: parseFloat(ticketPrice),
                     ticketsTotal: parseInt(totalTickets, 10),
                     raffleDate: new Date(raffleDate),
-                    status: 'SCHEDULED',
+                    status: 'ACTIVE',
                 },
                 include: {
                     item: true

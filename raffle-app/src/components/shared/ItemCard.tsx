@@ -1,3 +1,7 @@
+import RafflePointsIcon from '@/components/ui/RafflePointsIcon';
+import { resolveImageUrl } from '@/lib/imageUrl';
+import { convertNairaToPoints } from '@/lib/constants';
+
 interface ItemProps {
   item: {
     id: number;
@@ -16,11 +20,22 @@ export default function ItemCard({ item }: ItemProps) {
     (item.ticketsSold / item.ticketsTotal) * 100,
   );
 
+  const imageUrl = resolveImageUrl(item.image);
+  const pointsPrice = convertNairaToPoints(item.ticketPrice);
+
   return (
     <div className="bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden">
       {/* Item Image */}
-      <div className="bg-gradient-to-br from-gray-100 to-gray-200 h-40 flex items-center justify-center text-6xl">
-        {item.image}
+      <div className="bg-gradient-to-br from-gray-100 to-gray-200 h-40 overflow-hidden">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={item.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-6xl">📦</div>
+        )}
       </div>
 
       {/* Item Content */}
@@ -48,9 +63,10 @@ export default function ItemCard({ item }: ItemProps) {
         {/* Details */}
         <div className="flex justify-between items-center mb-4">
           <div>
-            <div className="text-sm text-gray-600">Price per ticket</div>
-            <div className="text-2xl font-bold text-gray-900">
-              ₦{item.ticketPrice.toLocaleString()}
+            <div className="text-sm text-gray-600">Points per ticket</div>
+            <div className="text-2xl font-bold text-gray-900 flex items-center gap-1.5">
+              <RafflePointsIcon size={20} className="text-amber-500" />
+              {pointsPrice.toLocaleString()}
             </div>
           </div>
           <div className="text-right">
@@ -61,8 +77,9 @@ export default function ItemCard({ item }: ItemProps) {
 
         {/* CTA Button */}
         {item.status === 'active' ? (
-          <button className="w-full py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-lg hover:shadow-lg hover:shadow-red-600/50 transition">
-            Buy Ticket
+          <button className="flex items-center justify-center gap-1.5 w-full py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-lg hover:shadow-lg hover:shadow-red-600/50 transition">
+            <RafflePointsIcon size={16} className="text-yellow-300" />
+            Get Ticket
           </button>
         ) : (
           <button

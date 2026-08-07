@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { uploadToCloudinary } from '../services/cloudinary';
+import { formatImageUrlForStorage } from '../utils/imageUrl';
 
 // GET /api/items — Public, paginated, filterable
 export const getAllItems = async (req: Request, res: Response) => {
@@ -111,6 +112,10 @@ export const createItem = async (req: Request, res: Response) => {
         let imageUrl: string;
         try {
             imageUrl = await uploadToCloudinary(req.file.buffer, 'raffle-items');
+            console.log('[Items] Cloudinary upload successful, URL:', imageUrl);
+            // Ensure URL is complete before storing
+            imageUrl = formatImageUrlForStorage(imageUrl);
+            console.log('[Items] Formatted URL for storage:', imageUrl);
         } catch (uploadErr) {
             console.error('[Items] Cloudinary upload error:', uploadErr);
             res.status(500).json({ success: false, message: 'Image upload failed.' });

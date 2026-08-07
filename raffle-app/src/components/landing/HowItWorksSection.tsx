@@ -12,8 +12,8 @@ export default function HowItWorksSection() {
     },
     {
       number: 3,
-      title: 'Buy Tickets',
-      description: 'Pick your favourite item and buy one ticket per raffle draw.',
+      title: 'Get Tickets',
+      description: 'Pick your favourite item and use your raffle points to get a ticket.',
     },
     {
       number: 4,

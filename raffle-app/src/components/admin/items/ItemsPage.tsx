@@ -92,20 +92,13 @@ export function AdminItemsPage() {
 
   const handleUploadSubmit = async (formData: any) => {
     try {
-      const fd = new FormData();
-      fd.append('name', formData.name);
-      fd.append('description', formData.description || formData.name);
-      fd.append('value', String(formData.value));
-      fd.append('category', formData.category);
-      if (formData.image) {
-        fd.append('image', formData.image);
-      }
-
-      await createItem.mutateAsync(fd);
+      // Use the formData directly as it now contains all required fields
+      // including ticketPrice, totalTickets, and raffleDate
+      await createItem.mutateAsync(formData);
       setShowUploadForm(false);
-      toast.success('Item created successfully!');
+      toast.success('Item and raffle created successfully!');
     } catch (err: any) {
-      toast.error(err.message || 'Failed to create item');
+      toast.error(err.message || 'Failed to create item and raffle');
     }
   };
 

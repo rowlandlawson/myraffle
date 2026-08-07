@@ -4,19 +4,25 @@ import { useState } from 'react';
 import {
   Settings,
   Globe,
-  CreditCard,
   Bell,
-  Users,
   Save,
   Shield,
+  Clock,
+  ExternalLink,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
+import { api } from '@/lib/api';
 
 export default function AdminSettingsPage() {
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<
-    'general' | 'payment' | 'notifications' | 'security'
+    'general' | 'notifications' | 'security'
   >('general');
   const [isSaving, setIsSaving] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [logsLoading, setLogsLoading] = useState(false);
 
   const [generalSettings, setGeneralSettings] = useState({
     siteName: 'RaffleHub',
@@ -26,15 +32,7 @@ export default function AdminSettingsPage() {
     maintenanceMode: false,
   });
 
-  const [paymentSettings, setPaymentSettings] = useState({
-    paystackPublicKey: 'pk_test_xxxxxxxxxxxxx',
-    paystackSecretKey: 'sk_test_xxxxxxxxxxxxx',
-    minDeposit: 100,
-    maxDeposit: 5000000,
-    minWithdrawal: 1000,
-    withdrawalFeePercent: 1,
-    commissionPercent: 10,
-  });
+
 
   const [notificationSettings, setNotificationSettings] = useState({
     emailNotifications: true,
@@ -54,7 +52,6 @@ export default function AdminSettingsPage() {
 
   const tabs = [
     { id: 'general', label: 'General', icon: Globe },
-    { id: 'payment', label: 'Payment', icon: CreditCard },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
   ];
@@ -204,149 +201,6 @@ export default function AdminSettingsPage() {
               </div>
             )}
 
-            {/* Payment Settings */}
-            {activeTab === 'payment' && (
-              <div className="space-y-6">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Payment Settings
-                </h2>
-
-                <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                  <p className="text-sm text-blue-800">
-                    <strong>Paystack Integration:</strong> Configure your
-                    Paystack API keys to enable payments.
-                  </p>
-                </div>
-
-                <div className="grid gap-6">
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Paystack Public Key
-                    </label>
-                    <input
-                      type="text"
-                      value={paymentSettings.paystackPublicKey}
-                      onChange={(e) =>
-                        setPaymentSettings({
-                          ...paymentSettings,
-                          paystackPublicKey: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600 font-mono text-sm"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Paystack Secret Key
-                    </label>
-                    <input
-                      type="password"
-                      value={paymentSettings.paystackSecretKey}
-                      onChange={(e) =>
-                        setPaymentSettings({
-                          ...paymentSettings,
-                          paystackSecretKey: e.target.value,
-                        })
-                      }
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600 font-mono text-sm"
-                    />
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-6">
-                    <h3 className="font-semibold text-gray-900 mb-4">
-                      Transaction Limits
-                    </h3>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Min Deposit (₦)
-                        </label>
-                        <input
-                          type="number"
-                          value={paymentSettings.minDeposit}
-                          onChange={(e) =>
-                            setPaymentSettings({
-                              ...paymentSettings,
-                              minDeposit: parseInt(e.target.value),
-                            })
-                          }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Max Deposit (₦)
-                        </label>
-                        <input
-                          type="number"
-                          value={paymentSettings.maxDeposit}
-                          onChange={(e) =>
-                            setPaymentSettings({
-                              ...paymentSettings,
-                              maxDeposit: parseInt(e.target.value),
-                            })
-                          }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Min Withdrawal (₦)
-                        </label>
-                        <input
-                          type="number"
-                          value={paymentSettings.minWithdrawal}
-                          onChange={(e) =>
-                            setPaymentSettings({
-                              ...paymentSettings,
-                              minWithdrawal: parseInt(e.target.value),
-                            })
-                          }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-semibold text-gray-700 mb-2">
-                          Withdrawal Fee (%)
-                        </label>
-                        <input
-                          type="number"
-                          value={paymentSettings.withdrawalFeePercent}
-                          onChange={(e) =>
-                            setPaymentSettings({
-                              ...paymentSettings,
-                              withdrawalFeePercent: parseFloat(e.target.value),
-                            })
-                          }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Platform Commission (%)
-                    </label>
-                    <input
-                      type="number"
-                      value={paymentSettings.commissionPercent}
-                      onChange={(e) =>
-                        setPaymentSettings({
-                          ...paymentSettings,
-                          commissionPercent: parseFloat(e.target.value),
-                        })
-                      }
-                      className="w-full md:w-1/2 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
-                    />
-                    <p className="text-xs text-gray-500 mt-1">
-                      Commission charged on each raffle ticket sold
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
 
             {/* Notification Settings */}
             {activeTab === 'notifications' && (
@@ -452,8 +306,12 @@ export default function AdminSettingsPage() {
                     <p className="text-sm text-gray-600 mb-4">
                       Require 2FA for all admin accounts
                     </p>
-                    <button className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition">
-                      Configure 2FA
+                    <button
+                      onClick={() => router.push('/dashboard/settings?tab=security')}
+                      className="flex items-center gap-2 px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition"
+                    >
+                      <ExternalLink size={16} />
+                      Configure 2FA in User Settings
                     </button>
                   </div>
 
@@ -464,9 +322,57 @@ export default function AdminSettingsPage() {
                     <p className="text-sm text-gray-600 mb-4">
                       View all admin login and action history
                     </p>
-                    <button className="px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition">
-                      View Logs
+                    <button
+                      onClick={async () => {
+                        setShowLogs(!showLogs);
+                        if (!showLogs && logs.length === 0) {
+                          setLogsLoading(true);
+                          try {
+                            const res = await api.get<{ transactions: any[]; pagination: any }>('/api/admin/transactions?limit=10');
+                            if (!res.success) {
+                              throw new Error(res.message || 'Failed to load logs');
+                            }
+                            setLogs(res.data?.transactions || []);
+                          } catch (err: any) {
+                            toast.error(err.message || 'Failed to load logs.');
+                          } finally {
+                            setLogsLoading(false);
+                          }
+                        }
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg hover:bg-gray-200 transition"
+                    >
+                      <Clock size={16} />
+                      {showLogs ? 'Hide Logs' : 'View Logs'}
                     </button>
+                    {showLogs && (
+                      <div className="mt-4 border border-gray-200 rounded-lg overflow-hidden">
+                        {logsLoading ? (
+                          <div className="p-6 text-center">
+                            <div className="animate-spin w-6 h-6 border-3 border-red-600 border-t-transparent rounded-full mx-auto mb-2" />
+                            <p className="text-sm text-gray-500">Loading logs…</p>
+                          </div>
+                        ) : logs.length > 0 ? (
+                          <div className="divide-y divide-gray-100 max-h-64 overflow-y-auto">
+                            {logs.map((log: any) => (
+                              <div key={log.id} className="flex items-center justify-between px-4 py-3 hover:bg-gray-50 text-sm">
+                                <div>
+                                  <p className="font-medium text-gray-900">{log.description || log.type}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {log.user?.name || 'System'} · {new Date(log.createdAt).toLocaleString()}
+                                  </p>
+                                </div>
+                                <span className={`px-2 py-0.5 text-xs font-bold rounded-full ${log.status === 'COMPLETED' ? 'bg-green-100 text-green-700' : log.status === 'FAILED' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                                  {log.status}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className="p-4 text-center text-gray-500 text-sm">No logs found.</p>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="p-4 border border-gray-200 rounded-lg">

@@ -7,6 +7,15 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
       {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '5000',
+      },
+      {
+        protocol: 'https',
+        hostname: 'res.cloudinary.com',
+      },
+      {
         protocol: 'https',
         hostname: 'cdn.jsdelivr.net',
       },

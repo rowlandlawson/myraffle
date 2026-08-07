@@ -2,11 +2,13 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { DollarSign, Star, Ticket, ArrowRight, ShoppingBag, History } from 'lucide-react';
+import { DollarSign, Ticket, ArrowRight, ShoppingBag, History } from 'lucide-react';
+import RafflePointsIcon from '@/components/ui/RafflePointsIcon';
 import { useAuthStore } from '@/lib/authStore';
 import toast from 'react-hot-toast';
 import { useWalletTransactions, useWalletBalance } from '@/lib/hooks/useWallet';
 import { useTicketHistory } from '@/lib/hooks/useTickets';
+import { resolveImageUrl } from '@/lib/imageUrl';
 import { useRaffles } from '@/lib/hooks/useRaffles';
 import { useTasks, useCompletedTasks, useCompleteTask } from '@/lib/hooks/useTasks';
 
@@ -121,9 +123,7 @@ export default function DashboardHome() {
       const now = new Date();
       const raffleEnd = new Date(t.raffle.raffleDate);
       const daysLeft = Math.max(0, Math.ceil((raffleEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
-      const imageUrl = t.raffle.item.imageUrl?.startsWith('/uploads')
-        ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${t.raffle.item.imageUrl}`
-        : t.raffle.item.imageUrl || '📦';
+      const imageUrl = resolveImageUrl(t.raffle.item.imageUrl) || '📦';
 
       return {
         id: t.id as any,
@@ -162,9 +162,7 @@ export default function DashboardHome() {
   // Map available items
   const availableItems = activeRaffles.map(r => {
     const progress = Math.min(100, Math.round((r.ticketsSold / r.ticketsTotal) * 100));
-    const imageUrl = r.item.imageUrl?.startsWith('/uploads')
-      ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${r.item.imageUrl}`
-      : r.item.imageUrl || '📦';
+    const imageUrl = resolveImageUrl(r.item.imageUrl) || '📦';
 
     return {
       id: r.id as any,
@@ -187,7 +185,7 @@ export default function DashboardHome() {
       case 'purchase':
         return <ShoppingBag size={18} className="text-blue-600" />;
       case 'reward':
-        return <Star size={18} className="text-yellow-500" />;
+        return <RafflePointsIcon size={18} className="text-amber-500" />;
       default:
         return <History size={18} className="text-gray-500" />;
     }
@@ -263,8 +261,8 @@ export default function DashboardHome() {
               </div>
               <p className="text-xs text-gray-500 mt-2">1,000 points = ₦100 value</p>
             </div>
-            <div className="w-10 h-10 bg-yellow-50 rounded-full flex items-center justify-center">
-              <Star size={20} className="text-yellow-500" />
+            <div className="w-10 h-10 bg-amber-50 rounded-full flex items-center justify-center">
+              <RafflePointsIcon size={20} className="text-amber-500" />
             </div>
           </div>
           <div className="mt-4">
@@ -354,7 +352,7 @@ export default function DashboardHome() {
               ))
             ) : (
               <div className="text-center py-8 text-gray-500">
-                No active tickets. Buy a raffle ticket to get started!
+                No active tickets. Use your raffle points to get a ticket and start winning!
               </div>
             )}
           </div>
@@ -443,7 +441,7 @@ export default function DashboardHome() {
                     <div className="text-right">
                       <p className={`font-semibold ${tx.amount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {tx.rawType === 'TASK_REWARD' ? (
-                          <>{tx.amount >= 0 ? '+' : ''}{Math.abs(tx.amount).toLocaleString()} <span className="text-xs">⭐ pts</span></>
+                          <>{tx.amount >= 0 ? '+' : ''}{Math.abs(tx.amount).toLocaleString()} <span className="text-xs inline-flex items-center gap-0.5"><RafflePointsIcon size={10} /> pts</span></>
                         ) : (
                           <>{tx.amount >= 0 ? '+' : ''}₦{Math.abs(tx.amount).toLocaleString()}</>
                         )}
@@ -463,7 +461,7 @@ export default function DashboardHome() {
       {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-4 right-4 bg-green-600 text-white px-6 py-3 rounded-xl shadow-lg font-medium animate-in slide-in-from-bottom-5 fade-in duration-300 z-50 flex items-center gap-2">
-          <Star size={18} className="text-yellow-300" />
+          <RafflePointsIcon size={18} className="text-yellow-300" />
           {toastMessage}
         </div>
       )}

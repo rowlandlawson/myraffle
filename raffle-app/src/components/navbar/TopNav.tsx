@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import Image from 'next/image';
+import { Bell, User } from 'lucide-react';
 import { useAuthStore } from '@/lib/authStore';
 
 export default function TopNav() {
@@ -16,8 +17,8 @@ export default function TopNav() {
 
   return (
     <nav className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex justify-between items-center h-14 sm:h-16">
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <Image
@@ -25,48 +26,42 @@ export default function TopNav() {
               alt="Logo"
               width={180}
               height={60}
-              className="h-auto w-32 sm:w-40 object-contain"
+              className="h-auto w-28 sm:w-40 object-contain"
               priority
             />
           </Link>
 
-          {/* Auth Links */}
-          <div className="flex items-center gap-3">
+          {/* Right Icons */}
+          <div className="flex items-center gap-2">
+            {/* Notification Bell */}
+            <button className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center hover:bg-gray-100 transition relative">
+              <Bell size={20} className="text-gray-600" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+            </button>
+
+            {/* Profile / Auth */}
             {!isAuthenticated ? (
-              <>
-                <Link
-                  href="/login"
-                  className="text-gray-600 hover:text-red-600 font-semibold px-3 py-2 text-sm transition-colors"
-                >
-                  Log In
-                </Link>
-                <Link
-                  href="/register"
-                  className="bg-red-600 text-white px-5 py-2 text-sm rounded-full font-bold hover:bg-red-700 transition-all shadow-md shadow-red-600/20 hover:shadow-lg active:scale-95"
-                >
-                  Sign Up
-                </Link>
-              </>
+              <Link
+                href="/login"
+                className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center hover:bg-red-100 transition"
+              >
+                <User size={20} className="text-red-600" />
+              </Link>
             ) : (
               <div className="relative">
                 <button
                   onClick={() => setIsOpen(!isOpen)}
-                  className="flex items-center gap-2 text-gray-700 hover:text-red-600 px-2 py-1.5 rounded-xl transition-colors"
+                  className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-red-600 to-red-500 text-white font-bold text-sm ring-2 ring-red-100 hover:ring-red-200 transition"
                 >
                   {user?.profileImage ? (
                     <img
                       src={user.profileImage}
                       alt={user.name}
-                      className="w-9 h-9 rounded-full object-cover ring-2 ring-red-100"
+                      className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-600 to-red-500 text-white flex items-center justify-center font-bold text-sm ring-2 ring-red-100">
-                      {user?.name?.charAt(0) || 'U'}
-                    </div>
+                    user?.name?.charAt(0) || 'U'
                   )}
-                  <span className="font-semibold text-sm hidden sm:block">
-                    {user?.name?.split(' ')[0] || 'User'}
-                  </span>
                 </button>
                 {isOpen && (
                   <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl py-1.5 z-50">
@@ -77,10 +72,10 @@ export default function TopNav() {
                       Dashboard
                     </Link>
                     <Link
-                      href="/account"
+                      href="/dashboard/settings"
                       className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
                     >
-                      Account
+                      Settings
                     </Link>
                     <hr className="my-1 border-gray-100" />
                     <button
@@ -99,4 +94,3 @@ export default function TopNav() {
     </nav>
   );
 }
-

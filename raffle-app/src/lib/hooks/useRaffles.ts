@@ -68,6 +68,11 @@ export function useRaffles(params?: {
             const res = await api.get<{ raffles: ApiRaffle[]; pagination: Pagination }>(
                 `/api/raffles${qs ? `?${qs}` : ''}`,
             );
+
+            if (!res.success) {
+                throw new Error(res.message || 'Failed to load raffles');
+            }
+
             return {
                 raffles: res.data?.raffles ?? [],
                 pagination: res.data?.pagination ?? null,

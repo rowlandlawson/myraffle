@@ -12,6 +12,7 @@ import { Item, Category, FilterState } from '@/types/publicItems';
 import { useItems } from '@/lib/hooks/useItems';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/authStore';
+import { resolveImageUrl } from '@/lib/imageUrl';
 import toast from 'react-hot-toast';
 
 // Categories data - exported for reuse
@@ -27,7 +28,7 @@ export const filterAndSortItems = (
   items: Item[],
   filters: FilterState,
 ): Item[] => {
-  let result = items.filter((item) => {
+  const result = items.filter((item) => {
     const categoryMatch =
       filters.category === 'all' || item.category === filters.category;
     const searchMatch = item.name
@@ -100,15 +101,15 @@ export function PublicItemsPage() {
       const activeRaffle = item.raffles[0]; // First active raffle
       const ticketsSold = activeRaffle?.ticketsSold ?? 0;
       const ticketsTotal = activeRaffle?.ticketsTotal ?? 0;
+      const imageUrl = resolveImageUrl(item.imageUrl) || '\u{1F4E6}';
+
       return {
         id: index + 1, // numeric id for sorting compatibility
         _apiId: item.id, // preserve real id
         _raffleId: activeRaffle?.id ?? null,
         name: item.name,
         category: item.category,
-        image: item.imageUrl?.startsWith('/uploads')
-          ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${item.imageUrl}`
-          : item.imageUrl || '📦',
+        image: imageUrl,
         price: activeRaffle?.ticketPrice ?? 0,
         ticketsSold,
         ticketsTotal,
@@ -149,8 +150,10 @@ export function PublicItemsPage() {
 
     setBuyingItemId(itemId);
     try {
-      await api.post(`/api/tickets/${item._raffleId}/buy`, { paymentMethod: 'wallet' });
-      toast.success('Ticket purchased successfully! 🎉');
+      await api.post(`/api/tickets/${item._raffleId}/buy`, {
+        paymentMethod: 'wallet',
+      });
+      toast.success('Ticket purchased successfully!');
       setSelectedItem(null);
     } catch (err: any) {
       toast.error(err.message || 'Failed to buy ticket');
@@ -196,7 +199,11 @@ export function PublicItemsPage() {
               </div>
             ) : error ? (
               <div className="text-center py-16">
-                <p className="text-red-600">{error instanceof Error ? error.message : 'Failed to load items'}</p>
+                <p className="text-red-600">
+                  {error instanceof Error
+                    ? error.message
+                    : 'Failed to load items'}
+                </p>
               </div>
             ) : (
               <>

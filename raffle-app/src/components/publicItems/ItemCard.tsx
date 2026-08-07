@@ -2,6 +2,9 @@
 
 import { ChevronRight } from 'lucide-react';
 import { Item } from '@/types/publicItems';
+import { resolveImageUrl } from '@/lib/imageUrl';
+import { convertNairaToPoints } from '@/lib/constants';
+import RafflePointsIcon from '@/components/ui/RafflePointsIcon';
 
 interface ItemCardProps {
   item: Item;
@@ -9,11 +12,22 @@ interface ItemCardProps {
 }
 
 export default function ItemCard({ item, onViewDetails }: ItemCardProps) {
+  const imageUrl = resolveImageUrl(item.image);
+  const pointsPrice = convertNairaToPoints(item.price);
+
   return (
     <div className="bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden group">
       {/* Image */}
-      <div className="bg-gradient-to-br from-gray-100 to-gray-200 h-40 flex items-center justify-center text-6xl group-hover:scale-110 transition">
-        {item.image}
+      <div className="bg-gradient-to-br from-gray-100 to-gray-200 h-40 overflow-hidden">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={item.name}
+            className="w-full h-full object-cover group-hover:scale-110 transition"
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-6xl">📦</div>
+        )}
       </div>
 
       {/* Content */}
@@ -46,9 +60,10 @@ export default function ItemCard({ item, onViewDetails }: ItemCardProps) {
         {/* Info */}
         <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
           <div>
-            <p className="text-xs text-gray-600">Price per ticket</p>
-            <p className="text-xl font-bold text-gray-900">
-              ₦{item.price.toLocaleString()}
+            <p className="text-xs text-gray-600">Points per ticket</p>
+            <p className="text-xl font-bold text-gray-900 flex items-center gap-1">
+              <RafflePointsIcon size={18} className="text-amber-500" />
+              {pointsPrice.toLocaleString()}
             </p>
           </div>
           <div className="text-right">

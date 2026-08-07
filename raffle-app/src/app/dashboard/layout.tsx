@@ -9,7 +9,6 @@ import {
   Home,
   Wallet,
   Ticket,
-  Star,
   Settings,
   LogOut,
   Menu,
@@ -20,13 +19,14 @@ import {
   Lock,
   Trophy,
 } from 'lucide-react';
+import RafflePointsIcon from '@/components/ui/RafflePointsIcon';
 
 const USER_MENU = [
   { label: 'Dashboard', href: '/dashboard', icon: Home },
   { label: 'Items', href: '/dashboard/items', icon: ShoppingBag },
   { label: 'Wallet', href: '#', icon: Wallet, locked: true },
   { label: 'My Tickets', href: '/dashboard/tickets', icon: Ticket },
-  { label: 'Earnings', href: '/dashboard/earnings', icon: Star },
+  { label: 'Earnings', href: '/dashboard/earnings', icon: RafflePointsIcon },
   { label: 'My Wins', href: '/dashboard/wins', icon: Trophy },
   { label: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
@@ -44,6 +44,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       router.push('/login');
     }
   }, [isLoading, isAuthenticated, router]);
+
+  // Visitor tracking is now handled globally by VisitorTracker component
+
 
   const handleLogout = async () => {
     await logout();
@@ -63,18 +66,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans text-slate-900">
       {/* Mobile Top Header */}
-      <div className="md:hidden bg-white border-b border-slate-200 flex items-center justify-between p-4 fixed top-0 left-0 right-0 z-50 shadow-sm">
+      <div className="md:hidden bg-white border-b border-slate-200 flex items-center justify-between px-3 py-1 fixed top-0 left-0 right-0 z-50 shadow-sm h-10">
         <div className="flex items-center gap-3">
           <Image
             src="/images/logo.png"
             alt="RaffleHub"
-            width={120}
-            height={32}
+            width={90}
+            height={24}
             className="object-contain"
           />
         </div>
-        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-1.5 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+        <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="p-1 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
+          {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
         </button>
       </div>
 
@@ -228,7 +231,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </header>
 
         {/* Page Content */}
-        <div className="pt-[64px] md:pt-0 p-4 md:p-8 max-w-[1600px] mx-auto animate-in fade-in duration-500 relative z-10 pb-20 md:pb-8">
+        <div className="pt-14 md:pt-0 p-4 md:p-8 max-w-[1600px] mx-auto animate-in fade-in duration-500 relative z-10 pb-20 md:pb-8">
           {children}
         </div>
       </main>

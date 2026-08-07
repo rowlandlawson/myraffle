@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/Providers';
 import { Toaster } from 'react-hot-toast';
+import VisitorTracker from '@/components/VisitorTracker';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -24,7 +25,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         <Toaster position="top-center" />
-        <Providers>{children}</Providers>
+        <Providers>
+          <VisitorTracker />
+          {children}
+        </Providers>
       </body>
     </html>
   );

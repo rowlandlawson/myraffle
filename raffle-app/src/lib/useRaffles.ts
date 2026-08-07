@@ -60,11 +60,12 @@ export function useRaffles(params?: {
             if (params?.status && params.status !== 'all') query.set('status', params.status);
 
             const qs = query.toString();
-            const res = await api.get<{ raffles: ApiRaffle[]; pagination: Pagination }>(`/api/raffles${qs ? `?${qs}` : ''}`);
-            setRaffles(res.data?.raffles ?? []);
-            setPagination(res.data?.pagination ?? null);
+            const res = await api.get<{ success: boolean; data: { raffles: ApiRaffle[]; pagination: Pagination } }>(`/api/raffles${qs ? `?${qs}` : ''}`);
+            setRaffles(res.data?.data?.raffles ?? []);
+            setPagination(res.data?.data?.pagination ?? null);
         } catch (err: any) {
             setError(err.message || 'Failed to load raffles');
+            console.error('Failed to load raffles:', err);
         } finally {
             setLoading(false);
         }
@@ -85,12 +86,30 @@ export function useRaffle(id: string | null) {
 
     useEffect(() => {
         if (!id) return;
-        setLoading(true);
+        // Defer setting loading to avoid synchronous setState inside effect (prevents cascading renders)
+        let cancelled = false;
+        const setLoadingDeferred = Promise.resolve().then(() => {
+            if (!cancelled) setLoading(true);
+        });
+
         api
             .get<ApiRaffle>(`/api/raffles/${id}`)
-            .then((res) => setRaffle(res.data ?? null))
-            .catch((err: any) => setError(err.message || 'Failed to load raffle'))
-            .finally(() => setLoading(false));
+            .then((res) => {
+                if (!cancelled) setRaffle(res.data ?? null);
+            })
+            .catch((err: any) => {
+                if (!cancelled) setError(err.message || 'Failed to load raffle');
+            })
+            .finally(() => {
+                // Ensure we wait for the deferred setLoading(true) to run before clearing loading
+                setLoadingDeferred.then(() => {
+                    if (!cancelled) setLoading(false);
+                });
+            });
+
+        return () => {
+            cancelled = true;
+        };
     }, [id]);
 
     return { raffle, loading, error };

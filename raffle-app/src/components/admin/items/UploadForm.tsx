@@ -122,13 +122,44 @@ export default function UploadForm({ onCancel, onSubmit }: UploadFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Build FormData including the image file
+    
+    // Validate required fields
+    if (!formData.name.trim()) {
+      alert('Item name is required');
+      return;
+    }
+    if (!formData.value) {
+      alert('Item value is required');
+      return;
+    }
+    if (!formData.ticketPrice) {
+      alert('Ticket price is required');
+      return;
+    }
+    if (!formData.totalTickets) {
+      alert('Total tickets is required');
+      return;
+    }
+    if (!formData.raffleDate) {
+      alert('Raffle date is required');
+      return;
+    }
+    if (!imageFile) {
+      alert('Item image is required');
+      return;
+    }
+    
+    // Build FormData including all fields for creating raffle with item
     const fd = new FormData();
     fd.append('name', formData.name);
-    fd.append('description', formData.description);
+    fd.append('description', formData.description || formData.name);
     fd.append('value', formData.value);
     fd.append('category', formData.category);
+    fd.append('ticketPrice', formData.ticketPrice);
+    fd.append('totalTickets', formData.totalTickets);
+    fd.append('raffleDate', formData.raffleDate);
     if (imageFile) fd.append('image', imageFile);
+    
     onSubmit(fd);
   };
 
