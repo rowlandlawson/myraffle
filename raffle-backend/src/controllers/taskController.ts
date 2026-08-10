@@ -188,6 +188,41 @@ export const completeTask = async (req: Request, res: Response) => {
             return;
         }
 
+        const { startedAt, socialHandle } = req.body;
+
+        // Stealth duration enforcement (25 seconds for social/ads)
+        if (task.type.startsWith('SOCIAL_') || task.type.startsWith('WATCH_AD_')) {
+            const requiredDurationMs = 20000; // 20 seconds minimum required engagement
+            if (!startedAt) {
+                res.status(400).json({
+                    success: false,
+                    message: 'Task verification failed. Please ensure you open the task and complete it before claiming.',
+                });
+                return;
+            }
+
+            const startTime = Number(startedAt);
+            const elapsed = Date.now() - startTime;
+
+            if (isNaN(startTime) || elapsed < requiredDurationMs) {
+                // Stealth response: neutral failure message without revealing return time
+                res.status(400).json({
+                    success: false,
+                    message: 'Task verification failed. Please make sure you completed the task requirement on social media and try again.',
+                });
+                return;
+            }
+        }
+
+        // Social Handle Requirement
+        if (task.type.startsWith('SOCIAL_') && (!socialHandle || !String(socialHandle).trim())) {
+            res.status(400).json({
+                success: false,
+                message: 'Please enter your social media handle (@username) to verify task completion.',
+            });
+            return;
+        }
+
         // Determine points to award (use task.points from DB, fallback to constants)
         const pointsToAward = task.points || TASK_POINTS[task.type] || 0;
 
@@ -260,8 +295,8 @@ export const completeTask = async (req: Request, res: Response) => {
             });
             const updatedUser = await tx.user.update({
                 where: { id: userId },
-                data: { rafflePoints: { increment: pointsToAward } },
-                select: { rafflePoints: true },
+                data: { walletBalance: { increment: pointsToAward } },
+                select: { walletBalance: true },
             });
 
             return { userTask, updatedUser };
@@ -279,16 +314,17 @@ export const completeTask = async (req: Request, res: Response) => {
             type: 'TASK_REWARD',
             amount: pointsToAward,
             status: 'COMPLETED',
-            description: `Earned ${pointsToAward} points for completing task: ${task.title}`,
+            description: `Earned ₦${pointsToAward} for completing task: ${task.title}`,
         });
 
         res.status(200).json({
             success: true,
-            message: `Task completed! You earned ${pointsToAward} raffle points.`,
+            message: `Task completed! You earned ₦${pointsToAward.toLocaleString()}.`,
             data: {
                 taskCompletion: result.userTask,
                 pointsEarned: pointsToAward,
-                totalPoints: result.updatedUser.rafflePoints,
+                walletBalance: result.updatedUser.walletBalance,
+                totalPoints: result.updatedUser.walletBalance,
             },
         });
     } catch (error) {

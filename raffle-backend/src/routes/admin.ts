@@ -14,7 +14,16 @@ import {
     getVisitorAnalytics,
     getAdminWins,
     updateDeliveryStatus,
+    convertPrizeToWallet,
 } from '../controllers/adminController';
+import {
+    getAdminBanners,
+    createBanner,
+    updateBanner,
+    deleteBanner,
+} from '../controllers/bannerController';
+import { updateSetting } from '../controllers/settingsController';
+import { upload } from '../middleware/upload';
 import { requireAuth, requireAdmin } from '../middleware/auth';
 
 const router = Router();
@@ -38,5 +47,14 @@ router.delete('/tasks/:id', requireAuth, requireAdmin, deleteTask);
 // Wins management
 router.get('/wins', requireAuth, requireAdmin, getAdminWins);
 router.put('/wins/:raffleId/delivery', requireAuth, requireAdmin, updateDeliveryStatus);
+
+// Banner management
+router.get('/banners', requireAuth, requireAdmin, getAdminBanners);
+router.post('/banners', requireAuth, requireAdmin, upload.single('image'), createBanner);
+router.put('/banners/:id', requireAuth, requireAdmin, upload.single('image'), updateBanner);
+router.delete('/banners/:id', requireAuth, requireAdmin, deleteBanner);
+
+// Settings management (e.g. Terms & Conditions)
+router.put('/settings/:key', requireAuth, requireAdmin, updateSetting);
 
 export default router;

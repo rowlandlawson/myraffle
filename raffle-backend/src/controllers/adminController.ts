@@ -758,7 +758,16 @@ export const getAdminWins = async (req: Request, res: Response) => {
                         select: { id: true, name: true, imageUrl: true, value: true, category: true },
                     },
                     winner: {
-                        select: { id: true, name: true, email: true, userNumber: true, phone: true },
+                        select: {
+                            id: true,
+                            name: true,
+                            email: true,
+                            userNumber: true,
+                            phone: true,
+                            address: true,
+                            city: true,
+                            state: true,
+                        } as any,
                     },
                 },
                 orderBy: { updatedAt: 'desc' },
@@ -781,13 +790,13 @@ export const getAdminWins = async (req: Request, res: Response) => {
     }
 };
 
-// PUT /api/admin/wins/:raffleId/delivery — Update delivery status
+// PUT /api/admin/wins/:raffleId/delivery — Update delivery status & courier info
 export const updateDeliveryStatus = async (req: Request, res: Response) => {
     try {
         const raffleId = req.params.raffleId as string;
-        const { deliveryStatus, deliveryNote } = req.body;
+        const { deliveryStatus, deliveryNote, courierName, trackingNumber } = req.body;
 
-        const validStatuses = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED'];
+        const validStatuses = ['PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CONVERTED_TO_WALLET'];
         if (!deliveryStatus || !validStatuses.includes(deliveryStatus)) {
             res.status(400).json({
                 success: false,
@@ -810,16 +819,19 @@ export const updateDeliveryStatus = async (req: Request, res: Response) => {
             return;
         }
 
+        const dataToUpdate: any = {
+            deliveryStatus,
+            deliveryUpdatedAt: new Date(),
+        };
+
+        if (deliveryNote !== undefined) dataToUpdate.deliveryNote = deliveryNote || null;
+
         const updated = await prisma.raffle.update({
             where: { id: raffleId },
-            data: {
-                deliveryStatus,
-                deliveryNote: deliveryNote || null,
-                deliveryUpdatedAt: new Date(),
-            },
+            data: dataToUpdate,
             include: {
-                item: { select: { name: true } },
-                winner: { select: { name: true, userNumber: true } },
+                item: { select: { name: true, value: true } },
+                winner: { select: { id: true, name: true, userNumber: true, walletBalance: true } },
             },
         });
 
@@ -833,5 +845,61 @@ export const updateDeliveryStatus = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('[Admin] Update delivery status error:', error);
         res.status(500).json({ success: false, message: 'Failed to update delivery status.' });
+    }
+};
+
+// POST /api/admin/wins/:raffleId/convert-to-wallet — Convert unclaimed prize to wallet credit
+export const convertPrizeToWallet = async (req: Request, res: Response) => {
+    try {
+        const raffleId = req.params.raffleId as string;
+        const { amount, note } = req.body;
+
+        const raffle = await prisma.raffle.findUnique({
+            where: { id: raffleId },
+            include: { item: true, winner: true },
+        });
+
+        if (!raffle || !raffle.winnerUserId || !raffle.winner) {
+            res.status(404).json({ success: false, message: 'Completed raffle or winner not found.' });
+            return;
+        }
+
+        const creditAmount = amount && Number(amount) > 0 ? Number(amount) : raffle.item.value;
+
+        // Credit user wallet and update raffle delivery status
+        const [updatedUser, updatedRaffle] = await prisma.$transaction([
+            prisma.user.update({
+                where: { id: raffle.winnerUserId },
+                data: { walletBalance: { increment: creditAmount } },
+            }),
+            prisma.raffle.update({
+                where: { id: raffleId },
+                data: {
+                    deliveryStatus: 'CONVERTED_TO_WALLET' as any,
+                    deliveryNote: note || `Converted item value (₦${creditAmount.toLocaleString()}) to non-withdrawable wallet credits.`,
+                    deliveryUpdatedAt: new Date(),
+                },
+            }),
+        ]);
+
+        await logTransaction({
+            userId: raffle.winnerUserId,
+            type: 'TASK_REWARD',
+            amount: creditAmount,
+            status: 'COMPLETED',
+            description: `Prize Credit: Converted ${raffle.item.name} into store credits`,
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully credited ₦${creditAmount.toLocaleString()} to winner's wallet.`,
+            data: {
+                winner: updatedUser,
+                raffle: updatedRaffle,
+            },
+        });
+    } catch (error) {
+        console.error('[Admin] Convert prize to wallet error:', error);
+        res.status(500).json({ success: false, message: 'Failed to convert prize to wallet credit.' });
     }
 };

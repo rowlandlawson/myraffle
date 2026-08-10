@@ -155,7 +155,7 @@ export const createRaffle = async (req: Request, res: Response) => {
                 itemId,
                 ticketPrice,
                 ticketsTotal,
-                raffleDate: new Date(raffleDate),
+                raffleDate: raffleDate ? new Date(raffleDate) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
                 status: 'SCHEDULED',
             },
             include: {
@@ -405,7 +405,7 @@ export const createRaffleWithItem = async (req: Request, res: Response) => {
                     itemId: item.id,
                     ticketPrice: parseFloat(ticketPrice),
                     ticketsTotal: parseInt(totalTickets, 10),
-                    raffleDate: new Date(raffleDate),
+                    raffleDate: raffleDate ? new Date(raffleDate) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
                     status: 'ACTIVE',
                 },
                 include: {

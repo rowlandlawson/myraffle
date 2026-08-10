@@ -5,6 +5,7 @@ import {
     handleWebhook,
     getPaymentHistory,
 } from '../controllers/paymentController';
+import { handleMonnifyWebhook } from '../controllers/monnifyController';
 import { requireAuth } from '../middleware/auth';
 import { validate, depositSchema, verifyPaymentSchema } from '../middleware/validation';
 
@@ -15,7 +16,10 @@ router.post('/initialize', requireAuth, validate(depositSchema), initializePayme
 router.post('/verify', requireAuth, validate(verifyPaymentSchema), verifyPayment);
 router.get('/history', requireAuth, getPaymentHistory);
 
-// Public route — Paystack webhook (validated via HMAC signature in controller)
+// Public route — Paystack webhook
 router.post('/webhook', handleWebhook);
+
+// Public route — Monnify webhook
+router.post('/monnify-webhook', handleMonnifyWebhook);
 
 export default router;

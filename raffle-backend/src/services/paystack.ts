@@ -29,6 +29,7 @@ interface VerifyPaymentData {
     customer: {
         email: string;
     };
+    metadata?: Record<string, unknown>;
 }
 
 interface TransferRecipientData {

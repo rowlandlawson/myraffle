@@ -2,7 +2,11 @@ import { Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { logTransaction } from '../utils/transactions';
 import { CONSTANTS } from '../config/constants';
+import { initializePayment as paystackInitialize } from '../services/paystack';
+import { initializeMonnifyPayment } from '../services/monnify';
+import { checkAndTriggerAutoDraw } from '../services/raffle';
 import crypto from 'crypto';
+
 
 // GET /api/tickets — Get user's tickets (paginated)
 export const getUserTickets = async (req: Request, res: Response) => {
@@ -115,7 +119,7 @@ export const getTicketById = async (req: Request, res: Response) => {
 // POST /api/tickets — Buy a ticket
 export const buyTicket = async (req: Request, res: Response) => {
     try {
-        const { raffleId, paymentMethod } = req.body;
+        const { raffleId, paymentMethod, useWallet } = req.body;
         const userId = req.user!.userId;
 
         // Get raffle details
@@ -160,10 +164,10 @@ export const buyTicket = async (req: Request, res: Response) => {
             return;
         }
 
-        // Check user has sufficient balance/points
+        // Check user
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            select: { walletBalance: true, rafflePoints: true },
+            select: { id: true, email: true, walletBalance: true },
         });
 
         if (!user) {
@@ -172,95 +176,124 @@ export const buyTicket = async (req: Request, res: Response) => {
         }
 
         const ticketPrice = raffle.ticketPrice;
+        const availableWallet = Math.max(0, user.walletBalance);
 
-        if (paymentMethod === 'wallet') {
-            if (user.walletBalance < ticketPrice) {
-                res.status(400).json({
-                    success: false,
-                    message: `Insufficient wallet balance. You need ₦${ticketPrice.toLocaleString()} but have ₦${user.walletBalance.toLocaleString()}.`,
-                });
-                return;
-            }
-        } else if (paymentMethod === 'points') {
-            // Convert price to points: ₦100 = 1,000 points
-            const pointsNeeded = ticketPrice * 10;
-            if (user.rafflePoints < pointsNeeded) {
-                res.status(400).json({
-                    success: false,
-                    message: `Insufficient raffle points. You need ${pointsNeeded.toLocaleString()} points but have ${user.rafflePoints.toLocaleString()}.`,
-                });
-                return;
-            }
-        } else {
-            res.status(400).json({
-                success: false,
-                message: 'Invalid payment method. Must be "wallet" or "points".',
-            });
-            return;
-        }
+        // Determine if wallet balance should be applied
+        const isWalletOnly = paymentMethod === 'wallet' && useWallet === false;
+        const isGatewayOnly = paymentMethod === 'paystack' || paymentMethod === 'monnify' || paymentMethod === 'gateway';
+        const applyWallet = useWallet !== false && !isGatewayOnly;
 
-        // Generate unique ticket number
-        const ticketNumber = `TKT-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+        const walletAmountToUse = applyWallet ? Math.min(availableWallet, ticketPrice) : 0;
+        const remainingAmountToPay = ticketPrice - walletAmountToUse;
 
-        // Execute purchase in a transaction
-        const [ticket] = await prisma.$transaction([
-            // Create the ticket
-            prisma.ticket.create({
-                data: {
-                    userId,
-                    raffleId,
-                    ticketNumber,
-                    status: 'ACTIVE',
-                },
-                include: {
-                    raffle: {
-                        include: {
-                            item: {
-                                select: {
-                                    id: true,
-                                    name: true,
-                                    imageUrl: true,
-                                    value: true,
+        // SCENARIO 1: Full Payment via Wallet (100% covered)
+        if (remainingAmountToPay <= 0) {
+            const ticketNumber = `TKT-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+
+            const [ticket] = await prisma.$transaction([
+                prisma.ticket.create({
+                    data: {
+                        userId,
+                        raffleId,
+                        ticketNumber,
+                        status: 'ACTIVE',
+                    },
+                    include: {
+                        raffle: {
+                            include: {
+                                item: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        imageUrl: true,
+                                        value: true,
+                                    },
                                 },
                             },
                         },
                     },
-                },
-            }),
+                }),
+                prisma.raffle.update({
+                    where: { id: raffleId },
+                    data: {
+                        ticketsSold: { increment: 1 },
+                        ...(raffle.status === 'SCHEDULED' ? { status: 'ACTIVE' } : {}),
+                    },
+                }),
+                prisma.user.update({
+                    where: { id: userId },
+                    data: { walletBalance: { decrement: ticketPrice } },
+                }),
+            ]);
 
-            // Increment tickets sold
-            prisma.raffle.update({
-                where: { id: raffleId },
-                data: {
-                    ticketsSold: { increment: 1 },
-                    // Auto-activate if still scheduled and first ticket
-                    ...(raffle.status === 'SCHEDULED' ? { status: 'ACTIVE' } : {}),
-                },
-            }),
+            await logTransaction({
+                userId,
+                type: 'TICKET_PURCHASE',
+                amount: ticketPrice,
+                status: 'COMPLETED',
+                description: `Ticket for ${raffle.item.name} (Wallet)`,
+            });
 
-            // Deduct from user balance or points
-            prisma.user.update({
+            // Check if sold out & auto-draw immediately
+            checkAndTriggerAutoDraw(raffleId).catch(err => {
+                console.error('[TicketController] Auto-draw check failed:', err);
+            });
+
+            res.status(201).json({
+                success: true,
+                message: 'Ticket purchased successfully!',
+                data: ticket,
+            });
+            return;
+        }
+
+        // SCENARIO 2: Insufficient Wallet for Wallet-Only Option
+        if (isWalletOnly) {
+            res.status(400).json({
+                success: false,
+                message: `Insufficient wallet balance. You need ₦${ticketPrice.toLocaleString()} but have ₦${availableWallet.toLocaleString()}. Use split payment to pay remaining ₦${remainingAmountToPay.toLocaleString()} online.`,
+            });
+            return;
+        }
+
+        // SCENARIO 3: Split Payment / Online Gateway Payment
+        const paymentData = await paystackInitialize(user.email, remainingAmountToPay, {
+            userId,
+            raffleId,
+            walletDeducted: walletAmountToUse,
+            remainingAmount: remainingAmountToPay,
+            type: 'ticket_purchase',
+        });
+
+        // If using partial wallet balance, deduct it now
+        if (walletAmountToUse > 0) {
+            await prisma.user.update({
                 where: { id: userId },
-                data:
-                    paymentMethod === 'wallet'
-                        ? { walletBalance: { decrement: ticketPrice } }
-                        : { rafflePoints: { decrement: ticketPrice * 10 } },
-            }),
-        ]);
+                data: { walletBalance: { decrement: walletAmountToUse } },
+            });
+        }
 
-        // Log the transaction
         await logTransaction({
             userId,
             type: 'TICKET_PURCHASE',
-            amount: ticketPrice,
-            status: 'COMPLETED',
-            description: `Ticket for ${raffle.item.name} (${paymentMethod})`,
+            amount: remainingAmountToPay,
+            status: 'PENDING',
+            reference: paymentData.reference,
+            description: walletAmountToUse > 0
+                ? `Ticket for ${raffle.item.name} (₦${walletAmountToUse.toLocaleString()} wallet + ₦${remainingAmountToPay.toLocaleString()} online)`
+                : `Ticket for ${raffle.item.name} (Online Gateway)`,
         });
 
-        res.status(201).json({
+        res.status(200).json({
             success: true,
-            message: 'Ticket purchased successfully!',
-            data: ticket,
+            isPendingPayment: true,
+            message: `Please complete payment of ₦${remainingAmountToPay.toLocaleString()} via online gateway.`,
+            data: {
+                authorizationUrl: paymentData.authorization_url,
+                reference: paymentData.reference,
+                walletDeducted: walletAmountToUse,
+                remainingAmount: remainingAmountToPay,
+            },
         });
     } catch (error) {
         console.error('[Tickets] Buy ticket error:', error);

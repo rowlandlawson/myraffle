@@ -459,7 +459,7 @@ async function handleFullVerification(user: any) {
         if (referrer) {
             await prisma.user.update({
                 where: { id: referrer.id },
-                data: { rafflePoints: { increment: 500 } },
+                data: { walletBalance: { increment: 500 } },
             });
 
             await logTransaction({
@@ -467,7 +467,7 @@ async function handleFullVerification(user: any) {
                 type: 'TASK_REWARD',
                 amount: 500,
                 status: 'COMPLETED',
-                description: `Referral bonus: ${user.name} (${user.userNumber}) completed verification.`,
+                description: `Referral bonus: ₦500 for ${user.name} (${user.userNumber}) completing verification.`,
             });
         }
     }

@@ -70,8 +70,8 @@ export const handleAdCompleted = async (req: Request, res: Response) => {
             }),
             prisma.user.update({
                 where: { id: userId },
-                data: { rafflePoints: { increment: pointsToAward } },
-                select: { rafflePoints: true },
+                data: { walletBalance: { increment: pointsToAward } },
+                select: { walletBalance: true },
             }),
         ]);
 
@@ -80,7 +80,7 @@ export const handleAdCompleted = async (req: Request, res: Response) => {
             type: 'TASK_REWARD',
             amount: pointsToAward,
             status: 'COMPLETED',
-            description: `Earned ${pointsToAward} points for ad task: ${task.title}`,
+            description: `Earned ₦${pointsToAward} for ad task: ${task.title}`,
         });
 
         console.log(`[Webhook] Ad completed: user=${userId}, task=${taskId}, points=${pointsToAward}`);

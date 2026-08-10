@@ -105,3 +105,28 @@ export const runRaffleDraw = async (raffleId: string) => {
         totalTickets: raffle.tickets.length,
     };
 };
+
+/**
+ * Check if all tickets for a raffle are sold out.
+ * If ticketsSold >= ticketsTotal, trigger the winner draw immediately.
+ */
+export const checkAndTriggerAutoDraw = async (raffleId: string) => {
+    try {
+        const raffle = await prisma.raffle.findUnique({
+            where: { id: raffleId },
+            select: { id: true, ticketsSold: true, ticketsTotal: true, status: true },
+        });
+
+        if (!raffle || raffle.status === 'COMPLETED' || raffle.status === 'CANCELLED') {
+            return;
+        }
+
+        if (raffle.ticketsSold >= raffle.ticketsTotal) {
+            console.log(`[AutoDraw] Raffle ${raffleId} is completely sold out (${raffle.ticketsSold}/${raffle.ticketsTotal}). Executing winner draw immediately!`);
+            const drawResult = await runRaffleDraw(raffleId);
+            console.log(`[AutoDraw] Winner selected for raffle ${raffleId}: User ${drawResult.winnerName} (${drawResult.winnerUserNumber})`);
+        }
+    } catch (error) {
+        console.error(`[AutoDraw] Error running automatic draw for raffle ${raffleId}:`, error);
+    }
+};

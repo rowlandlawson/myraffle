@@ -98,7 +98,7 @@ export const createRaffleSchema = z.object({
         .number({ message: 'Total tickets must be a number' })
         .int('Total tickets must be a whole number')
         .min(2, 'Minimum 2 tickets per raffle'),
-    raffleDate: z.string().min(1, 'Raffle date is required'),
+    raffleDate: z.string().optional(),
 });
 
 export const updateRaffleSchema = z.object({
@@ -111,7 +111,7 @@ export const updateRaffleSchema = z.object({
 // Ticket Validation Schemas
 export const buyTicketSchema = z.object({
     raffleId: z.string().min(1, 'Raffle ID is required'),
-    paymentMethod: z.enum(['wallet', 'points'], {
-        message: 'Payment method must be "wallet" or "points"',
-    }),
+    paymentMethod: z.enum(['wallet', 'points', 'paystack', 'monnify', 'gateway']).optional(),
+    useWallet: z.boolean().optional(),
 });
+

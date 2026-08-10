@@ -17,6 +17,8 @@ import raffleRoutes from './routes/raffles';
 import ticketRoutes from './routes/tickets';
 import taskRoutes from './routes/tasks';
 import webhookRoutes from './routes/webhooks';
+import bannerRoutes from './routes/banners';
+import settingsRoutes from './routes/settings';
 
 // Load env vars
 dotenv.config();
@@ -106,6 +108,24 @@ app.use('/api/raffles', raffleRoutes);
 app.use('/api/tickets', ticketRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/banners', bannerRoutes);
+app.use('/api/settings', settingsRoutes);
+
+// Real-Time SSE Endpoint for Live Ticket Counters
+app.get('/api/events/raffles', (req, res) => {
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache');
+    res.setHeader('Connection', 'keep-alive');
+    res.flushHeaders();
+
+    const interval = setInterval(() => {
+        res.write(`data: ${JSON.stringify({ type: 'PING', timestamp: Date.now() })}\n\n`);
+    }, 20000);
+
+    req.on('close', () => {
+        clearInterval(interval);
+    });
+});
 
 // Global Error Handler
 app.use(errorHandler);

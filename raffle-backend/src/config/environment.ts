@@ -35,4 +35,8 @@ export const env = {
     INFOBIP_API_KEY: process.env.INFOBIP_API_KEY,
     INFOBIP_BASE_URL: process.env.INFOBIP_BASE_URL,
     INFOBIP_SENDER: process.env.INFOBIP_SENDER,
+    MONNIFY_API_KEY: process.env.MONNIFY_API_KEY || 'MK_TEST_SAF7F9X2',
+    MONNIFY_SECRET_KEY: process.env.MONNIFY_SECRET_KEY || 'SECRET_KEY_HERE',
+    MONNIFY_CONTRACT_CODE: process.env.MONNIFY_CONTRACT_CODE || '1234567890',
+    MONNIFY_BASE_URL: process.env.MONNIFY_BASE_URL || 'https://sandbox.monnify.com',
 };
