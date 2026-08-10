@@ -96,7 +96,7 @@ export default function AdminRafflesPage() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
   // Map to display format
-  const raffles = apiRaffles.map((r) => ({
+  const raffles = apiRaffles.map((r: any) => ({
     id: r.id,
     itemName: r.item.name,
     image: r.item.imageUrl?.startsWith('/uploads')
