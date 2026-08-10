@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Settings,
   Globe,
@@ -9,6 +9,9 @@ import {
   Shield,
   Clock,
   ExternalLink,
+  Gift,
+  Coins,
+  Users,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
@@ -17,12 +20,39 @@ import { api } from '@/lib/api';
 export default function AdminSettingsPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
-    'general' | 'notifications' | 'security'
-  >('general');
+    'bonuses' | 'general' | 'notifications' | 'security'
+  >('bonuses');
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingBonuses, setIsLoadingBonuses] = useState(true);
   const [showLogs, setShowLogs] = useState(false);
   const [logs, setLogs] = useState<any[]>([]);
   const [logsLoading, setLogsLoading] = useState(false);
+
+  // Bonus Settings State
+  const [bonusSettings, setBonusSettings] = useState({
+    signupBonus: 1000,
+    referralBonus: 500,
+  });
+
+  useEffect(() => {
+    const fetchBonusSettings = async () => {
+      try {
+        setIsLoadingBonuses(true);
+        const res = await api.get<{ signupBonus: number; referralBonus: number }>('/api/admin/bonus-settings');
+        if (res.success && res.data) {
+          setBonusSettings({
+            signupBonus: res.data.signupBonus ?? 1000,
+            referralBonus: res.data.referralBonus ?? 500,
+          });
+        }
+      } catch (err) {
+        console.error('Failed to fetch bonus settings', err);
+      } finally {
+        setIsLoadingBonuses(false);
+      }
+    };
+    fetchBonusSettings();
+  }, []);
 
   const [generalSettings, setGeneralSettings] = useState({
     siteName: 'RaffleHub',
@@ -42,15 +72,28 @@ export default function AdminSettingsPage() {
     marketingEmails: false,
   });
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setIsSaving(true);
-    setTimeout(() => {
+    try {
+      if (activeTab === 'bonuses') {
+        const res = await api.put('/api/admin/bonus-settings', bonusSettings);
+        if (res.success) {
+          toast.success(res.message || 'Registration & Referral bonus settings saved!');
+        } else {
+          toast.error(res.message || 'Failed to save bonus settings');
+        }
+      } else {
+        toast.success('Settings saved successfully!');
+      }
+    } catch (err: any) {
+      toast.error(err.message || 'An error occurred while saving.');
+    } finally {
       setIsSaving(false);
-      toast.success('Settings saved successfully!');
-    }, 1500);
+    }
   };
 
   const tabs = [
+    { id: 'bonuses', label: 'Bonuses & Rewards', icon: Gift },
     { id: 'general', label: 'General', icon: Globe },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Shield },
@@ -91,6 +134,95 @@ export default function AdminSettingsPage() {
         {/* Content Area */}
         <div className="flex-1">
           <div className="bg-white rounded-xl shadow p-6">
+            {/* Bonus & Reward Settings */}
+            {activeTab === 'bonuses' && (
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+                    <Gift className="text-red-600" size={24} /> Registration & Referral Bonuses
+                  </h2>
+                  <p className="text-gray-500 text-sm mt-1">
+                    Set the Naira (₦) bonus amount credited to new users upon signup and users who invite friends.
+                  </p>
+                </div>
+
+                {isLoadingBonuses ? (
+                  <div className="py-8 text-center">
+                    <div className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">Loading bonus settings...</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-6 md:grid-cols-2">
+                    <div className="p-5 bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2.5 bg-emerald-600 text-white rounded-lg">
+                          <Coins size={20} />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-gray-900">New User Sign-up Bonus</h3>
+                          <p className="text-xs text-gray-600">Credited to wallet upon account creation</p>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">
+                          Bonus Amount (₦)
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3.5 top-3 text-gray-500 font-bold text-sm">₦</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="100"
+                            value={bonusSettings.signupBonus}
+                            onChange={(e) =>
+                              setBonusSettings({
+                                ...bonusSettings,
+                                signupBonus: Math.max(0, parseFloat(e.target.value) || 0),
+                              })
+                            }
+                            className="w-full pl-8 pr-4 py-2.5 bg-white border border-emerald-300 rounded-lg font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-5 bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-xl">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="p-2.5 bg-purple-600 text-white rounded-lg">
+                          <Users size={20} />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-gray-900">Referral Reward</h3>
+                          <p className="text-xs text-gray-600">Credited to referrer when a invited user joins</p>
+                        </div>
+                      </div>
+                      <div className="mt-4">
+                        <label className="block text-xs font-bold uppercase tracking-wider text-gray-600 mb-1">
+                          Reward Amount (₦)
+                        </label>
+                        <div className="relative">
+                          <span className="absolute left-3.5 top-3 text-gray-500 font-bold text-sm">₦</span>
+                          <input
+                            type="number"
+                            min="0"
+                            step="50"
+                            value={bonusSettings.referralBonus}
+                            onChange={(e) =>
+                              setBonusSettings({
+                                ...bonusSettings,
+                                referralBonus: Math.max(0, parseFloat(e.target.value) || 0),
+                              })
+                            }
+                            className="w-full pl-8 pr-4 py-2.5 bg-white border border-purple-300 rounded-lg font-bold text-gray-900 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* General Settings */}
             {activeTab === 'general' && (
               <div className="space-y-6">

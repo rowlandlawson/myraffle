@@ -4,7 +4,7 @@ const features = [
     {
         icon: Shield,
         title: '100% Secure & Fair',
-        description: 'All raffles are transparent and provably fair. Your money is safe with us.',
+        description: 'All raffles are provably fair, transparent, and regulated for your security.',
         color: 'red',
         bgFrom: 'from-red-50',
         borderColor: 'border-red-100',
@@ -12,8 +12,8 @@ const features = [
     },
     {
         icon: Zap,
-        title: 'Earn Raffle Points',
-        description: 'Complete tasks and watch ads to earn free raffle points. No spending needed.',
+        title: 'Earn Cash via Tasks',
+        description: 'Complete simple daily tasks to earn cash rewards credited straight to your wallet.',
         color: 'amber',
         bgFrom: 'from-amber-50',
         borderColor: 'border-amber-100',
@@ -21,8 +21,8 @@ const features = [
     },
     {
         icon: TrendingUp,
-        title: 'Best Odds',
-        description: 'Win amazing prizes with the best odds in the market. More chances, bigger prizes.',
+        title: 'Best Winning Odds',
+        description: 'Win high-value luxury prizes with guaranteed limited ticket entries.',
         color: 'emerald',
         bgFrom: 'from-emerald-50',
         borderColor: 'border-emerald-100',
@@ -36,10 +36,10 @@ export default function FeaturesSection() {
             <div className="max-w-7xl mx-auto">
                 <div className="text-center mb-10">
                     <h2 className="text-2xl sm:text-3xl font-extrabold text-gray-900 tracking-tight">
-                        Why Choose RaffleHub?
+                        Why Choose MyRaffle?
                     </h2>
                     <p className="text-sm text-gray-500 mt-2">
-                        Trusted by thousands of users nationwide
+                        Earn cash, buy tickets, and win luxury prizes
                     </p>
                 </div>
 

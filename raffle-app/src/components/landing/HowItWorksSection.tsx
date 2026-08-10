@@ -3,22 +3,22 @@ export default function HowItWorksSection() {
     {
       number: 1,
       title: 'Create Account',
-      description: 'Sign up in seconds with your email. Get a unique user ID.',
+      description: 'Sign up in seconds with your email and access active raffle draws.',
     },
     {
       number: 2,
-      title: 'Add Funds or Earn',
-      description: 'Deposit money or complete tasks to earn free raffle points.',
+      title: 'Complete Tasks & Earn',
+      description: 'Complete daily tasks to earn cash rewards credited directly into your wallet.',
     },
     {
       number: 3,
       title: 'Get Tickets',
-      description: 'Pick your favourite item and use your raffle points to get a ticket.',
+      description: 'Use your wallet balance to buy raffle tickets for your favourite items.',
     },
     {
       number: 4,
       title: 'Win & Receive',
-      description: "Win and we'll contact you. Your prize gets delivered straight to your door.",
+      description: "When tickets sell out, the draw takes place immediately and prizes get delivered.",
     },
   ];
 
@@ -30,7 +30,7 @@ export default function HowItWorksSection() {
             How It Works
           </h2>
           <p className="text-sm text-gray-500 mt-2">
-            Four simple steps to start winning
+            Four simple steps to start earning and winning
           </p>
         </div>
 

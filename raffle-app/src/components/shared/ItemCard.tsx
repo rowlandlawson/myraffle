@@ -63,10 +63,9 @@ export default function ItemCard({ item }: ItemProps) {
         {/* Details */}
         <div className="flex justify-between items-center mb-4">
           <div>
-            <div className="text-sm text-gray-600">Points per ticket</div>
+            <div className="text-sm text-gray-600">Ticket price</div>
             <div className="text-2xl font-bold text-gray-900 flex items-center gap-1.5">
-              <RafflePointsIcon size={20} className="text-amber-500" />
-              {pointsPrice.toLocaleString()}
+              ₦{item.ticketPrice.toLocaleString()}
             </div>
           </div>
           <div className="text-right">
@@ -78,8 +77,7 @@ export default function ItemCard({ item }: ItemProps) {
         {/* CTA Button */}
         {item.status === 'active' ? (
           <button className="flex items-center justify-center gap-1.5 w-full py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold rounded-lg hover:shadow-lg hover:shadow-red-600/50 transition">
-            <RafflePointsIcon size={16} className="text-yellow-300" />
-            Get Ticket
+            Get Ticket — ₦{item.ticketPrice.toLocaleString()}
           </button>
         ) : (
           <button

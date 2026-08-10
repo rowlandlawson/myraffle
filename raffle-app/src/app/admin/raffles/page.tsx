@@ -459,7 +459,7 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
     fd.append('category', formData.category);
     fd.append('ticketPrice', formData.ticketPrice);
     fd.append('totalTickets', formData.totalTickets);
-    fd.append('raffleDate', formData.raffleDate);
+    if (formData.raffleDate) fd.append('raffleDate', formData.raffleDate);
     fd.append('image', imageFile);
 
     try {
@@ -591,9 +591,6 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
                     required
                     disabled={isSubmitting}
                   />
-                    {pointsValue > 0 && (
-                    <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1"><RafflePointsIcon size={12} className="text-yellow-500" /> ≈ {pointsValue.toLocaleString()} pts</p>
-                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Category *</label>
@@ -631,11 +628,6 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
                   required
                   disabled={isSubmitting}
                 />
-                {ticketPointsValue > 0 && (
-                    <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1">
-                     <RafflePointsIcon size={12} className="text-yellow-500" /> ≈ {ticketPointsValue.toLocaleString()} pts per ticket
-                  </p>
-                )}
               </div>
 
               <div>
@@ -646,19 +638,6 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
                   value={formData.totalTickets}
                   onChange={handleChange}
                   placeholder="100"
-                  className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-red-500"
-                  required
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Draw Date *</label>
-                <input
-                  type="date"
-                  name="raffleDate"
-                  value={formData.raffleDate}
-                  onChange={handleChange}
                   className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-red-500"
                   required
                   disabled={isSubmitting}

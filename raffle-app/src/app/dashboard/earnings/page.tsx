@@ -16,8 +16,10 @@ import ReferralSection from '@/components/earnings/ReferralSection';
 import WatchAdModal from '@/components/earnings/WatchAdModal';
 import toast from 'react-hot-toast';
 import EarningsStatCard from '@/components/earnings/EarningsStatCard';
+import WalletTransactionRow from '@/components/wallet/WalletTransactionRow';
 import { useAuthStore } from '@/lib/authStore';
 import { useTasks, useCompletedTasks, useCompleteTask } from '@/lib/hooks/useTasks';
+import { useWalletTransactions } from '@/lib/hooks/useWallet';
 import type { StatsRange } from '@/lib/hooks/useTasks';
 
 export default function EarningsPage() {
@@ -25,6 +27,7 @@ export default function EarningsPage() {
   const { data: tasks = [], isLoading: tasksLoading } = useTasks();
   const [statsRange, setStatsRange] = useState<StatsRange>('today');
   const { data: completedData, isLoading: completedLoading } = useCompletedTasks(statsRange);
+  const { data: txData } = useWalletTransactions();
   const completeTaskMutation = useCompleteTask();
 
   const [showWatchAd, setShowWatchAd] = useState(false);
@@ -41,7 +44,7 @@ export default function EarningsPage() {
   // NOTE: DAILY_LOGIN auto-complete is handled by the dashboard page, not here.
 
   const userStats = {
-    totalPoints: user?.rafflePoints || 0,
+    totalPoints: user?.walletBalance ?? 1000,
     totalPointsEarned: completedData?.summary.totalPointsEarned ?? 0,
     tasksCompleted: completedData?.summary.totalTasksCompleted ?? 0,
     referrals: (completedData?.completedTasks ?? []).filter(
@@ -173,10 +176,10 @@ export default function EarningsPage() {
       <div className="bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl mb-6 md:mb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-8">
           <h1 className="text-2xl md:text-3xl font-bold mb-2">
-            Earn Raffle Points
+            Earn Naira Rewards
           </h1>
           <p className="text-red-100 text-sm md:text-base">
-            Complete tasks and watch ads to earn free raffle points
+            Complete tasks and watch ads to earn free Naira added directly to your wallet
           </p>
         </div>
       </div>
@@ -220,15 +223,15 @@ export default function EarningsPage() {
             {/* Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-8">
               <EarningsStatCard
-                title="Total Points"
-                value={userStats.totalPoints.toLocaleString()}
+                title="Wallet Balance"
+                value={`₦${userStats.totalPoints.toLocaleString()}`}
                 subtitle="Available"
-                icon={<Zap size={20} className="text-yellow-400" />}
-                borderColor="border-yellow-400"
+                icon={<Zap size={20} className="text-green-500" />}
+                borderColor="border-green-500"
               />
               <EarningsStatCard
                 title="Earned"
-                value={userStats.totalPointsEarned.toLocaleString()}
+                value={`₦${userStats.totalPointsEarned.toLocaleString()}`}
                 subtitle={statsRange === 'all' ? 'All time' : statsRange === 'today' ? 'Today' : statsRange === 'week' ? 'This week' : statsRange === 'month' ? 'This month' : 'This year'}
                 icon={<Award size={20} className="text-green-500" />}
                 borderColor="border-green-500"
@@ -254,13 +257,65 @@ export default function EarningsPage() {
               <p className="text-blue-900 font-semibold mb-2 flex items-center gap-2">
                 <Lightbulb size={20} className="text-yellow-500" /> How It Works
               </p>
-              <p className="text-blue-800">
-                <span className="font-bold">1,000 raffle points = ₦100</span>. Earn
-                points by watching ads, completing surveys, and sharing RaffleHub
-                with friends. Use your points to buy raffle tickets for free!
+              <p className="text-blue-800 text-sm">
+                Earn Naira rewards directly into your wallet by watching ads, completing tasks, and referring friends.
+                Use your wallet balance to enter any raffle draw!
               </p>
             </div>
 
+            {/* Wallet Transactions History */}
+            <div className="bg-white rounded-2xl border border-gray-200 p-6 shadow-xs">
+              <h3 className="font-bold text-gray-900 text-lg mb-4">Wallet Transactions</h3>
+              {txData?.transactions && txData.transactions.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b border-gray-200">
+                      <tr>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Type</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Description</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Date</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Ref</th>
+                        <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase">Amount</th>
+                        <th className="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {txData.transactions.map((tx) => {
+                        const date = new Date(tx.createdAt);
+                        const isMinus = tx.type === 'WITHDRAWAL' || tx.type === 'TICKET_PURCHASE';
+                        const mapType = (t: string) => {
+                          if (t === 'TICKET_PURCHASE') return 'purchase';
+                          if (t === 'TASK_REWARD' || t === 'RAFFLE_WIN') return 'reward';
+                          if (t === 'WITHDRAWAL') return 'withdrawal';
+                          return 'deposit';
+                        };
+                        return (
+                          <WalletTransactionRow
+                            key={tx.id}
+                            transaction={{
+                              id: tx.id,
+                              type: mapType(tx.type) as any,
+                              rawType: tx.type,
+                              description: tx.description || `${tx.type} transaction`,
+                              amount: isMinus ? -tx.amount : tx.amount,
+                              date: date.toISOString().split('T')[0],
+                              time: date.toTimeString().slice(0, 5),
+                              status: tx.status === 'COMPLETED' ? 'completed' : 'pending',
+                              reference: tx.reference || `TXN-${tx.id.slice(0, 8)}`,
+                            }}
+                          />
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                  <p className="text-gray-700 font-bold text-sm">No transactions recorded yet</p>
+                  <p className="text-gray-500 text-xs mt-1">Your wallet activity will show up here</p>
+                </div>
+              )}
+            </div>
           </div>
         ) : (
           <div className="space-y-8">

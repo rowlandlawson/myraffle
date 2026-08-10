@@ -1,10 +1,10 @@
-import Link from 'next/link';
+import Image from 'next/image';
 
 type TicketStatus = 'active' | 'won' | 'lost';
 
 interface TicketCardProps {
   ticket: {
-    id: number;
+    id: string | number;
     ticketNumber: string;
     item: string;
     image: string;
@@ -19,97 +19,83 @@ interface TicketCardProps {
 }
 
 export default function TicketCard({ ticket }: TicketCardProps) {
-  const getStatusColor = (status: TicketStatus): string => {
+  const getBadgeStyle = (status: TicketStatus): string => {
     switch (status) {
       case 'active':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-amber-100 text-amber-800 border-amber-300';
       case 'won':
-        return 'bg-green-100 text-green-700';
+        return 'bg-green-100 text-green-800 border-green-300';
       case 'lost':
-        return 'bg-red-100 text-red-700';
+        return 'bg-red-100 text-red-800 border-red-300';
       default:
-        return 'bg-gray-100 text-gray-700';
+        return 'bg-gray-100 text-gray-700 border-gray-200';
     }
   };
 
-  const getBorderColor = () => {
-    if (ticket.status === 'active')
-      return 'border-blue-200 bg-blue-50 hover:border-blue-400';
-    if (ticket.status === 'won')
-      return 'border-green-200 bg-green-50 hover:border-green-400';
-    return 'border-gray-200 bg-gray-50 hover:border-gray-400';
+  const getCardBorder = (status: TicketStatus): string => {
+    switch (status) {
+      case 'active':
+        return 'border-amber-200 bg-amber-50/40 hover:border-amber-400';
+      case 'won':
+        return 'border-green-200 bg-green-50/40 hover:border-green-400';
+      case 'lost':
+        return 'border-red-200 bg-red-50/40 hover:border-red-400';
+      default:
+        return 'border-gray-200 bg-gray-50/40';
+    }
   };
 
-  return (
-    <div className={`p-6 rounded-xl border-2 transition ${getBorderColor()}`}>
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Left: Ticket Info */}
-        <div className="flex gap-4">
-          <div className="text-5xl">{ticket.image}</div>
-          <div className="flex-1">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
-              <h3 className="text-xl font-bold text-gray-900">{ticket.item}</h3>
-              <span
-                className={`px-3 py-1 rounded-full text-sm font-semibold w-fit ${getStatusColor(ticket.status)}`}
-              >
-                {ticket.status.charAt(0).toUpperCase() + ticket.status.slice(1)}
-              </span>
-            </div>
-            <p className="text-sm text-gray-600 font-mono">
-              Ticket #: {ticket.ticketNumber}
-            </p>
-            <p className="text-sm text-gray-600">
-              Price: ₦{ticket.price.toLocaleString()}
-            </p>
-            <p className="text-sm text-gray-600">
-              Purchased: {ticket.purchaseDate}
-            </p>
+  const getStatusLabel = (status: TicketStatus): string => {
+    switch (status) {
+      case 'active':
+        return 'Ongoing';
+      case 'won':
+        return 'Won';
+      case 'lost':
+        return 'Lost';
+      default:
+        return status;
+    }
+  };
 
-            {/* Status Messages */}
-            {ticket.status === 'won' && (
-              <div className="mt-3 p-3 bg-green-100 border border-green-300 rounded-lg">
-                <p className="text-sm font-semibold text-green-700">
-                  {ticket.winnerNotification}
-                </p>
-              </div>
-            )}
-            {ticket.status === 'lost' && (
-              <div className="mt-3 p-3 bg-red-100 border border-red-300 rounded-lg">
-                <p className="text-sm font-semibold text-red-700">
-                  {ticket.loserMessage}
-                </p>
-              </div>
-            )}
+  const isUrlImage = ticket.image && (ticket.image.startsWith('/') || ticket.image.startsWith('http'));
+
+  return (
+    <div className={`p-5 rounded-2xl border-2 transition-all shadow-xs ${getCardBorder(ticket.status)}`}>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        {/* Left: Info */}
+        <div className="flex items-center gap-4 w-full sm:w-auto">
+          {isUrlImage && (
+            <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
+              <img
+                src={ticket.image}
+                alt={ticket.item}
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+          <div className="space-y-1">
+            <h3 className="text-base font-bold text-gray-900 leading-snug">{ticket.item}</h3>
+            <p className="text-xs text-gray-500 font-mono font-semibold">
+              Ticket #: <span className="text-gray-800">{ticket.ticketNumber}</span>
+            </p>
+            <div className="flex items-center gap-3 text-xs text-gray-500 pt-0.5">
+              <span>Price: <strong className="text-gray-900">₦{ticket.price.toLocaleString()}</strong></span>
+              <span>•</span>
+              <span>Date: {ticket.purchaseDate}</span>
+            </div>
           </div>
         </div>
 
-        {/* Right: Countdown or Result */}
-        <div className="flex flex-col justify-between md:text-right">
-          {ticket.status === 'active' ? (
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Raffle ends in</p>
-              <div className="text-4xl font-bold text-red-600">
-                {ticket.daysLeft} {ticket.daysLeft === 1 ? 'day' : 'days'}
-              </div>
-              <p className="text-sm text-gray-600 mt-2">
-                Scheduled: {ticket.raffleDate}
-              </p>
-              <button className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition">
-                View Details
-              </button>
-            </div>
-          ) : (
-            <div>
-              <p className="text-sm text-gray-600 mb-1">Raffle completed</p>
-              <div className="text-3xl font-bold mb-2">
-                {ticket.status === 'won' ? 'Won' : 'Lost'}
-              </div>
-              <p className="text-sm text-gray-600">On {ticket.raffleDate}</p>
-              <button className="mt-4 px-6 py-2 bg-gray-600 text-white rounded-lg font-semibold hover:bg-gray-700 transition">
-                View Results
-              </button>
-            </div>
-          )}
+        {/* Right: Status Badge */}
+        <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/60">
+          <span
+            className={`px-4 py-1.5 rounded-full text-xs font-extrabold border shadow-xs tracking-wide ${getBadgeStyle(
+              ticket.status
+            )}`}
+          >
+            {getStatusLabel(ticket.status)}
+          </span>
         </div>
       </div>
     </div>

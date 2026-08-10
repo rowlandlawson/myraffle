@@ -158,11 +158,10 @@ export default function ItemDetailModal({
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-red-50 rounded-xl p-3.5">
                   <p className="text-xs text-gray-500 font-medium mb-1">
-                    Points per ticket
+                    Ticket Price
                   </p>
                   <p className="text-lg font-bold text-gray-900 flex items-center gap-1.5">
-                    <RafflePointsIcon size={18} className="text-amber-500" />
-                    {pointsPrice.toLocaleString()}
+                    ₦{item.price.toLocaleString()}
                   </p>
                 </div>
                 <div className="bg-blue-50 rounded-xl p-3.5">
@@ -222,8 +221,7 @@ export default function ItemDetailModal({
                 href={`/login?redirect=/items/${item.id}`}
                 className="flex items-center justify-center gap-2 w-full py-3.5 bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-base rounded-2xl hover:shadow-lg hover:shadow-red-600/50 transition active:scale-[0.98]"
               >
-                <RafflePointsIcon size={16} className="text-yellow-300" />
-                Use {pointsPrice.toLocaleString()} pts — Get Ticket
+                Get Ticket — ₦{item.price.toLocaleString()}
               </a>
             )}
             <button

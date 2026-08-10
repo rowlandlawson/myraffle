@@ -13,12 +13,11 @@ export const getAllRaffles = async (req: Request, res: Response) => {
 
         const where: any = {};
         if (status) {
-            // When requesting ACTIVE raffles, also include SCHEDULED ones
-            // so newly uploaded items show up on the homepage
-            if (status === 'ACTIVE') {
+            const upperStatus = status.toUpperCase();
+            if (upperStatus === 'ACTIVE') {
                 where.status = { in: ['ACTIVE', 'SCHEDULED'] };
             } else {
-                where.status = status;
+                where.status = upperStatus;
             }
         }
 

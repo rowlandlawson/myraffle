@@ -60,10 +60,12 @@ export default function BalanceCard({
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2 bg-amber-50 px-3 py-2 rounded-xl border border-amber-100">
-            <RafflePointsIcon size={16} className="text-amber-500" />
-            <span className="text-sm font-bold text-gray-900">{rafflePoints.toLocaleString()} pts</span>
-          </div>
+          <Link
+            href="/dashboard/wallet"
+            className="px-3.5 py-2 bg-red-50 text-red-600 text-xs font-bold rounded-xl hover:bg-red-100 transition active:scale-95 flex items-center gap-1"
+          >
+            + Top Up
+          </Link>
         </div>
       </div>
     </div>

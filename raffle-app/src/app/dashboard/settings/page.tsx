@@ -5,7 +5,6 @@ import {
   User,
   Bell,
   Lock,
-  CreditCard,
   Trash2,
   Save,
   Eye,
@@ -187,7 +186,6 @@ export default function SettingsPage() {
     { id: 'profile', label: 'Profile', icon: User },
     { id: 'notifications', label: 'Notifications', icon: Bell },
     { id: 'security', label: 'Security', icon: Lock },
-    { id: 'bank', label: 'Bank Account', icon: CreditCard, disabled: true },
   ];
 
   if (isLoading || !user) {
@@ -219,13 +217,10 @@ export default function SettingsPage() {
               {tabs.map((tab) => (
                 <button
                   key={tab.id}
-                  disabled={tab.disabled}
-                  onClick={() => !tab.disabled && setActiveTab(tab.id as typeof activeTab)}
+                  onClick={() => setActiveTab(tab.id as typeof activeTab)}
                   className={`w-full flex items-center justify-between px-4 py-3 rounded-lg text-left transition ${
                     activeTab === tab.id
                       ? 'bg-red-50 text-red-600 font-semibold'
-                      : tab.disabled
-                      ? 'opacity-50 cursor-not-allowed text-gray-400'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >
@@ -233,7 +228,6 @@ export default function SettingsPage() {
                     <tab.icon size={20} />
                     {tab.label}
                   </div>
-                  {tab.disabled && <Lock size={14} className="text-gray-400" />}
                 </button>
               ))}
             </nav>

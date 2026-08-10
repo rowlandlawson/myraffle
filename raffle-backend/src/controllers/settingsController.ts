@@ -79,3 +79,69 @@ export const updateSetting = async (req: Request, res: Response) => {
         res.status(500).json({ success: false, message: 'Failed to update setting.' });
     }
 };
+
+// GET /api/admin/bonus-settings — Fetch registration & referral bonus settings
+export const getBonusSettings = async (req: Request, res: Response) => {
+    try {
+        const [signupSetting, referralSetting] = await Promise.all([
+            (prisma as any).setting.findUnique({ where: { key: 'signup_bonus' } }),
+            (prisma as any).setting.findUnique({ where: { key: 'referral_bonus' } }),
+        ]);
+
+        const signupBonus = signupSetting ? parseFloat(signupSetting.value) || 1000 : 1000;
+        const referralBonus = referralSetting ? parseFloat(referralSetting.value) || 500 : 500;
+
+        res.status(200).json({
+            success: true,
+            data: {
+                signupBonus,
+                referralBonus,
+            },
+        });
+    } catch (error) {
+        console.error('[Settings] Get bonus settings error:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch bonus settings.' });
+    }
+};
+
+// PUT /api/admin/bonus-settings — Update registration & referral bonus settings
+export const updateBonusSettings = async (req: Request, res: Response) => {
+    try {
+        const { signupBonus, referralBonus } = req.body;
+
+        if (signupBonus !== undefined) {
+            const signupVal = Number(signupBonus);
+            if (isNaN(signupVal) || signupVal < 0) {
+                res.status(400).json({ success: false, message: 'Signup bonus must be a non-negative number.' });
+                return;
+            }
+            await (prisma as any).setting.upsert({
+                where: { key: 'signup_bonus' },
+                update: { value: signupVal.toString() },
+                create: { key: 'signup_bonus', value: signupVal.toString() },
+            });
+        }
+
+        if (referralBonus !== undefined) {
+            const refVal = Number(referralBonus);
+            if (isNaN(refVal) || refVal < 0) {
+                res.status(400).json({ success: false, message: 'Referral bonus must be a non-negative number.' });
+                return;
+            }
+            await (prisma as any).setting.upsert({
+                where: { key: 'referral_bonus' },
+                update: { value: refVal.toString() },
+                create: { key: 'referral_bonus', value: refVal.toString() },
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            message: 'Registration and Referral bonuses updated successfully!',
+        });
+    } catch (error) {
+        console.error('[Settings] Update bonus settings error:', error);
+        res.status(500).json({ success: false, message: 'Failed to update bonus settings.' });
+    }
+};
+

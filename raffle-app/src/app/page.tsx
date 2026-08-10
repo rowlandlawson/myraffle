@@ -1,23 +1,26 @@
 'use client';
 
 import { useState } from 'react';
+import LandingNavbar from '@/components/landing/LandingNavbar';
 import TopNav from '@/components/navbar/TopNav';
-import { useAuthStore } from '@/lib/authStore';
-import { useRaffles } from '@/lib/hooks/useRaffles';
-import BalanceCard from '@/components/landing/BalanceCard';
-import HeroBanner from '@/components/landing/HeroBanner';
-import ItemsSection from '@/components/landing/ItemsSection';
+import RaffleCard from '@/components/landing/RaffleCard';
 import FeaturesSection from '@/components/landing/FeaturesSection';
 import WinnersSection from '@/components/landing/WinnersSection';
 import HowItWorksSection from '@/components/landing/HowItWorksSection';
 import CTASection from '@/components/landing/CTASection';
 import Footer from '@/components/landing/Footer';
+import ItemsSection from '@/components/landing/ItemsSection';
 import BottomNav from '@/components/navbar/BottomNav';
 import ItemBottomSheet from '@/components/shared/ItemBottomSheet';
+import { useAuthStore } from '@/lib/authStore';
+import { useRaffles, ApiRaffle } from '@/lib/hooks/useRaffles';
 import { resolveImageUrl } from '@/lib/imageUrl';
+import { Loader2 } from 'lucide-react';
+
+import BannerSlider from '@/components/landing/BannerSlider';
 
 interface RaffleItem {
-  id: number;
+  id: string | number;
   name: string;
   image: string;
   ticketPrice: number;
@@ -28,26 +31,21 @@ interface RaffleItem {
 }
 
 export default function LandingPage() {
-  const [activeTab, setActiveTab] = useState('active');
   const [selectedItem, setSelectedItem] = useState<RaffleItem | null>(null);
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
 
-  // Fetch live raffles
-  const {
-    data: activeData,
-    isLoading: activeLoading,
-    error: activeError,
-  } = useRaffles({ status: 'ACTIVE' });
-  const {
-    data: completedData,
-    isLoading: completedLoading,
-    error: completedError,
-  } = useRaffles({ status: 'COMPLETED' });
+  // Fetch live active raffles from backend API
+  const { data: activeData, isPending: isPendingActive, isLoading: isLoadingActive } = useRaffles({ status: 'ACTIVE' });
   const activeRaffles = activeData?.raffles || [];
+
+  // Fetch completed winner raffles directly from database API
+  const { data: completedData } = useRaffles({ status: 'COMPLETED' });
   const completedRaffles = completedData?.raffles || [];
 
-  // Map API data to the format ItemsSection expects
-  const mapRaffleToItem = (r: any): RaffleItem => {
+  const isRafflesLoading = isPendingActive || isLoadingActive;
+
+  // Map API data to RaffleItem format
+  const mapRaffleToItem = (r: ApiRaffle): RaffleItem => {
     const now = new Date();
     const raffleEnd = new Date(r.raffleDate);
     const daysLeft = Math.max(
@@ -57,98 +55,112 @@ export default function LandingPage() {
       ),
     );
 
-    const imageUrl = resolveImageUrl(r.item.imageUrl) || '\u{1F4E6}';
+    const imageUrl = resolveImageUrl(r.item?.imageUrl) || '';
 
     return {
-      id: r.id,
-      name: r.item.name,
+      id: String(r.id),
+      name: r.item?.name || 'Raffle Draw',
       image: imageUrl,
       ticketPrice: r.ticketPrice,
       ticketsSold: r.ticketsSold,
       ticketsTotal: r.ticketsTotal,
-      status:
-        r.status === 'ACTIVE' || r.status === 'SCHEDULED'
-          ? ('active' as const)
-          : ('completed' as const),
+      status: r.status === 'COMPLETED' ? 'completed' : 'active',
       endsIn: r.status === 'COMPLETED' ? 'Completed' : `${daysLeft} days`,
     };
   };
 
-  const activeItems = activeRaffles.map(mapRaffleToItem);
-  const completedItems = completedRaffles.map(mapRaffleToItem);
-  const items = [...activeItems, ...completedItems];
+  const items = activeRaffles.map(mapRaffleToItem);
 
-  // Mock data for winners
-  const recentWinners = [
-    {
-      id: 1,
-      userNumber: 'USER-98765',
-      itemName: 'iPhone 15 Pro Max',
-      date: '2 hours ago',
-    },
-    {
-      id: 2,
-      userNumber: 'USER-54321',
-      itemName: 'MacBook Pro 14"',
-      date: '5 hours ago',
-    },
-    {
-      id: 3,
-      userNumber: 'USER-11223',
-      itemName: 'AirPods Pro Max',
-      date: '1 day ago',
-    },
-    {
-      id: 4,
-      userNumber: 'USER-44556',
-      itemName: 'PlayStation 5',
-      date: '2 days ago',
-    },
-  ];
+  // Recent winners ticker format
+  const recentWinners = completedRaffles.map((r: ApiRaffle, idx: number) => ({
+    id: idx + 1,
+    userNumber: r.winner?.name || r.winner?.userNumber || `USER-${String(r.id).slice(0, 5)}`,
+    itemName: r.item?.name || 'Raffle Item',
+    date: new Date(r.raffleDate).toLocaleDateString(),
+  }));
+
+  // MINIMALIST CLEAN WHITE LOADING SCREEN WHILE FETCHING
+  if (isRafflesLoading) {
+    return (
+      <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center space-y-4">
+        <h1 className="text-2xl font-black tracking-tight text-gray-900">
+          my<span className="text-red-600">Raffle</span>
+        </h1>
+        <Loader2 className="w-6 h-6 text-red-600 animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* App-Style Top Nav */}
-      <TopNav />
+    <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 1. DESKTOP VIEW (Visible on medium and larger screens: md:block) */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      <div className="hidden md:block">
+        <LandingNavbar />
+        <BannerSlider />
 
-      {/* Balance Card (like reference image) */}
-      <BalanceCard
-        isAuthenticated={isAuthenticated}
-        walletBalance={user?.walletBalance ?? 0}
-        rafflePoints={user?.rafflePoints ?? 0}
-      />
+        {/* Desktop Items Grid */}
+        <section id="items" className="py-16 px-4 md:px-8 max-w-7xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-3xl font-extrabold text-gray-900">
+                Live Raffle Draws
+              </h2>
+              <p className="text-gray-600 text-sm mt-1">
+                Choose an item to view details and enter the raffle draw.
+              </p>
+            </div>
+          </div>
 
-      {/* Hero Banner Carousel (like reference image) */}
-      <HeroBanner isAuthenticated={isAuthenticated} />
+          {items.length > 0 ? (
+            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {items.map((item: RaffleItem) => (
+                <RaffleCard
+                  key={item.id}
+                  item={item}
+                  isAuthenticated={isAuthenticated}
+                  onViewDetails={(selected: RaffleItem) => setSelectedItem(selected)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
+              <div className="text-5xl mb-3">🎰</div>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">
+                No Active Raffles Available
+              </h3>
+              <p className="text-gray-500 text-sm">
+                Check back soon for new raffle draws!
+              </p>
+            </div>
+          )}
+        </section>
 
-      {/* Horizontal Scrollable Items */}
-      <ItemsSection
-        items={items}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        isAuthenticated={isAuthenticated}
-        onViewDetails={(item) => setSelectedItem(item)}
-      />
+        <FeaturesSection />
+        {recentWinners.length > 0 && <WinnersSection winners={recentWinners} />}
+        <HowItWorksSection />
+        <CTASection />
+        <Footer />
+      </div>
 
-      {/* Features */}
-      <FeaturesSection />
+      {/* ───────────────────────────────────────────────────────────── */}
+      {/* 2. MOBILE VIEW (Visible strictly on mobile screens: md:hidden) */}
+      {/* ───────────────────────────────────────────────────────────── */}
+      <div className="md:hidden">
+        <TopNav />
+        <BannerSlider />
+        <main className="py-4">
+          <ItemsSection
+            items={items}
+            completedRaffles={completedRaffles}
+            onViewDetails={(item: RaffleItem) => setSelectedItem(item)}
+          />
+        </main>
+        <BottomNav />
+      </div>
 
-      {/* Recent Winners Ticker */}
-      <WinnersSection winners={recentWinners} />
-
-      {/* How It Works */}
-      <HowItWorksSection />
-
-      {/* CTA */}
-      <CTASection />
-
-      {/* Footer */}
-      <Footer />
-
-      {/* Bottom Navigation (mobile) */}
-      <BottomNav />
-
-      {/* Item Detail Bottom Sheet Modal */}
+      {/* Item Detail Bottom Sheet (Reusable for both desktop and mobile) */}
       <ItemBottomSheet
         item={selectedItem}
         onClose={() => setSelectedItem(null)}

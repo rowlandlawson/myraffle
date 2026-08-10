@@ -1,7 +1,14 @@
 'use client';
 
-import AdminItemsPage from '@/components/admin/items/ItemsPage';
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function AdminDashboard() {
-  return <AdminItemsPage />;
+export default function AdminItemsRedirect() {
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace('/admin/raffles');
+  }, [router]);
+
+  return null;
 }

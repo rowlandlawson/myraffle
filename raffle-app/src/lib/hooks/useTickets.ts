@@ -5,6 +5,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { walletKeys } from './useWallet';
+import { fireCelebrationConfetti } from '@/lib/confetti';
 
 // ─── Types ──────────────────────────────────────────────────
 export interface ApiTicket {
@@ -106,16 +107,21 @@ export function useBuyTicket() {
     return useMutation({
         mutationFn: async ({
             raffleId,
-            paymentMethod,
+            paymentMethod = 'wallet',
+            useWallet = true,
         }: {
             raffleId: string;
-            paymentMethod: 'wallet' | 'points';
+            paymentMethod?: string;
+            useWallet?: boolean;
         }) => {
-            const result = await api.post('/api/tickets', { raffleId, paymentMethod });
+            const result = await api.post('/api/tickets', { raffleId, paymentMethod, useWallet });
             if (!result.success) throw new Error(result.message);
             return result;
         },
-        onSuccess: () => {
+        onSuccess: (data: any) => {
+            if (!data?.isPendingPayment) {
+                fireCelebrationConfetti();
+            }
             queryClient.invalidateQueries({ queryKey: ticketKeys.all });
             queryClient.invalidateQueries({ queryKey: walletKeys.all });
         },

@@ -7,7 +7,7 @@ export default function ReferralSection() {
         </h3>
         <p className="text-white/90 mb-6">
           Share your unique referral link with friends. When they sign up, you
-          both get bonus raffle points! There&apos;s no limit to how many
+          both get bonus Naira cash! There&apos;s no limit to how many
           friends you can invite.
         </p>
 
@@ -29,12 +29,12 @@ export default function ReferralSection() {
         <div className="grid grid-cols-2 gap-4">
           <div className="bg-white/10 rounded-lg p-4">
             <p className="text-sm text-white/70 mb-2">You Get</p>
-            <p className="text-2xl font-bold">500 points</p>
+            <p className="text-2xl font-bold">₦500</p>
             <p className="text-xs text-white/70">When friend signs up</p>
           </div>
           <div className="bg-white/10 rounded-lg p-4">
             <p className="text-sm text-white/70 mb-2">Your Friend Gets</p>
-            <p className="text-2xl font-bold">100 points</p>
+            <p className="text-2xl font-bold">₦100</p>
             <p className="text-xs text-white/70">Bonus welcome gift</p>
           </div>
         </div>

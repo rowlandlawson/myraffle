@@ -1,96 +1,79 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
+import Link from 'next/link';
 import Image from 'next/image';
-import { Bell, User } from 'lucide-react';
+import { User, FileText, HelpCircle } from 'lucide-react';
 import { useAuthStore } from '@/lib/authStore';
+import HamburgerMenu from '@/components/navbar/HamburgerMenu';
+import TermsModal from '@/components/terms/TermsModal';
+import HowItWorksModal from '@/components/landing/HowItWorksModal';
 
 export default function TopNav() {
-  const { user, isAuthenticated, logout } = useAuthStore();
-  const [isOpen, setIsOpen] = useState(false);
-
-  const handleSignOut = async () => {
-    await logout();
-    window.location.href = '/login';
-  };
+  const { isAuthenticated } = useAuthStore();
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [termsModalOpen, setTermsModalOpen] = useState(false);
+  const [howItWorksOpen, setHowItWorksOpen] = useState(false);
 
   return (
-    <nav className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex justify-between items-center h-14 sm:h-16">
-          {/* Logo */}
+    <>
+      <header className="bg-white sticky top-0 z-50 border-b border-gray-100 shadow-sm">
+        <div className="max-w-xl mx-auto px-4 h-20 flex items-center justify-between">
+          {/* Brand Logo - Bigger on mobile */}
           <Link href="/" className="flex items-center">
             <Image
               src="/images/logo.png"
-              alt="Logo"
-              width={180}
-              height={60}
-              className="h-auto w-28 sm:w-40 object-contain"
+              alt="Raffle Logo"
+              width={220}
+              height={70}
+              className="h-14 w-auto object-contain"
               priority
             />
           </Link>
 
-          {/* Right Icons */}
-          <div className="flex items-center gap-2">
-            {/* Notification Bell */}
-            <button className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center hover:bg-gray-100 transition relative">
-              <Bell size={20} className="text-gray-600" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
+          {/* Mobile Header Right Icons */}
+          <div className="flex items-center gap-2 z-10">
+            {/* How It Works Help Icon */}
+            <button
+              onClick={() => setHowItWorksOpen(true)}
+              className="w-10 h-10 rounded-full bg-amber-50 text-amber-700 flex items-center justify-center hover:bg-amber-100 active:scale-95 transition-all shadow-sm border border-amber-200"
+              aria-label="How It Works"
+              title="How It Works"
+            >
+              <HelpCircle size={20} />
             </button>
 
-            {/* Profile / Auth */}
-            {!isAuthenticated ? (
-              <Link
-                href="/login"
-                className="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center hover:bg-red-100 transition"
-              >
-                <User size={20} className="text-red-600" />
-              </Link>
-            ) : (
-              <div className="relative">
-                <button
-                  onClick={() => setIsOpen(!isOpen)}
-                  className="w-10 h-10 rounded-xl overflow-hidden flex items-center justify-center bg-gradient-to-br from-red-600 to-red-500 text-white font-bold text-sm ring-2 ring-red-100 hover:ring-red-200 transition"
-                >
-                  {user?.profileImage ? (
-                    <img
-                      src={user.profileImage}
-                      alt={user.name}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    user?.name?.charAt(0) || 'U'
-                  )}
-                </button>
-                {isOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white border border-gray-100 rounded-xl shadow-xl py-1.5 z-50">
-                    <Link
-                      href="/dashboard"
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-                    >
-                      Dashboard
-                    </Link>
-                    <Link
-                      href="/dashboard/settings"
-                      className="block px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-                    >
-                      Settings
-                    </Link>
-                    <hr className="my-1 border-gray-100" />
-                    <button
-                      onClick={handleSignOut}
-                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-red-50 hover:text-red-600 transition-colors"
-                    >
-                      Sign Out
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Terms & Conditions Paper Icon */}
+            <button
+              onClick={() => setTermsModalOpen(true)}
+              className="w-10 h-10 rounded-full bg-gray-50 text-gray-700 flex items-center justify-center hover:bg-gray-100 active:scale-95 transition-all shadow-sm border border-gray-200"
+              aria-label="Terms & Conditions"
+              title="Terms & Conditions"
+            >
+              <FileText size={20} />
+            </button>
+
+            {/* User Account Icon - Opens Hamburger Menu / Auth */}
+            <button
+              onClick={() => setMenuOpen(true)}
+              className="w-10 h-10 rounded-full bg-red-50 text-red-600 flex items-center justify-center hover:bg-red-100 active:scale-95 transition-all shadow-sm border border-red-200"
+              aria-label="Account Menu"
+              title="Account Menu"
+            >
+              <User size={20} />
+            </button>
           </div>
         </div>
-      </div>
-    </nav>
+      </header>
+
+      {/* Slide-out Hamburger Navigation Menu when user icon is tapped */}
+      {menuOpen && <HamburgerMenu onClose={() => setMenuOpen(false)} />}
+
+      {/* Terms & Conditions Modal */}
+      <TermsModal isOpen={termsModalOpen} onClose={() => setTermsModalOpen(false)} />
+
+      {/* How It Works Bottom Sheet Modal */}
+      <HowItWorksModal isOpen={howItWorksOpen} onClose={() => setHowItWorksOpen(false)} />
+    </>
   );
 }

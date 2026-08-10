@@ -49,7 +49,10 @@ export const register = async (req: Request, res: Response) => {
         }
 
         // Check if email already exists
-        const existingUser = await prisma.user.findUnique({ where: { email } });
+        const existingUser = await prisma.user.findUnique({
+            where: { email },
+            select: { id: true, email: true },
+        });
         if (existingUser) {
             res.status(400).json({
                 success: false,
@@ -64,10 +67,16 @@ export const register = async (req: Request, res: Response) => {
 
         // Generate unique User Number
         let userNumber = generateUserNumber();
-        let numberExists = await prisma.user.findUnique({ where: { userNumber } });
+        let numberExists = await prisma.user.findUnique({
+            where: { userNumber },
+            select: { id: true },
+        });
         while (numberExists) {
             userNumber = generateUserNumber();
-            numberExists = await prisma.user.findUnique({ where: { userNumber } });
+            numberExists = await prisma.user.findUnique({
+                where: { userNumber },
+                select: { id: true },
+            });
         }
 
         // Generate OTP codes for both channels
@@ -75,18 +84,30 @@ export const register = async (req: Request, res: Response) => {
         const whatsappCode = generateOTPCode();
         const codeExpiry = new Date(Date.now() + OTP_EXPIRY_MS);
 
+        // Fetch dynamic signup bonus & referral bonus settings configured by admin
+        const [signupSetting, referralSetting] = await Promise.all([
+            (prisma as any).setting.findUnique({ where: { key: 'signup_bonus' } }),
+            (prisma as any).setting.findUnique({ where: { key: 'referral_bonus' } }),
+        ]);
+
+        const signupBonus = signupSetting ? parseFloat(signupSetting.value) || 1000 : 1000;
+        const referralBonus = referralSetting ? parseFloat(referralSetting.value) || 500 : 500;
+
         // Handle referral
         let referredBy: string | null = null;
+        let referrerUser: { id: string; userNumber: string; name: string } | null = null;
         if (referralCode) {
             const referrer = await prisma.user.findUnique({
                 where: { userNumber: referralCode },
+                select: { id: true, userNumber: true, name: true },
             });
             if (referrer) {
                 referredBy = referrer.userNumber;
+                referrerUser = referrer;
             }
         }
 
-        // Create user (unverified)
+        // Create user with dynamic Sign-up Bonus
         const user = await prisma.user.create({
             data: {
                 userNumber,
@@ -95,6 +116,7 @@ export const register = async (req: Request, res: Response) => {
                 name,
                 phone: phone || null,
                 referredBy,
+                walletBalance: signupBonus,
                 emailVerified: false,
                 whatsappVerified: false,
                 emailVerificationCode: emailCode,
@@ -103,6 +125,34 @@ export const register = async (req: Request, res: Response) => {
                 whatsappCodeExpiry: codeExpiry,
             },
         });
+
+        // Log transaction for Sign-up Bonus
+        if (signupBonus > 0) {
+            await logTransaction({
+                userId: user.id,
+                type: 'TASK_REWARD',
+                amount: signupBonus,
+                status: 'COMPLETED',
+                description: `Welcome Sign-up Bonus: ₦${signupBonus.toLocaleString()} credited to your wallet.`,
+            });
+        }
+
+        // Credit referral bonus to referrer if applicable
+        if (referrerUser && referralBonus > 0) {
+            await prisma.user.update({
+                where: { id: referrerUser.id },
+                data: {
+                    walletBalance: { increment: referralBonus },
+                },
+            });
+            await logTransaction({
+                userId: referrerUser.id,
+                type: 'TASK_REWARD',
+                amount: referralBonus,
+                status: 'COMPLETED',
+                description: `Referral Bonus: ₦${referralBonus.toLocaleString()} credited for inviting ${user.name || user.userNumber}.`,
+            });
+        }
 
         // Send OTPs via both channels
         await Promise.all([

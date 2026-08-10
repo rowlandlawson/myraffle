@@ -3,12 +3,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { X, Clock, Users, Ticket, ChevronRight } from 'lucide-react';
 import { resolveImageUrl } from '@/lib/imageUrl';
-import { convertNairaToPoints } from '@/lib/constants';
-import RafflePointsIcon from '@/components/ui/RafflePointsIcon';
 import Link from 'next/link';
+import toast from 'react-hot-toast';
+import TicketCheckoutModal from './TicketCheckoutModal';
 
 interface RaffleItem {
-  id: number;
+  id: string | number;
   name: string;
   image: string;
   ticketPrice: number;
@@ -33,12 +33,12 @@ export default function ItemBottomSheet({
   const [isVisible, setIsVisible] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [translateY, setTranslateY] = useState(0);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
   const dragStartY = useRef(0);
   const sheetRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (item) {
-      // Small delay for animation
       requestAnimationFrame(() => setIsVisible(true));
       document.body.style.overflow = 'hidden';
     } else {
@@ -55,7 +55,6 @@ export default function ItemBottomSheet({
     setTimeout(onClose, 300);
   };
 
-  // Touch handling for drag-to-dismiss
   const handleTouchStart = (e: React.TouchEvent) => {
     dragStartY.current = e.touches[0].clientY;
     setIsDragging(true);
@@ -84,22 +83,23 @@ export default function ItemBottomSheet({
     (item.ticketsSold / item.ticketsTotal) * 100,
   );
   const ticketsRemaining = item.ticketsTotal - item.ticketsSold;
-  const pointsPrice = convertNairaToPoints(item.ticketPrice);
 
   return (
     <>
       {/* Backdrop */}
       <div
-        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] transition-opacity duration-300 ${isVisible ? 'opacity-100' : 'opacity-0'
-          }`}
+        className={`fixed inset-0 bg-black/60 backdrop-blur-sm z-[110] transition-opacity duration-300 ${
+          isVisible ? 'opacity-100' : 'opacity-0'
+        }`}
         onClick={handleClose}
       />
 
       {/* Bottom Sheet */}
       <div
         ref={sheetRef}
-        className={`fixed inset-x-0 bottom-0 z-[101] transition-transform duration-300 ease-out ${isVisible ? 'translate-y-0' : 'translate-y-full'
-          }`}
+        className={`fixed inset-x-0 bottom-0 z-[120] transition-transform duration-300 ease-out ${
+          isVisible ? 'translate-y-0' : 'translate-y-full'
+        }`}
         style={{
           transform: isVisible
             ? `translateY(${translateY}px)`
@@ -107,7 +107,7 @@ export default function ItemBottomSheet({
           transition: isDragging ? 'none' : undefined,
         }}
       >
-        <div className="bg-white rounded-t-3xl max-h-[92vh] overflow-hidden flex flex-col shadow-2xl">
+        <div className="bg-white rounded-t-3xl max-h-[92vh] overflow-hidden flex flex-col shadow-2xl max-w-xl mx-auto">
           {/* Drag Handle */}
           <div
             className="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing"
@@ -121,7 +121,7 @@ export default function ItemBottomSheet({
           {/* Close Button */}
           <button
             onClick={handleClose}
-            className="absolute top-4 right-4 w-8 h-8 bg-black/30 backdrop-blur-sm text-white rounded-full flex items-center justify-center hover:bg-black/50 transition-colors z-10"
+            className="absolute top-4 right-4 w-8 h-8 bg-black/30 text-white rounded-full flex items-center justify-center hover:bg-black/50 transition-colors z-10"
             aria-label="Close"
           >
             <X size={18} />
@@ -129,37 +129,26 @@ export default function ItemBottomSheet({
 
           {/* Content */}
           <div className="overflow-y-auto flex-1 overscroll-contain">
-            {/* Image — Large and Prominent */}
-            <div className="relative w-full aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
+            {/* Image Container with Yellow background accent */}
+            <div className="relative w-full aspect-[4/3] bg-yellow-400 overflow-hidden flex items-center justify-center">
               {imageUrl ? (
                 <img
                   src={imageUrl}
                   alt={item.name}
-                  className="w-full h-full object-contain bg-white"
+                  className="w-full h-full object-contain"
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-8xl">
-                  📦
-                </div>
+                <div className="text-7xl">📦</div>
               )}
 
               {/* Status Badge */}
               {item.status === 'active' ? (
-                <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 bg-green-500/90 backdrop-blur-sm text-white text-xs font-bold rounded-full shadow-lg">
-                  <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                  LIVE
+                <div className="absolute top-4 left-4 flex items-center gap-1.5 px-3 py-1.5 bg-red-600 text-white text-xs font-extrabold rounded-md shadow-sm">
+                  LIVE DRAW
                 </div>
               ) : (
-                <div className="absolute top-4 left-4 px-3 py-1.5 bg-gray-800/80 backdrop-blur-sm text-white text-xs font-bold rounded-full">
+                <div className="absolute top-4 left-4 px-3 py-1.5 bg-slate-900 text-white text-xs font-bold rounded-md">
                   ENDED
-                </div>
-              )}
-
-              {/* Countdown badge */}
-              {item.status === 'active' && (
-                <div className="absolute top-4 right-14 flex items-center gap-1.5 px-3 py-1.5 bg-white/90 backdrop-blur-sm text-gray-700 text-xs font-semibold rounded-full shadow-sm">
-                  <Clock size={13} className="text-red-500" />
-                  {item.endsIn}
                 </div>
               )}
             </div>
@@ -167,11 +156,11 @@ export default function ItemBottomSheet({
             {/* Details */}
             <div className="px-5 py-5 space-y-5">
               {/* Name */}
-              <h2 className="text-xl font-bold text-gray-900 leading-tight">
+              <h2 className="text-xl font-extrabold text-gray-900 leading-tight">
                 {item.name}
               </h2>
 
-              {/* Description if available */}
+              {/* Description */}
               {item.description && (
                 <p className="text-sm text-gray-600 leading-relaxed">
                   {item.description}
@@ -180,21 +169,20 @@ export default function ItemBottomSheet({
 
               {/* Price & Stats */}
               <div className="grid grid-cols-2 gap-3">
-                <div className="bg-red-50 rounded-xl p-3.5">
-                  <p className="text-xs text-gray-500 font-medium mb-1">
-                    Points per ticket
+                <div className="bg-red-50 rounded-2xl p-3.5 border border-red-100">
+                  <p className="text-xs text-gray-500 font-semibold mb-1">
+                    Price Per Ticket
                   </p>
-                  <p className="text-lg font-bold text-gray-900 flex items-center gap-1.5">
-                    <RafflePointsIcon size={18} className="text-amber-500" />
-                    {pointsPrice.toLocaleString()}
+                  <p className="text-lg font-black text-red-600">
+                    {item.ticketPrice.toLocaleString()} NGN
                   </p>
                 </div>
-                <div className="bg-blue-50 rounded-xl p-3.5">
-                  <p className="text-xs text-gray-500 font-medium mb-1">
-                    Tickets left
+                <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200">
+                  <p className="text-xs text-gray-500 font-semibold mb-1">
+                    Tickets Remaining
                   </p>
-                  <p className="text-lg font-bold text-gray-900 flex items-center gap-1.5">
-                    <Ticket size={18} className="text-blue-500" />
+                  <p className="text-lg font-black text-slate-900 flex items-center gap-1.5">
+                    <Ticket size={18} className="text-yellow-500" />
                     {ticketsRemaining.toLocaleString()}
                   </p>
                 </div>
@@ -202,18 +190,18 @@ export default function ItemBottomSheet({
 
               {/* Progress */}
               <div>
-                <div className="flex justify-between items-center mb-2">
-                  <span className="flex items-center gap-1.5 text-sm text-gray-600 font-medium">
+                <div className="flex justify-between items-center mb-1.5">
+                  <span className="flex items-center gap-1.5 text-xs text-gray-600 font-bold">
                     <Users size={14} />
                     {item.ticketsSold}/{item.ticketsTotal} sold
                   </span>
-                  <span className="text-sm font-bold text-red-600">
+                  <span className="text-xs font-extrabold text-red-600">
                     {progressPercent}%
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-red-500 to-orange-500 transition-all duration-700"
+                    className="h-full rounded-full bg-red-600 transition-all duration-500"
                     style={{ width: `${progressPercent}%` }}
                   />
                 </div>
@@ -221,22 +209,21 @@ export default function ItemBottomSheet({
             </div>
           </div>
 
-          {/* Fixed CTA at bottom */}
-          <div className="px-5 pb-6 pt-3 border-t border-gray-100 bg-white">
+          {/* Fixed CTA at bottom with padding above mobile bottom navbar */}
+          <div className="px-5 pt-3 pb-20 md:pb-6 border-t border-gray-100 bg-white">
             {item.status === 'active' ? (
               isAuthenticated ? (
-                <Link
-                  href="/dashboard/items"
-                  className="flex items-center justify-center gap-2 w-full py-3.5 bg-gradient-to-r from-red-600 to-red-500 text-white font-bold text-base rounded-2xl hover:from-red-700 hover:to-red-600 transition-all shadow-lg shadow-red-600/25 active:scale-[0.98]"
-                  onClick={handleClose}
+                <button
+                  onClick={() => setCheckoutOpen(true)}
+                  className="flex items-center justify-center gap-2 w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-base rounded-2xl transition-all shadow-md active:scale-[0.98]"
                 >
-                  <RafflePointsIcon size={18} className="text-yellow-300" />
-                  Use {pointsPrice.toLocaleString()} pts — Get Ticket
-                </Link>
+                  Buy Ticket ({item.ticketPrice.toLocaleString()} NGN)
+                  <ChevronRight size={18} />
+                </button>
               ) : (
                 <Link
                   href="/login"
-                  className="flex items-center justify-center gap-2 w-full py-3.5 bg-gradient-to-r from-red-600 to-red-500 text-white font-bold text-base rounded-2xl hover:from-red-700 hover:to-red-600 transition-all shadow-lg shadow-red-600/25 active:scale-[0.98]"
+                  className="flex items-center justify-center gap-2 w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-base rounded-2xl transition-all shadow-md active:scale-[0.98]"
                 >
                   Login to Buy Ticket
                   <ChevronRight size={18} />
@@ -253,6 +240,13 @@ export default function ItemBottomSheet({
           </div>
         </div>
       </div>
+
+      {/* Ticket Checkout Modal */}
+      <TicketCheckoutModal
+        item={item}
+        isOpen={checkoutOpen}
+        onClose={() => setCheckoutOpen(false)}
+      />
     </>
   );
 }

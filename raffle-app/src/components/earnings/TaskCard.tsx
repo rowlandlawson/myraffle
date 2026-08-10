@@ -127,7 +127,7 @@ export default function TaskCard({
       <div className="flex items-center gap-4 mb-5 p-3 bg-gray-50 rounded-xl border border-gray-100">
         <div className="flex flex-col flex-1">
           <span className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-0.5">Reward</span>
-          <span className="font-bold text-red-600 text-base">{task.points} pts</span>
+          <span className="font-bold text-red-600 text-base">₦{task.points.toLocaleString()}</span>
         </div>
 
         <div className="w-px h-8 bg-gray-200"></div>
@@ -183,7 +183,7 @@ export default function TaskCard({
           'Limit reached — check back tomorrow!'
         ) : isSocialTask ? (
           isVerifying ? `Verifying... (${verifyTimer}s)` :
-            canClaim ? 'Claim Points' :
+            canClaim ? 'Claim Reward' :
               <>Go to Post <ExternalLink size={16} /></>
         ) : task.actionUrl && !isClickedUrl ? (
           <>

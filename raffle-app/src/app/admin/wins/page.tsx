@@ -1,22 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { Trophy, Package, Truck, CheckCircle, Clock, Search, ChevronDown } from 'lucide-react';
+import { Trophy, Package, Truck, CheckCircle, Clock, Wallet, MapPin, Mail, Phone, RefreshCw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAdminWins, useUpdateDeliveryStatus } from '@/lib/hooks/useAdmin';
+import { api } from '@/lib/api';
 
 const DELIVERY_STATUSES = [
     { value: 'PENDING', label: 'Pending', icon: Clock, color: 'bg-gray-100 text-gray-700' },
     { value: 'PROCESSING', label: 'Processing', icon: Package, color: 'bg-yellow-100 text-yellow-700' },
     { value: 'SHIPPED', label: 'Shipped', icon: Truck, color: 'bg-blue-100 text-blue-700' },
     { value: 'DELIVERED', label: 'Delivered', icon: CheckCircle, color: 'bg-green-100 text-green-700' },
+    { value: 'CONVERTED_TO_WALLET', label: 'Converted to Store Credits', icon: Wallet, color: 'bg-purple-100 text-purple-700' },
 ];
 
 export default function AdminWinsPage() {
     const [filterStatus, setFilterStatus] = useState('all');
     const [page, setPage] = useState(1);
-    const { data, isLoading } = useAdminWins({ page, deliveryStatus: filterStatus });
+    const { data, isLoading, refetch } = useAdminWins({ page, deliveryStatus: filterStatus });
     const updateDelivery = useUpdateDeliveryStatus();
+
+    const [selectedWinForConversion, setSelectedWinForConversion] = useState<any>(null);
+    const [conversionAmount, setConversionAmount] = useState<number>(0);
+    const [conversionNote, setConversionNote] = useState('');
+    const [isConverting, setIsConverting] = useState(false);
 
     const wins = data?.wins ?? [];
     const pagination = data?.pagination ?? null;
@@ -26,7 +33,36 @@ export default function AdminWinsPage() {
             await updateDelivery.mutateAsync({ raffleId, deliveryStatus: newStatus });
             toast.success(`Delivery status updated to ${newStatus}`);
         } catch (err: any) {
-            toast.error(err.message || 'Failed to update');
+            toast.error(err.message || 'Failed to update delivery status');
+        }
+    };
+
+    const handleOpenConversionModal = (win: any) => {
+        setSelectedWinForConversion(win);
+        setConversionAmount(win.item?.value || 0);
+        setConversionNote(`Unclaimed/Unavailable physical prize converted to non-withdrawable store credits for ${win.item?.name}.`);
+    };
+
+    const handleConfirmConversion = async () => {
+        if (!selectedWinForConversion) return;
+        setIsConverting(true);
+        try {
+            const res = (await api.post(`/api/admin/wins/${selectedWinForConversion.id}/convert-to-wallet`, {
+                amount: conversionAmount,
+                note: conversionNote,
+            })) as any;
+
+            if (res.success) {
+                toast.success(res.message || 'Prize successfully converted to store credits!');
+                setSelectedWinForConversion(null);
+                refetch();
+            } else {
+                toast.error(res.message || 'Failed to convert prize');
+            }
+        } catch (err: any) {
+            toast.error(err.message || 'Error converting prize to store credit');
+        } finally {
+            setIsConverting(false);
         }
     };
 
@@ -37,9 +73,9 @@ export default function AdminWinsPage() {
                 <div>
                     <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
                         <Trophy className="text-yellow-500" size={24} />
-                        Wins Management
+                        Wins & Delivery Management
                     </h1>
-                    <p className="text-sm text-gray-500 mt-1">Track and manage raffle winners and deliveries</p>
+                    <p className="text-sm text-gray-500 mt-1">Manage winner shipping info and prize-to-wallet conversions</p>
                 </div>
 
                 <select
@@ -77,51 +113,83 @@ export default function AdminWinsPage() {
                             ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${win.item.imageUrl}`
                             : win.item?.imageUrl;
 
+                        const winnerAddress = [win.winner?.address, win.winner?.city, win.winner?.state].filter(Boolean).join(', ');
+
                         return (
                             <div key={win.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 hover:shadow-md transition">
-                                <div className="flex flex-col sm:flex-row gap-4">
+                                <div className="flex flex-col md:flex-row gap-5">
                                     {/* Item Image */}
-                                    <div className="w-20 h-20 bg-gray-100 rounded-xl overflow-hidden shrink-0">
+                                    <div className="w-24 h-24 bg-gray-100 rounded-xl overflow-hidden shrink-0">
                                         {imageUrl ? (
                                             <img src={imageUrl} alt={win.item?.name} className="w-full h-full object-cover" />
                                         ) : (
-                                            <div className="w-full h-full flex items-center justify-center text-2xl">🏆</div>
+                                            <div className="w-full h-full flex items-center justify-center text-3xl">🏆</div>
                                         )}
                                     </div>
 
-                                    {/* Info */}
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-bold text-gray-900 text-sm">{win.item?.name}</h3>
-                                        <p className="text-xs text-gray-500 mt-1">
-                                            Winner: <span className="font-semibold text-gray-700">{win.winner?.name}</span>
-                                            {' '}({win.winner?.userNumber})
-                                        </p>
-                                        <p className="text-xs text-gray-400 mt-0.5">
-                                            Won on: {new Date(win.updatedAt).toLocaleDateString()}
-                                            {win.winner?.phone && ` • Phone: ${win.winner.phone}`}
-                                        </p>
-                                        <p className="text-xs text-gray-400">
-                                            Value: ₦{win.item?.value?.toLocaleString()}
-                                        </p>
+                                    {/* Info & Delivery Contact */}
+                                    <div className="flex-1 min-w-0 space-y-2">
+                                        <div className="flex items-start justify-between gap-2">
+                                            <div>
+                                                <h3 className="font-bold text-gray-900 text-base">{win.item?.name}</h3>
+                                                <p className="text-xs text-gray-500 font-semibold">Value: ₦{win.item?.value?.toLocaleString()}</p>
+                                            </div>
+                                            <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${currentStatus.color}`}>
+                                                <StatusIcon size={14} />
+                                                {currentStatus.label}
+                                            </span>
+                                        </div>
+
+                                        {/* Winner Contact details box */}
+                                        <div className="p-3 bg-gray-50 rounded-xl border border-gray-100 text-xs space-y-1">
+                                            <p className="font-bold text-gray-800 flex items-center gap-1.5">
+                                                Winner: {win.winner?.name} <span className="font-mono text-gray-400 text-[11px]">({win.winner?.userNumber})</span>
+                                            </p>
+                                            {win.winner?.email && (
+                                                <p className="text-gray-600 flex items-center gap-1.5">
+                                                    <Mail size={12} className="text-gray-400" /> {win.winner.email}
+                                                </p>
+                                            )}
+                                            {win.winner?.phone && (
+                                                <p className="text-gray-600 flex items-center gap-1.5">
+                                                    <Phone size={12} className="text-gray-400" /> {win.winner.phone}
+                                                </p>
+                                            )}
+                                            {winnerAddress ? (
+                                                <p className="text-gray-700 flex items-start gap-1.5 font-medium">
+                                                    <MapPin size={13} className="text-red-500 shrink-0 mt-0.5" /> Shipping Address: {winnerAddress}
+                                                </p>
+                                            ) : (
+                                                <p className="text-gray-400 flex items-center gap-1.5 italic">
+                                                    <MapPin size={12} className="text-gray-300" /> Delivery address not provided yet in profile
+                                                </p>
+                                            )}
+                                        </div>
                                     </div>
 
-                                    {/* Status & Actions */}
-                                    <div className="flex flex-col gap-2 sm:items-end shrink-0">
-                                        <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold ${currentStatus.color}`}>
-                                            <StatusIcon size={14} />
-                                            {currentStatus.label}
-                                        </span>
-
+                                    {/* Actions */}
+                                    <div className="flex flex-col gap-2.5 justify-center md:items-end shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100">
+                                        <label className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider">Update Delivery</label>
                                         <select
                                             value={win.deliveryStatus}
                                             onChange={(e) => handleStatusChange(win.id, e.target.value)}
-                                            disabled={updateDelivery.isPending}
-                                            className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg focus:outline-none focus:border-red-500 bg-white disabled:opacity-50"
+                                            disabled={updateDelivery.isPending || win.deliveryStatus === 'CONVERTED_TO_WALLET'}
+                                            className="text-xs px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-red-500 bg-white font-medium disabled:opacity-50"
                                         >
                                             {DELIVERY_STATUSES.map(s => (
                                                 <option key={s.value} value={s.value}>{s.label}</option>
                                             ))}
                                         </select>
+
+                                        {win.deliveryStatus !== 'CONVERTED_TO_WALLET' && (
+                                            <button
+                                                onClick={() => handleOpenConversionModal(win)}
+                                                className="inline-flex items-center gap-1.5 px-3 py-2 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 rounded-xl text-xs font-semibold transition"
+                                            >
+                                                <Wallet size={13} />
+                                                Convert Prize to Wallet
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
 
@@ -129,13 +197,77 @@ export default function AdminWinsPage() {
                                 {win.deliveryNote && (
                                     <div className="mt-3 pt-3 border-t border-gray-100">
                                         <p className="text-xs text-gray-500">
-                                            <span className="font-semibold">Note:</span> {win.deliveryNote}
+                                            <span className="font-semibold text-gray-700">Note:</span> {win.deliveryNote}
                                         </p>
                                     </div>
                                 )}
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {/* Conversion Modal / Mobile Sheet */}
+            {selectedWinForConversion && (
+                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
+                    <div className="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in slide-in-from-bottom duration-200">
+                        {/* Mobile Sheet Handle Bar */}
+                        <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto sm:hidden mb-1" />
+
+                        <div className="flex items-center gap-3 text-purple-700">
+                            <div className="p-3 bg-purple-100 rounded-xl">
+                                <Wallet size={24} />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg text-gray-900">Convert Prize to Store Credit</h3>
+                                <p className="text-xs text-gray-500">Credit winner's non-withdrawable wallet</p>
+                            </div>
+                        </div>
+
+                        <div className="p-3 bg-purple-50 rounded-xl border border-purple-100 text-xs space-y-1 text-purple-900 font-medium">
+                            <p>Winner: <strong>{selectedWinForConversion.winner?.name}</strong></p>
+                            <p>Prize Item: <strong>{selectedWinForConversion.item?.name}</strong></p>
+                            <p>Standard Item Value: <strong>₦{selectedWinForConversion.item?.value?.toLocaleString()}</strong></p>
+                        </div>
+
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1">Credit Amount (₦)</label>
+                                <input
+                                    type="number"
+                                    value={conversionAmount}
+                                    onChange={(e) => setConversionAmount(Number(e.target.value))}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-purple-600"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold text-gray-700 mb-1">Admin Note / Reason</label>
+                                <textarea
+                                    value={conversionNote}
+                                    onChange={(e) => setConversionNote(e.target.value)}
+                                    rows={3}
+                                    className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-purple-600"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-end gap-2 pt-2">
+                            <button
+                                onClick={() => setSelectedWinForConversion(null)}
+                                className="px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-xl transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleConfirmConversion}
+                                disabled={isConverting}
+                                className="px-4 py-2 text-xs font-bold text-white bg-purple-700 hover:bg-purple-800 rounded-xl shadow-md transition disabled:opacity-50"
+                            >
+                                {isConverting ? 'Converting...' : 'Confirm & Credit Wallet'}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 

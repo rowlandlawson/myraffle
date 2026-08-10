@@ -67,15 +67,18 @@ export default function ConfirmDialog({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center p-0 sm:p-4">
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200"
         onClick={onCancel}
       />
 
-      {/* Dialog */}
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md animate-in zoom-in-95 fade-in duration-200">
+      {/* Dialog / Mobile Sheet */}
+      <div className="relative bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full max-w-md animate-in slide-in-from-bottom sm:zoom-in-95 fade-in duration-200 p-6 pt-3">
+        {/* Mobile Handle Pill */}
+        <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto sm:hidden mb-3" />
+
         {/* Close button */}
         <button
           onClick={onCancel}
@@ -84,7 +87,7 @@ export default function ConfirmDialog({
           <X size={18} />
         </button>
 
-        <div className="p-6">
+        <div className="pt-2 pb-4">
           {/* Icon */}
           <div className={`w-12 h-12 rounded-full ${styles.icon} flex items-center justify-center mx-auto mb-4`}>
             <AlertTriangle size={24} />

@@ -22,7 +22,7 @@ import {
     updateBanner,
     deleteBanner,
 } from '../controllers/bannerController';
-import { updateSetting } from '../controllers/settingsController';
+import { updateSetting, getBonusSettings, updateBonusSettings } from '../controllers/settingsController';
 import { upload } from '../middleware/upload';
 import { requireAuth, requireAdmin } from '../middleware/auth';
 
@@ -54,7 +54,9 @@ router.post('/banners', requireAuth, requireAdmin, upload.single('image'), creat
 router.put('/banners/:id', requireAuth, requireAdmin, upload.single('image'), updateBanner);
 router.delete('/banners/:id', requireAuth, requireAdmin, deleteBanner);
 
-// Settings management (e.g. Terms & Conditions)
+// Settings management (e.g. Terms & Conditions and Bonus Settings)
+router.get('/bonus-settings', requireAuth, requireAdmin, getBonusSettings);
+router.put('/bonus-settings', requireAuth, requireAdmin, updateBonusSettings);
 router.put('/settings/:key', requireAuth, requireAdmin, updateSetting);
 
 export default router;

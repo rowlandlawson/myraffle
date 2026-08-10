@@ -81,11 +81,7 @@ export default function WalletTransactionRow({
         <div
           className={`font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-gray-900'}`}
         >
-          {transaction.rawType === 'TASK_REWARD' || transaction.type === 'reward' ? (
-            <>{transaction.amount > 0 ? '+' : ''}{Math.abs(transaction.amount).toLocaleString()} <span className="text-xs">⭐ pts</span></>
-          ) : (
-            <>{transaction.amount > 0 ? '+' : ''}₦{Math.abs(transaction.amount).toLocaleString()}</>
-          )}
+          {transaction.amount > 0 ? '+' : ''}₦{Math.abs(transaction.amount).toLocaleString()}
         </div>
       </td>
       <td className="px-4 py-4 text-center">

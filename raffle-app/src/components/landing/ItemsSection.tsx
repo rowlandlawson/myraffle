@@ -1,13 +1,12 @@
 'use client';
 
-import Link from 'next/link';
-import { ChevronRight, Flame, Trophy, Clock, Users, Ticket } from 'lucide-react';
-import { resolveImageUrl } from '@/lib/imageUrl';
-import { convertNairaToPoints } from '@/lib/constants';
-import RafflePointsIcon from '@/components/ui/RafflePointsIcon';
+import FeaturedRaffleCard from '@/components/landing/FeaturedRaffleCard';
+import ListItemCard from '@/components/landing/ListItemCard';
+import WinnersCarousel from '@/components/landing/WinnersCarousel';
+import { ApiRaffle } from '@/lib/hooks/useRaffles';
 
 interface Item {
-  id: number;
+  id: string | number;
   name: string;
   image: string;
   ticketPrice: number;
@@ -19,172 +18,109 @@ interface Item {
 
 interface ItemsSectionProps {
   items: Item[];
-  activeTab: string;
-  onTabChange: (tab: string) => void;
-  isAuthenticated: boolean;
+  completedRaffles?: ApiRaffle[];
+  isLoading?: boolean;
   onViewDetails?: (item: Item) => void;
 }
 
 export default function ItemsSection({
   items,
-  activeTab,
-  onTabChange,
-  isAuthenticated,
+  completedRaffles = [],
+  isLoading = false,
   onViewDetails,
 }: ItemsSectionProps) {
-  const activeItems = items.filter((item) => item.status === 'active');
-  const completedItems = items.filter((item) => item.status === 'completed');
-  const displayItems = activeTab === 'active' ? activeItems : completedItems;
-
-  return (
-    <section id="items" className="pt-6 pb-4">
-      <div className="px-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-extrabold text-gray-900">
-            {activeTab === 'active' ? '🔥 Live Raffles' : '🏆 Completed'}
-          </h2>
-          <Link
-            href="/items"
-            className="flex items-center gap-1 text-red-600 font-semibold text-sm hover:text-red-700 transition-colors"
-          >
-            View All
-            <ChevronRight size={16} />
-          </Link>
+  // Skeleton pre-loader when raffles are still loading from server
+  if (isLoading) {
+    return (
+      <div className="space-y-6 pb-10 px-4 md:px-8 max-w-7xl mx-auto">
+        {/* Featured Skeleton */}
+        <div className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm animate-pulse space-y-4">
+          <div className="h-6 bg-gray-200 rounded w-1/3 mb-2" />
+          <div className="h-56 bg-gray-200 rounded-2xl" />
+          <div className="h-6 bg-gray-200 rounded w-2/3" />
+          <div className="h-4 bg-gray-200 rounded w-1/2" />
+          <div className="h-12 bg-gray-200 rounded-2xl" />
         </div>
 
-        {/* Tab Pills */}
-        <div className="flex gap-2 mb-4">
-          <button
-            onClick={() => onTabChange('active')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all ${activeTab === 'active'
-                ? 'bg-red-600 text-white shadow-md shadow-red-600/25'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-          >
-            <Flame size={12} />
-            Live ({activeItems.length})
-          </button>
-          <button
-            onClick={() => onTabChange('completed')}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold transition-all ${activeTab === 'completed'
-                ? 'bg-red-600 text-white shadow-md shadow-red-600/25'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-              }`}
-          >
-            <Trophy size={12} />
-            Completed ({completedItems.length})
-          </button>
-        </div>
-      </div>
-
-      {/* Horizontal Scrollable Items */}
-      {displayItems.length > 0 ? (
-        <div className="overflow-x-auto no-scrollbar">
-          <div className="flex gap-3 px-4 pb-2" style={{ width: 'max-content' }}>
-            {displayItems.map((item) => {
-              const imageUrl = resolveImageUrl(item.image);
-              const progress = Math.round(
-                (item.ticketsSold / item.ticketsTotal) * 100,
-              );
-              const pointsPrice = convertNairaToPoints(item.ticketPrice);
-
-              return (
-                <div
-                  key={item.id}
-                  className="w-44 sm:w-52 flex-none bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden hover:shadow-lg transition-all duration-200 cursor-pointer active:scale-[0.98]"
-                  onClick={() => onViewDetails?.(item)}
-                >
-                  {/* Image */}
-                  <div className="relative h-32 sm:h-36 bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-                    {imageUrl ? (
-                      <img
-                        src={imageUrl}
-                        alt={item.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full text-5xl">
-                        📦
-                      </div>
-                    )}
-
-                    {/* Status */}
-                    {item.status === 'active' ? (
-                      <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-0.5 bg-green-500/90 backdrop-blur-sm text-white text-[10px] font-bold rounded-full">
-                        <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
-                        LIVE
-                      </div>
-                    ) : (
-                      <div className="absolute top-2 left-2 px-2 py-0.5 bg-gray-800/80 backdrop-blur-sm text-white text-[10px] font-bold rounded-full">
-                        ENDED
-                      </div>
-                    )}
-
-                    {/* Timer */}
-                    {item.status === 'active' && (
-                      <div className="absolute top-2 right-2 flex items-center gap-1 px-2 py-0.5 bg-white/90 backdrop-blur-sm text-gray-700 text-[10px] font-semibold rounded-full">
-                        <Clock size={10} className="text-red-500" />
-                        {item.endsIn}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-3">
-                    <h3 className="text-xs sm:text-sm font-bold text-gray-900 truncate mb-2">
-                      {item.name}
-                    </h3>
-
-                    {/* Progress */}
-                    <div className="mb-2.5">
-                      <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                        <div
-                          className="h-full rounded-full bg-gradient-to-r from-red-500 to-orange-500"
-                          style={{ width: `${progress}%` }}
-                        />
-                      </div>
-                      <div className="flex items-center justify-between mt-1">
-                        <span className="text-[10px] text-gray-400 font-medium">
-                          {item.ticketsSold}/{item.ticketsTotal}
-                        </span>
-                        <span className="text-[10px] font-bold text-red-600">{progress}%</span>
-                      </div>
-                    </div>
-
-                    {/* Price */}
-                    <div className="flex items-center justify-between">
-                      <span className="flex items-center gap-1 text-xs font-bold text-gray-900">
-                        <RafflePointsIcon size={12} className="text-amber-500" />
-                        {pointsPrice.toLocaleString()} pts
-                      </span>
-                      <span className="text-[10px] text-gray-500 font-medium flex items-center gap-0.5">
-                        <Ticket size={9} />
-                        {item.ticketsTotal - item.ticketsSold} left
-                      </span>
-                    </div>
-                  </div>
+        {/* List Skeleton Grid */}
+        <div className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm animate-pulse space-y-4">
+          <div className="h-6 bg-gray-200 rounded w-1/4 mb-2" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2].map((i) => (
+              <div key={i} className="flex gap-4 items-center p-3 border border-gray-100 rounded-2xl">
+                <div className="w-20 h-20 bg-gray-200 rounded-xl shrink-0" />
+                <div className="space-y-2 grow">
+                  <div className="h-4 bg-gray-200 rounded w-3/4" />
+                  <div className="h-3 bg-gray-200 rounded w-1/2" />
+                  <div className="h-8 bg-gray-200 rounded-lg" />
                 </div>
-              );
-            })}
+              </div>
+            ))}
           </div>
         </div>
-      ) : (
-        <div className="text-center py-12 px-4">
-          <div className="text-4xl mb-3">🎰</div>
-          <p className="text-gray-500 text-sm font-medium">
-            {activeTab === 'active'
-              ? 'No active raffles right now. Check back soon!'
-              : 'No completed raffles yet.'}
+      </div>
+    );
+  }
+
+  // Render all active items passed from backend
+  const activeItems = items;
+
+  if (activeItems.length === 0) {
+    return (
+      <div className="space-y-8 pb-10 px-4 md:px-8 max-w-7xl mx-auto">
+        <div className="bg-white rounded-3xl p-8 md:p-12 border border-gray-100 shadow-sm text-center">
+          <div className="text-5xl mb-3">🎰</div>
+          <h3 className="text-base md:text-lg font-extrabold text-gray-900 mb-1">
+            No Active Raffles Available
+          </h3>
+          <p className="text-gray-500 text-xs md:text-sm font-semibold">
+            The admin hasn't posted any active raffles yet. Please check back soon!
           </p>
         </div>
+        {completedRaffles && completedRaffles.length > 0 && (
+          <WinnersCarousel completedRaffles={completedRaffles} />
+        )}
+      </div>
+    );
+  }
+
+  // Separate the first item as Featured and remaining as List items
+  const featuredItem = activeItems[0];
+  const listItems = activeItems.slice(1);
+
+  return (
+    <div className="space-y-8 pb-10 px-4 md:px-8 max-w-7xl mx-auto">
+      {/* FEATURED CAMPAIGN (First backend item posted by admin) */}
+      <section>
+        <h2 className="text-gray-900 font-extrabold text-lg sm:text-xl md:text-2xl uppercase mb-3 tracking-tight">
+          FEATURED DRAW
+        </h2>
+        <FeaturedRaffleCard item={featuredItem} onViewDetails={onViewDetails} />
+      </section>
+
+      {/* AVAILABLE RAFFLE ITEMS */}
+      {listItems.length > 0 && (
+        <section className="bg-white rounded-3xl p-4 sm:p-6 md:p-8 border border-gray-100 shadow-sm">
+          <h2 className="text-gray-900 font-extrabold text-lg sm:text-xl md:text-2xl uppercase mb-4 tracking-tight">
+            AVAILABLE RAFFLES
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+            {listItems.map((item) => (
+              <ListItemCard key={item.id} item={item} onViewDetails={onViewDetails} />
+            ))}
+          </div>
+        </section>
       )}
 
-      {/* No scrollbar CSS */}
-      <style>{`
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-      `}</style>
-    </section>
+      {/* Red Separator Dot & Winners Carousel (Only if completed winners exist) */}
+      {completedRaffles && completedRaffles.length > 0 && (
+        <>
+          <div className="flex justify-center py-2">
+            <span className="w-3.5 h-3.5 rounded-full bg-red-600" />
+          </div>
+          <WinnersCarousel completedRaffles={completedRaffles} />
+        </>
+      )}
+    </div>
   );
 }

@@ -19,6 +19,8 @@ import {
     ChevronLeft,
     ChevronRight,
     Trophy,
+    Image as ImageIcon,
+    FileText,
 } from 'lucide-react';
 
 const ADMIN_MENU = [
@@ -27,6 +29,8 @@ const ADMIN_MENU = [
     { label: 'Users', href: '/admin/users', icon: Users },
     { label: 'Raffles', href: '/admin/raffles', icon: Ticket },
     { label: 'Wins', href: '/admin/wins', icon: Trophy },
+    { label: 'Banners', href: '/admin/banners', icon: ImageIcon },
+    { label: 'Terms & Conditions', href: '/admin/terms', icon: FileText },
     { label: 'Transactions', href: '/admin/transactions', icon: Receipt },
     { label: 'Payouts', href: '/admin/payouts', icon: CreditCard },
     { label: 'Tasks', href: '/admin/tasks', icon: Zap },

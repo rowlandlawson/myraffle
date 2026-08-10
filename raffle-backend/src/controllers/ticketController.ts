@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import { prisma } from '../config/database';
 import { logTransaction } from '../utils/transactions';
 import { CONSTANTS } from '../config/constants';
-import { initializePayment as paystackInitialize } from '../services/paystack';
 import { initializeMonnifyPayment } from '../services/monnify';
 import { checkAndTriggerAutoDraw } from '../services/raffle';
 import crypto from 'crypto';
@@ -178,16 +177,17 @@ export const buyTicket = async (req: Request, res: Response) => {
         const ticketPrice = raffle.ticketPrice;
         const availableWallet = Math.max(0, user.walletBalance);
 
-        // Determine if wallet balance should be applied
-        const isWalletOnly = paymentMethod === 'wallet' && useWallet === false;
-        const isGatewayOnly = paymentMethod === 'paystack' || paymentMethod === 'monnify' || paymentMethod === 'gateway';
-        const applyWallet = useWallet !== false && !isGatewayOnly;
+        // Check if user requested wallet payment
+        if (paymentMethod === 'wallet') {
+            if (availableWallet < ticketPrice) {
+                res.status(400).json({
+                    success: false,
+                    message: `Insufficient wallet balance. You have ₦${availableWallet.toLocaleString()} but ticket costs ₦${ticketPrice.toLocaleString()}. Please pay via Monnify gateway or top up your wallet.`,
+                });
+                return;
+            }
 
-        const walletAmountToUse = applyWallet ? Math.min(availableWallet, ticketPrice) : 0;
-        const remainingAmountToPay = ticketPrice - walletAmountToUse;
-
-        // SCENARIO 1: Full Payment via Wallet (100% covered)
-        if (remainingAmountToPay <= 0) {
+            // User has sufficient wallet balance -> execute 100% wallet purchase
             const ticketNumber = `TKT-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
 
             const [ticket] = await prisma.$transaction([
@@ -247,30 +247,38 @@ export const buyTicket = async (req: Request, res: Response) => {
             return;
         }
 
-        // SCENARIO 2: Insufficient Wallet for Wallet-Only Option
-        if (isWalletOnly) {
+        // Gateway / Split Payment (Monnify)
+        const applyWallet = useWallet !== false;
+        const walletAmountToUse = applyWallet ? Math.min(availableWallet, ticketPrice) : 0;
+        const remainingAmountToPay = ticketPrice - walletAmountToUse;
+
+        const paymentRef = `TKT-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+        let authorizationUrl = '';
+
+        try {
+            const monnifyRes = await initializeMonnifyPayment({
+                amount: remainingAmountToPay,
+                customerName: user.name || user.email,
+                customerEmail: user.email,
+                paymentReference: paymentRef,
+                paymentDescription: `Ticket for ${raffle.item.name}`,
+                redirectUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/tickets`,
+                metadata: {
+                    userId,
+                    raffleId,
+                    walletDeducted: walletAmountToUse,
+                    remainingAmount: remainingAmountToPay,
+                    type: 'ticket_purchase',
+                },
+            });
+            authorizationUrl = monnifyRes.checkoutUrl || monnifyRes.redirectUrl;
+        } catch (monnifyErr: any) {
+            console.error('[Monnify Error]:', monnifyErr.message);
             res.status(400).json({
                 success: false,
-                message: `Insufficient wallet balance. You need ₦${ticketPrice.toLocaleString()} but have ₦${availableWallet.toLocaleString()}. Use split payment to pay remaining ₦${remainingAmountToPay.toLocaleString()} online.`,
+                message: `Monnify Payment Initialization Error: ${monnifyErr.message}`,
             });
             return;
-        }
-
-        // SCENARIO 3: Split Payment / Online Gateway Payment
-        const paymentData = await paystackInitialize(user.email, remainingAmountToPay, {
-            userId,
-            raffleId,
-            walletDeducted: walletAmountToUse,
-            remainingAmount: remainingAmountToPay,
-            type: 'ticket_purchase',
-        });
-
-        // If using partial wallet balance, deduct it now
-        if (walletAmountToUse > 0) {
-            await prisma.user.update({
-                where: { id: userId },
-                data: { walletBalance: { decrement: walletAmountToUse } },
-            });
         }
 
         await logTransaction({
@@ -278,19 +286,19 @@ export const buyTicket = async (req: Request, res: Response) => {
             type: 'TICKET_PURCHASE',
             amount: remainingAmountToPay,
             status: 'PENDING',
-            reference: paymentData.reference,
+            reference: paymentRef,
             description: walletAmountToUse > 0
-                ? `Ticket for ${raffle.item.name} (₦${walletAmountToUse.toLocaleString()} wallet + ₦${remainingAmountToPay.toLocaleString()} online)`
-                : `Ticket for ${raffle.item.name} (Online Gateway)`,
+                ? `Pending Ticket for ${raffle.item.name} (₦${walletAmountToUse.toLocaleString()} wallet + ₦${remainingAmountToPay.toLocaleString()} Monnify)`
+                : `Pending Ticket for ${raffle.item.name} (Monnify Gateway)`,
         });
 
         res.status(200).json({
             success: true,
             isPendingPayment: true,
-            message: `Please complete payment of ₦${remainingAmountToPay.toLocaleString()} via online gateway.`,
+            message: `Please complete payment of ₦${remainingAmountToPay.toLocaleString()} via Monnify gateway.`,
             data: {
-                authorizationUrl: paymentData.authorization_url,
-                reference: paymentData.reference,
+                authorizationUrl,
+                reference: paymentRef,
                 walletDeducted: walletAmountToUse,
                 remainingAmount: remainingAmountToPay,
             },

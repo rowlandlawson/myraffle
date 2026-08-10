@@ -4,7 +4,7 @@ import { Clock, Users, Ticket } from 'lucide-react';
 import { resolveImageUrl } from '@/lib/imageUrl';
 
 interface RaffleItem {
-    id: number;
+    id: string | number;
     name: string;
     image: string;
     ticketPrice: number;

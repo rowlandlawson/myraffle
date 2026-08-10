@@ -73,9 +73,18 @@ export function useRaffles(params?: {
                 throw new Error(res.message || 'Failed to load raffles');
             }
 
+            const rawData = res.data as any;
+            const rafflesList = Array.isArray(rawData?.raffles)
+                ? rawData.raffles
+                : Array.isArray(rawData)
+                    ? rawData
+                    : Array.isArray((res as any).raffles)
+                        ? (res as any).raffles
+                        : [];
+
             return {
-                raffles: res.data?.raffles ?? [],
-                pagination: res.data?.pagination ?? null,
+                raffles: rafflesList,
+                pagination: rawData?.pagination ?? null,
             };
         },
     });

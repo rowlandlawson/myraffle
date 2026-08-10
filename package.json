@@ -1,0 +1,15 @@
+{
+  "name": "raffle-project-root",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "prepare": "husky install",
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "ci:check": "bun --cwd raffle-backend prisma generate && bun --cwd raffle-app build"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.8.3",
+    "husky": "^9.0.11"
+  }
+}

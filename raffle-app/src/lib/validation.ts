@@ -118,10 +118,7 @@ export const itemUploadSchema = z.object({
     .int(),
   raffleDate: z
     .string()
-    .refine(
-      (date) => new Date(date) > new Date(),
-      'Raffle date must be in the future',
-    ),
+    .optional(),
   autoStart: z.boolean().optional(),
 });
 

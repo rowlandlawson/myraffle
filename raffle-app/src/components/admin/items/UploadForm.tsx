@@ -140,10 +140,6 @@ export default function UploadForm({ onCancel, onSubmit }: UploadFormProps) {
       alert('Total tickets is required');
       return;
     }
-    if (!formData.raffleDate) {
-      alert('Raffle date is required');
-      return;
-    }
     if (!imageFile) {
       alert('Item image is required');
       return;
@@ -157,7 +153,7 @@ export default function UploadForm({ onCancel, onSubmit }: UploadFormProps) {
     fd.append('category', formData.category);
     fd.append('ticketPrice', formData.ticketPrice);
     fd.append('totalTickets', formData.totalTickets);
-    fd.append('raffleDate', formData.raffleDate);
+    if (formData.raffleDate) fd.append('raffleDate', formData.raffleDate);
     if (imageFile) fd.append('image', imageFile);
     
     onSubmit(fd);
@@ -308,17 +304,6 @@ export default function UploadForm({ onCancel, onSubmit }: UploadFormProps) {
               value={formData.totalTickets}
               onChange={handleChange}
               placeholder="100"
-              className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Raffle Date *</label>
-            <input
-              type="date"
-              name="raffleDate"
-              value={formData.raffleDate}
-              onChange={handleChange}
               className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/20"
               required
             />

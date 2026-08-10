@@ -1,16 +1,16 @@
-// Raffle Points Conversion: ₦10 = 1 Raffle Point
-export const NAIRA_PER_POINT = 10;
-export const CONVERSION_RATE = NAIRA_PER_POINT;
-export const POINTS_PER_NAIRA = 1 / NAIRA_PER_POINT;
+// Raffle Currency Conversion: System is 1:1 Naira (₦)
+export const NAIRA_PER_POINT = 1;
+export const CONVERSION_RATE = 1;
+export const POINTS_PER_NAIRA = 1;
 
-/** Convert a naira amount to raffle points */
+/** Convert a naira amount to raffle currency (1:1) */
 export function convertNairaToPoints(naira: number): number {
-  return Math.floor(naira / NAIRA_PER_POINT);
+  return naira || 0;
 }
 
-/** Convert raffle points to naira equivalent */
+/** Convert raffle currency to naira equivalent (1:1) */
 export function convertPointsToNaira(points: number): number {
-  return points * NAIRA_PER_POINT;
+  return points || 0;
 }
 
 /** Feature flag: cash payments are scaffolded but not yet active */

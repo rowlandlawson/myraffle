@@ -117,6 +117,6 @@ export function useTicketHistory() {
 // ─── API functions ──────────────────────────────────────────
 
 /** POST /api/tickets — Buy a ticket */
-export async function buyTicket(raffleId: string, paymentMethod: 'wallet' | 'points') {
-    return api.post('/api/tickets', { raffleId, paymentMethod });
+export async function buyTicket(raffleId: string, paymentMethod: string = 'wallet', useWallet: boolean = true) {
+    return api.post('/api/tickets', { raffleId, paymentMethod, useWallet });
 }

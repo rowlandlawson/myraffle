@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { initializePayment } from '../services/paystack';
+import { initializeMonnifyPayment } from '../services/monnify';
 import { logTransaction } from '../utils/transactions';
+import crypto from 'crypto';
 
 // GET /api/wallet/balance
 export const getBalance = async (req: Request, res: Response) => {
@@ -39,7 +40,7 @@ export const initiateDeposit = async (req: Request, res: Response) => {
 
         const user = await prisma.user.findUnique({
             where: { id: req.user!.userId },
-            select: { email: true },
+            select: { email: true, name: true },
         });
 
         if (!user) {
@@ -47,10 +48,20 @@ export const initiateDeposit = async (req: Request, res: Response) => {
             return;
         }
 
-        // Initialize Paystack payment
-        const paymentData = await initializePayment(user.email, amount, {
-            userId: req.user!.userId,
-            type: 'wallet_deposit',
+        const paymentRef = `DEP-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+
+        // Initialize Monnify payment
+        const monnifyRes = await initializeMonnifyPayment({
+            amount,
+            customerName: user.name || user.email,
+            customerEmail: user.email,
+            paymentReference: paymentRef,
+            paymentDescription: 'Wallet deposit via Monnify',
+            redirectUrl: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/dashboard/earnings`,
+            metadata: {
+                userId: req.user!.userId,
+                type: 'wallet_deposit',
+            },
         });
 
         // Log pending transaction
@@ -59,16 +70,16 @@ export const initiateDeposit = async (req: Request, res: Response) => {
             type: 'DEPOSIT',
             amount,
             status: 'PENDING',
-            reference: paymentData.reference,
-            description: 'Wallet deposit via Paystack',
+            reference: paymentRef,
+            description: 'Wallet deposit via Monnify',
         });
 
         res.status(200).json({
             success: true,
-            message: 'Payment initialized.',
+            message: 'Monnify payment initialized.',
             data: {
-                authorizationUrl: paymentData.authorization_url,
-                reference: paymentData.reference,
+                authorizationUrl: monnifyRes.checkoutUrl || monnifyRes.redirectUrl,
+                reference: paymentRef,
             },
         });
     } catch (error) {
