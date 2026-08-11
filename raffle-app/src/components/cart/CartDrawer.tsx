@@ -77,7 +77,7 @@ export default function CartDrawer() {
             </button>
           </div>
 
-          {/* Cart Items List */}
+          {/* Cart List */}
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
             {items.length === 0 ? (
               <div className="text-center py-16 space-y-4">
