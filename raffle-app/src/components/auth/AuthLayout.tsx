@@ -3,6 +3,8 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -15,9 +17,20 @@ export default function AuthLayout({
   showLogo = true,
   logoLink = '/',
 }: AuthLayoutProps) {
+  const router = useRouter();
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12 relative">
       <div className="w-full max-w-sm">
+        {/* Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-red-600 mb-2 transition-colors group"
+        >
+          <ArrowLeft size={16} className="group-hover:-translate-x-0.5 transition-transform" />
+          <span>Back</span>
+        </button>
+
         {/* Logo */}
         {showLogo && (
           <div className="text-center -mb-4">

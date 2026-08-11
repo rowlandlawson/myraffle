@@ -60,8 +60,6 @@ export default function TermsPage() {
           </div>
         </div>
       </main>
-
-      <BottomNav />
     </div>
   );
 }

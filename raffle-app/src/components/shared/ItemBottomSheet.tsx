@@ -1,11 +1,12 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, Clock, Users, Ticket, ChevronRight } from 'lucide-react';
+import { X, Clock, Users, Ticket, ChevronRight, ShoppingBag } from 'lucide-react';
 import { resolveImageUrl } from '@/lib/imageUrl';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import TicketCheckoutModal from './TicketCheckoutModal';
+import { useCartStore } from '@/lib/cartStore';
 
 interface RaffleItem {
   id: string | number;
@@ -34,6 +35,7 @@ export default function ItemBottomSheet({
   const [isDragging, setIsDragging] = useState(false);
   const [translateY, setTranslateY] = useState(0);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const { addToCart, openCart } = useCartStore();
   const dragStartY = useRef(0);
   const sheetRef = useRef<HTMLDivElement>(null);
 
@@ -53,6 +55,28 @@ export default function ItemBottomSheet({
   const handleClose = () => {
     setIsVisible(false);
     setTimeout(onClose, 300);
+  };
+
+  const handleAddToCart = () => {
+    if (!item) return;
+
+    const maxTickets = Math.max(0, item.ticketsTotal - item.ticketsSold);
+
+    addToCart(
+      {
+        raffleId: String(item.id),
+        itemId: String(item.id),
+        title: item.name,
+        imageUrl: resolveImageUrl(item.image) || item.image,
+        ticketPrice: item.ticketPrice,
+        maxTicketsAvailable: maxTickets,
+      },
+      1
+    );
+
+    toast.success(`${item.name} added to cart! 🛒`);
+    handleClose();
+    openCart();
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -212,23 +236,33 @@ export default function ItemBottomSheet({
           {/* Fixed CTA at bottom with padding above mobile bottom navbar */}
           <div className="px-5 pt-3 pb-20 md:pb-6 border-t border-gray-100 bg-white">
             {item.status === 'active' ? (
-              isAuthenticated ? (
+              <div className="flex gap-2">
                 <button
-                  onClick={() => setCheckoutOpen(true)}
-                  className="flex items-center justify-center gap-2 w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-base rounded-2xl transition-all shadow-md active:scale-[0.98]"
+                  onClick={handleAddToCart}
+                  className="flex-1 py-3.5 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-extrabold text-sm rounded-2xl transition-all shadow flex items-center justify-center gap-1.5 active:scale-[0.98]"
                 >
-                  Buy Ticket ({item.ticketPrice.toLocaleString()} NGN)
-                  <ChevronRight size={18} />
+                  <ShoppingBag size={18} />
+                  Add to Cart
                 </button>
-              ) : (
-                <Link
-                  href="/login"
-                  className="flex items-center justify-center gap-2 w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-base rounded-2xl transition-all shadow-md active:scale-[0.98]"
-                >
-                  Login to Buy Ticket
-                  <ChevronRight size={18} />
-                </Link>
-              )
+
+                {isAuthenticated ? (
+                  <button
+                    onClick={() => setCheckoutOpen(true)}
+                    className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-sm rounded-2xl transition-all shadow-md flex items-center justify-center gap-1 active:scale-[0.98]"
+                  >
+                    Buy Ticket
+                    <ChevronRight size={18} />
+                  </button>
+                ) : (
+                  <Link
+                    href="/login"
+                    className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-sm rounded-2xl transition-all shadow-md flex items-center justify-center gap-1 active:scale-[0.98]"
+                  >
+                    Login to Buy
+                    <ChevronRight size={18} />
+                  </Link>
+                )}
+              </div>
             ) : (
               <button
                 disabled

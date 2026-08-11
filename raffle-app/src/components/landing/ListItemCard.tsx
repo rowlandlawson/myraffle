@@ -2,6 +2,9 @@
 
 import BlockProgressBar from '@/components/landing/BlockProgressBar';
 import { resolveImageUrl } from '@/lib/imageUrl';
+import { ShoppingBag } from 'lucide-react';
+import { useCartStore } from '@/lib/cartStore';
+import toast from 'react-hot-toast';
 
 export interface ListItem {
   id: string | number;
@@ -22,10 +25,25 @@ interface ListItemCardProps {
 export default function ListItemCard({ item, onViewDetails }: ListItemCardProps) {
   const imageUrl = resolveImageUrl(item.image);
   const ticketsLeft = Math.max(0, item.ticketsTotal - item.ticketsSold);
+  const { addToCart, openCart } = useCartStore();
+
+  const handleQuickAdd = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    addToCart({
+      raffleId: String(item.id),
+      itemId: String(item.id),
+      title: item.name,
+      imageUrl: imageUrl || item.image,
+      ticketPrice: item.ticketPrice,
+      maxTicketsAvailable: ticketsLeft,
+    });
+    toast.success(`Added 1 ticket for ${item.name} to cart! 🛒`);
+    openCart();
+  };
 
   return (
     <div
-      className="flex gap-3 sm:gap-4 py-4 border-b border-gray-100 last:border-b-0 cursor-pointer items-center"
+      className="flex gap-3 sm:gap-4 py-4 border-b border-gray-100 last:border-b-0 cursor-pointer items-center group"
       onClick={() => onViewDetails?.(item)}
     >
       {/* Square Thumbnail Container */}
@@ -68,12 +86,23 @@ export default function ListItemCard({ item, onViewDetails }: ListItemCardProps)
           {item.name}
         </h4>
 
-        {/* Price Tag */}
-        <div>
-          <span className="text-red-600 font-extrabold text-sm sm:text-base">
-            {item.ticketPrice.toLocaleString()} NGN
-          </span>
-          <span className="text-gray-400 text-xs font-semibold ml-1">/ticket</span>
+        {/* Price Tag & Add to Cart button */}
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-red-600 font-extrabold text-sm sm:text-base">
+              {item.ticketPrice.toLocaleString()} NGN
+            </span>
+            <span className="text-gray-400 text-xs font-semibold ml-1">/ticket</span>
+          </div>
+
+          <button
+            onClick={handleQuickAdd}
+            className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1 text-xs font-bold shadow-sm"
+            title="Add ticket to cart"
+          >
+            <ShoppingBag size={15} />
+            <span className="hidden sm:inline">Add</span>
+          </button>
         </div>
       </div>
     </div>

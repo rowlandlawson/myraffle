@@ -24,7 +24,7 @@ export default function ActiveRaffles({ raffles }: ActiveRafflesProps) {
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
             <h2 className="text-lg font-bold text-gray-900 mb-4">Active Raffles</h2>
             <div className="space-y-3">
-                {raffles.map((raffle) => {
+                {raffles.map((raffle: AdminActiveRaffle) => {
                     const progress = raffle.ticketsTotal > 0
                         ? Math.round((raffle.ticketsSold / raffle.ticketsTotal) * 100)
                         : 0;

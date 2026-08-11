@@ -34,7 +34,7 @@ export default function AdminPayoutsPage() {
   const pagination = data?.pagination;
 
   // Client-side search filter (backend doesn't have search on withdrawals)
-  const filteredWithdrawals = withdrawals.filter((w) => {
+  const filteredWithdrawals = withdrawals.filter((w: any) => {
     if (!searchTerm) return true;
     const term = searchTerm.toLowerCase();
     return (
@@ -97,12 +97,12 @@ export default function AdminPayoutsPage() {
   };
 
   const pendingTotal = filteredWithdrawals
-    .filter((p) => p.status === 'PENDING')
-    .reduce((sum, p) => sum + p.amount, 0);
-  const pendingCount = filteredWithdrawals.filter((p) => p.status === 'PENDING').length;
+    .filter((p: any) => p.status === 'PENDING')
+    .reduce((sum: number, p: any) => sum + p.amount, 0);
+  const pendingCount = filteredWithdrawals.filter((p: any) => p.status === 'PENDING').length;
   const completedTotal = filteredWithdrawals
-    .filter((p) => p.status === 'COMPLETED')
-    .reduce((sum, p) => sum + p.amount, 0);
+    .filter((p: any) => p.status === 'COMPLETED')
+    .reduce((sum: number, p: any) => sum + p.amount, 0);
 
   return (
     <div className="space-y-8">
@@ -202,7 +202,7 @@ export default function AdminPayoutsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                  {filteredWithdrawals.map((w) => (
+                  {filteredWithdrawals.map((w: any) => (
                     <tr key={w.id} className="hover:bg-gray-50">
                       <td className="px-4 py-4 font-mono text-sm text-gray-900">
                         {w.id.slice(0, 10)}

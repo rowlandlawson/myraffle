@@ -194,7 +194,7 @@ export default function AdminBannersPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {banners.map((banner) => {
+          {banners.map((banner: any) => {
             const imageUrl = banner.imageUrl?.startsWith('/uploads')
               ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${banner.imageUrl}`
               : banner.imageUrl;

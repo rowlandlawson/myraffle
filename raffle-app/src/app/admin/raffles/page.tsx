@@ -111,7 +111,7 @@ export default function AdminRafflesPage() {
     winner: r.winner?.name || null,
   }));
 
-  const filteredRaffles = raffles.filter((raffle) => {
+  const filteredRaffles = raffles.filter((raffle: any) => {
     const matchesSearch = raffle.itemName
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
@@ -156,9 +156,9 @@ export default function AdminRafflesPage() {
 
   const stats = {
     total: raffles.length,
-    active: raffles.filter((r) => r.status === 'ACTIVE').length,
-    scheduled: raffles.filter((r) => r.status === 'SCHEDULED').length,
-    completed: raffles.filter((r) => r.status === 'COMPLETED').length,
+    active: raffles.filter((r: any) => r.status === 'ACTIVE').length,
+    scheduled: raffles.filter((r: any) => r.status === 'SCHEDULED').length,
+    completed: raffles.filter((r: any) => r.status === 'COMPLETED').length,
   };
 
   return (
@@ -269,7 +269,7 @@ export default function AdminRafflesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredRaffles.map((raffle) => (
+                {filteredRaffles.map((raffle: any) => (
                   <tr key={raffle.id} className="hover:bg-gray-50">
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">

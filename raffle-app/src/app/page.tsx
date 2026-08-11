@@ -157,7 +157,6 @@ export default function LandingPage() {
             onViewDetails={(item: RaffleItem) => setSelectedItem(item)}
           />
         </main>
-        <BottomNav />
       </div>
 
       {/* Item Detail Bottom Sheet (Reusable for both desktop and mobile) */}

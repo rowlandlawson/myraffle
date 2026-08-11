@@ -17,7 +17,7 @@ export default function WinnersCarousel({ completedRaffles = [] }: WinnersCarous
   }
 
   // Map database completed raffles
-  const displayWinners = completedRaffles.map((r) => {
+  const displayWinners = completedRaffles.map((r: ApiRaffle) => {
     const formattedDate = new Date(r.raffleDate).toLocaleDateString('en-GB', {
       day: '2-digit',
       month: '2-digit',

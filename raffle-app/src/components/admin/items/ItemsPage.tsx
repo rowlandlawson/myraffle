@@ -34,7 +34,7 @@ export function AdminItemsPage() {
   const deleteItem = useDeleteItem();
 
   // Map API items to the admin Item type
-  const items: Item[] = apiItems.map((item) => {
+  const items: Item[] = apiItems.map((item: any) => {
     const activeRaffle = item.raffles[0];
     return {
       id: item.id as any,
@@ -57,7 +57,7 @@ export function AdminItemsPage() {
   });
 
   // Filter items client-side for search (API already filters by status)
-  const filteredItems = items.filter((item) => {
+  const filteredItems = items.filter((item: any) => {
     const searchMatch = item.name
       .toLowerCase()
       .includes(filters.searchTerm.toLowerCase());
