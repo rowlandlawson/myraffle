@@ -118,8 +118,9 @@ export const getTicketById = async (req: Request, res: Response) => {
 // POST /api/tickets — Buy a ticket
 export const buyTicket = async (req: Request, res: Response) => {
     try {
-        const { raffleId, paymentMethod, useWallet } = req.body;
+        const { raffleId, paymentMethod, useWallet, quantity } = req.body;
         const userId = req.user!.userId;
+        const qty = Math.max(1, Math.min(10, parseInt(quantity) || 1));
 
         // Get raffle details
         const raffle = await prisma.raffle.findUnique({
@@ -142,7 +143,8 @@ export const buyTicket = async (req: Request, res: Response) => {
         }
 
         // Check tickets available
-        if (raffle.ticketsSold >= raffle.ticketsTotal) {
+        const remainingTickets = raffle.ticketsTotal - raffle.ticketsSold;
+        if (remainingTickets <= 0) {
             res.status(400).json({
                 success: false,
                 message: 'All tickets for this raffle have been sold.',
@@ -150,15 +152,31 @@ export const buyTicket = async (req: Request, res: Response) => {
             return;
         }
 
-        // Enforce 1 ticket per user per raffle
-        const existingTicket = await prisma.ticket.findFirst({
+        if (qty > remainingTickets) {
+            res.status(400).json({
+                success: false,
+                message: `Only ${remainingTickets} ticket(s) remaining for this raffle.`,
+            });
+            return;
+        }
+
+        // Enforce max 10 tickets per user per raffle
+        const userTicketCount = await prisma.ticket.count({
             where: { userId, raffleId },
         });
 
-        if (existingTicket) {
+        if (userTicketCount >= 10) {
             res.status(400).json({
                 success: false,
-                message: 'You already have a ticket for this raffle.',
+                message: 'You have reached the maximum limit of 10 tickets for this raffle.',
+            });
+            return;
+        }
+
+        if (userTicketCount + qty > 10) {
+            res.status(400).json({
+                success: false,
+                message: `You can only buy up to 10 tickets per raffle. You currently own ${userTicketCount} ticket(s), so you can buy at most ${10 - userTicketCount} more.`,
             });
             return;
         }
@@ -166,7 +184,7 @@ export const buyTicket = async (req: Request, res: Response) => {
         // Check user
         const user = await prisma.user.findUnique({
             where: { id: userId },
-            select: { id: true, email: true, walletBalance: true },
+            select: { id: true, name: true, email: true, walletBalance: true },
         });
 
         if (!user) {
@@ -175,63 +193,85 @@ export const buyTicket = async (req: Request, res: Response) => {
         }
 
         const ticketPrice = raffle.ticketPrice;
+        const totalAmount = ticketPrice * qty;
         const availableWallet = Math.max(0, user.walletBalance);
 
         // Check if user requested wallet payment
         if (paymentMethod === 'wallet') {
-            if (availableWallet < ticketPrice) {
+            if (availableWallet < totalAmount) {
                 res.status(400).json({
                     success: false,
-                    message: `Insufficient wallet balance. You have ₦${availableWallet.toLocaleString()} but ticket costs ₦${ticketPrice.toLocaleString()}. Please pay via Monnify gateway or top up your wallet.`,
+                    message: `Insufficient wallet balance. You have ₦${availableWallet.toLocaleString()} but ${qty} ticket(s) cost ₦${totalAmount.toLocaleString()}. Please pay via Monnify gateway or top up your wallet.`,
                 });
                 return;
             }
 
-            // User has sufficient wallet balance -> execute 100% wallet purchase
-            const ticketNumber = `TKT-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
+            // Execute ATOMIC TRANSACTION with strict SQL row locks
+            // Prevents overselling when 1,000s of users click Buy simultaneously
+            try {
+                await prisma.$transaction(async (tx) => {
+                    // 1. Atomic Wallet Balance Deduction
+                    const walletDeducted = await tx.$executeRaw`
+                        UPDATE "User"
+                        SET "walletBalance" = "walletBalance" - ${totalAmount}
+                        WHERE "id" = ${userId}
+                          AND "walletBalance" >= ${totalAmount};
+                    `;
 
-            const [ticket] = await prisma.$transaction([
-                prisma.ticket.create({
-                    data: {
+                    if (walletDeducted === 0) {
+                        throw new Error('INSUFFICIENT_WALLET_FUNDS');
+                    }
+
+                    // 2. Atomic Ticket Count Reservation (Guarantees NO OVERSELLING)
+                    const raffleUpdated = await tx.$executeRaw`
+                        UPDATE "Raffle"
+                        SET "ticketsSold" = "ticketsSold" + ${qty},
+                            "status" = CASE WHEN "status" = 'SCHEDULED' THEN 'ACTIVE'::"RaffleStatus" ELSE "status" END
+                        WHERE "id" = ${raffleId}
+                          AND "status" IN ('ACTIVE'::"RaffleStatus", 'SCHEDULED'::"RaffleStatus")
+                          AND ("ticketsSold" + ${qty}) <= "ticketsTotal";
+                    `;
+
+                    if (raffleUpdated === 0) {
+                        throw new Error('RAFFLE_SOLD_OUT');
+                    }
+
+                    // 3. Batch insert tickets
+                    const ticketData = Array.from({ length: qty }).map((_, i) => ({
                         userId,
                         raffleId,
-                        ticketNumber,
-                        status: 'ACTIVE',
-                    },
-                    include: {
-                        raffle: {
-                            include: {
-                                item: {
-                                    select: {
-                                        id: true,
-                                        name: true,
-                                        imageUrl: true,
-                                        value: true,
-                                    },
-                                },
-                            },
-                        },
-                    },
-                }),
-                prisma.raffle.update({
-                    where: { id: raffleId },
-                    data: {
-                        ticketsSold: { increment: 1 },
-                        ...(raffle.status === 'SCHEDULED' ? { status: 'ACTIVE' } : {}),
-                    },
-                }),
-                prisma.user.update({
-                    where: { id: userId },
-                    data: { walletBalance: { decrement: ticketPrice } },
-                }),
-            ]);
+                        ticketNumber: `TKT-${Date.now()}-${i}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`,
+                        status: 'ACTIVE' as const,
+                    }));
+
+                    await tx.ticket.createMany({
+                        data: ticketData,
+                    });
+                });
+            } catch (txError: any) {
+                if (txError.message === 'RAFFLE_SOLD_OUT') {
+                    res.status(400).json({
+                        success: false,
+                        message: 'Sorry! The remaining ticket(s) for this raffle were just purchased by another user. This raffle is now sold out.',
+                    });
+                    return;
+                }
+                if (txError.message === 'INSUFFICIENT_WALLET_FUNDS') {
+                    res.status(400).json({
+                        success: false,
+                        message: 'Insufficient wallet balance for this purchase.',
+                    });
+                    return;
+                }
+                throw txError;
+            }
 
             await logTransaction({
                 userId,
                 type: 'TICKET_PURCHASE',
-                amount: ticketPrice,
+                amount: totalAmount,
                 status: 'COMPLETED',
-                description: `Ticket for ${raffle.item.name} (Wallet)`,
+                description: `${qty} Ticket(s) for ${raffle.item.name} (Wallet)`,
             });
 
             // Check if sold out & auto-draw immediately
@@ -241,8 +281,7 @@ export const buyTicket = async (req: Request, res: Response) => {
 
             res.status(201).json({
                 success: true,
-                message: 'Ticket purchased successfully!',
-                data: ticket,
+                message: `Successfully purchased ${qty} ticket(s)!`,
             });
             return;
         }

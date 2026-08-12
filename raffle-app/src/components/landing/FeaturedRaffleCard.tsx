@@ -1,7 +1,6 @@
-'use client';
-
 import TicketButton from '@/components/landing/TicketButton';
 import { resolveImageUrl } from '@/lib/imageUrl';
+import CountdownTimer from '@/components/shared/CountdownTimer';
 
 export interface FeaturedItem {
   id: string | number;
@@ -13,6 +12,7 @@ export interface FeaturedItem {
   status: string;
   endsIn?: string;
   category?: string;
+  raffleDate?: string | Date;
 }
 
 interface FeaturedRaffleCardProps {
@@ -65,16 +65,24 @@ export default function FeaturedRaffleCard({
       </div>
 
       {/* Content Area */}
-      <div className="p-4 sm:p-5 bg-white">
-        <h3 className="text-base sm:text-lg font-extrabold text-gray-900 mb-2">
-          {item.name}
-        </h3>
+      <div className="p-4 sm:p-5 bg-white space-y-3">
+        <div className="flex items-center justify-between gap-2">
+          <h3 className="text-base sm:text-lg font-extrabold text-gray-900 truncate">
+            {item.name}
+          </h3>
+          {item.raffleDate && <CountdownTimer targetDate={item.raffleDate} compact />}
+        </div>
 
-        <div className="mb-4">
-          <span className="text-red-600 font-extrabold text-base sm:text-lg">
-            {item.ticketPrice.toLocaleString()} NGN
-          </span>
-          <span className="text-gray-500 text-xs font-medium ml-1">/ticket</span>
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="text-red-600 font-extrabold text-base sm:text-lg">
+              {item.ticketPrice.toLocaleString()} NGN
+            </span>
+            <span className="text-gray-500 text-xs font-medium ml-1">/ticket</span>
+          </div>
+          {item.raffleDate && (
+            <CountdownTimer targetDate={item.raffleDate} className="hidden sm:flex" />
+          )}
         </div>
 
         {/* JOIN THE DRAW Ticket Button */}

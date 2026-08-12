@@ -15,6 +15,7 @@ import {
     getAdminWins,
     updateDeliveryStatus,
     convertPrizeToWallet,
+    extendRaffleTimer,
 } from '../controllers/adminController';
 import {
     getAdminBanners,
@@ -47,6 +48,10 @@ router.delete('/tasks/:id', requireAuth, requireAdmin, deleteTask);
 // Wins management
 router.get('/wins', requireAuth, requireAdmin, getAdminWins);
 router.put('/wins/:raffleId/delivery', requireAuth, requireAdmin, updateDeliveryStatus);
+router.post('/wins/:raffleId/convert-wallet', requireAuth, requireAdmin, convertPrizeToWallet);
+
+// Raffle timer extension
+router.post('/raffles/:id/extend', requireAuth, requireAdmin, extendRaffleTimer);
 
 // Banner management
 router.get('/banners', requireAuth, requireAdmin, getAdminBanners);

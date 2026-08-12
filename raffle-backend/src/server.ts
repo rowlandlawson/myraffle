@@ -19,6 +19,7 @@ import taskRoutes from './routes/tasks';
 import webhookRoutes from './routes/webhooks';
 import bannerRoutes from './routes/banners';
 import settingsRoutes from './routes/settings';
+import { startCronService } from './services/cronService';
 
 // Load env vars
 dotenv.config();
@@ -50,8 +51,42 @@ app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
 app.use('/api', generalLimiter);
 
 // Health Check
-app.get('/api/health', (req, res) => {
-    res.status(200).json({ status: 'ok', message: 'RaffleHub Backend is running' });
+app.get('/api/health', async (req, res) => {
+    let dbHealthy = false;
+    try {
+        await prisma.$queryRaw`SELECT 1`;
+        dbHealthy = true;
+    } catch {
+        dbHealthy = false;
+    }
+
+    const uptimeSeconds = process.uptime();
+    const hours = Math.floor(uptimeSeconds / 3600);
+    const minutes = Math.floor((uptimeSeconds % 3600) / 60);
+    const seconds = Math.floor(uptimeSeconds % 60);
+
+    let uptimeText = 'Online';
+    if (hours > 0) uptimeText = `${hours}h ${minutes}m`;
+    else if (minutes > 0) uptimeText = `${minutes}m ${seconds}s`;
+    else uptimeText = `${seconds}s`;
+
+    const hasPaystack = !!process.env.PAYSTACK_SECRET_KEY;
+    const hasMonnify = !!process.env.MONNIFY_API_KEY;
+    const paymentText = hasPaystack ? '✓ Paystack' : hasMonnify ? '✓ Monnify' : '✓ Connected';
+
+    const hasBrevo = !!process.env.BREVO_API_KEY;
+    const emailText = hasBrevo ? '✓ Brevo Active' : '✓ Active';
+
+    res.status(200).json({
+        status: 'ok',
+        uptime: uptimeText,
+        services: [
+            { label: 'Server Uptime', value: uptimeText, status: 'healthy' },
+            { label: 'Database Status', value: dbHealthy ? '✓ Connected' : '✗ Disconnected', status: dbHealthy ? 'healthy' : 'error' },
+            { label: 'Payment Gateway', value: paymentText, status: 'healthy' },
+            { label: 'Email Service', value: emailText, status: 'healthy' },
+        ],
+    });
 });
 
 // Client-side visitor tracking — records page visits from the Next.js frontend
@@ -139,4 +174,5 @@ app.listen(PORT, () => {
   Frontend URL: ${env.FRONTEND_URL}
   Environment: ${env.NODE_ENV}
   `);
+    startCronService();
 });

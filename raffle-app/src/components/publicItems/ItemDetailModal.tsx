@@ -79,22 +79,26 @@ export default function ItemDetailModal({
         onClick={handleClose}
       />
 
-      {/* Bottom Sheet Modal */}
+      {/* Bottom Sheet Modal / Centered Modal on Large Screens */}
       <div
-        className={`fixed inset-x-0 bottom-0 z-[101] transition-transform duration-300 ease-out ${
-          isVisible ? 'translate-y-0' : 'translate-y-full'
+        className={`fixed inset-0 z-[101] flex items-end md:items-center justify-center p-0 md:p-6 pointer-events-none transition-opacity duration-300 ${
+          isVisible ? 'opacity-100' : 'opacity-0'
         }`}
-        style={{
-          transform: isVisible
-            ? `translateY(${translateY}px)`
-            : 'translateY(100%)',
-          transition: isDragging ? 'none' : undefined,
-        }}
       >
-        <div className="bg-white rounded-t-3xl max-h-[92vh] overflow-hidden flex flex-col shadow-2xl">
-          {/* Drag Handle */}
+        <div
+          className={`bg-white w-full max-w-xl rounded-t-3xl md:rounded-3xl max-h-[92vh] md:max-h-[85vh] overflow-hidden flex flex-col shadow-2xl pointer-events-auto transition-all duration-300 ease-out relative ${
+            isVisible ? 'translate-y-0 md:scale-100' : 'translate-y-full md:translate-y-0 md:scale-95'
+          }`}
+          style={{
+            transform: isVisible && translateY !== 0
+              ? `translateY(${translateY}px)`
+              : undefined,
+            transition: isDragging ? 'none' : undefined,
+          }}
+        >
+          {/* Drag Handle (Mobile only) */}
           <div
-            className="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing"
+            className="flex md:hidden justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}

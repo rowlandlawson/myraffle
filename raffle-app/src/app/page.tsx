@@ -1,8 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import LandingNavbar from '@/components/landing/LandingNavbar';
-import TopNav from '@/components/navbar/TopNav';
+import { useState, useMemo } from 'react';
 import RaffleCard from '@/components/landing/RaffleCard';
 import FeaturesSection from '@/components/landing/FeaturesSection';
 import WinnersSection from '@/components/landing/WinnersSection';
@@ -10,14 +8,17 @@ import HowItWorksSection from '@/components/landing/HowItWorksSection';
 import CTASection from '@/components/landing/CTASection';
 import Footer from '@/components/landing/Footer';
 import ItemsSection from '@/components/landing/ItemsSection';
-import BottomNav from '@/components/navbar/BottomNav';
 import ItemBottomSheet from '@/components/shared/ItemBottomSheet';
 import { useAuthStore } from '@/lib/authStore';
 import { useRaffles, ApiRaffle } from '@/lib/hooks/useRaffles';
 import { resolveImageUrl } from '@/lib/imageUrl';
-import { Loader2 } from 'lucide-react';
-
+import { Loader2, ChevronDown } from 'lucide-react';
 import BannerSlider from '@/components/landing/BannerSlider';
+
+// How many items to show per "page" on the desktop grid
+const DESKTOP_PAGE_SIZE = 8;
+// How many items to show initially on mobile (featured + list)
+const MOBILE_PAGE_SIZE = 5;
 
 interface RaffleItem {
   id: string | number;
@@ -28,50 +29,49 @@ interface RaffleItem {
   ticketsTotal: number;
   status: 'active' | 'completed';
   endsIn: string;
+  raffleDate?: string | Date;
+}
+
+function mapRaffleToItem(r: ApiRaffle): RaffleItem {
+  const now = new Date();
+  const raffleEnd = new Date(r.raffleDate);
+  const daysLeft = Math.max(
+    0,
+    Math.ceil((raffleEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+  );
+  return {
+    id: String(r.id),
+    name: r.item?.name || 'Raffle Draw',
+    image: resolveImageUrl(r.item?.imageUrl) || '',
+    ticketPrice: r.ticketPrice,
+    ticketsSold: r.ticketsSold,
+    ticketsTotal: r.ticketsTotal,
+    status: r.status === 'COMPLETED' ? 'completed' : 'active',
+    endsIn: r.status === 'COMPLETED' ? 'Completed' : `${daysLeft} days`,
+    raffleDate: r.raffleDate,
+  };
 }
 
 export default function LandingPage() {
   const [selectedItem, setSelectedItem] = useState<RaffleItem | null>(null);
   const { isAuthenticated } = useAuthStore();
 
-  // Fetch live active raffles from backend API
-  const { data: activeData, isPending: isPendingActive, isLoading: isLoadingActive } = useRaffles({ status: 'ACTIVE' });
-  const activeRaffles = activeData?.raffles || [];
+  // Desktop: track how many items to show (starts at DESKTOP_PAGE_SIZE)
+  const [desktopVisible, setDesktopVisible] = useState(DESKTOP_PAGE_SIZE);
+  // Mobile: track how many items to show
+  const [mobileVisible, setMobileVisible] = useState(MOBILE_PAGE_SIZE);
 
-  // Fetch completed winner raffles directly from database API
+  // Fetch all active raffles once (backend default limit is usually 100, enough)
+  const { data: activeData, isPending, isFetching } = useRaffles({ status: 'ACTIVE' });
   const { data: completedData } = useRaffles({ status: 'COMPLETED' });
+
+  const allItems = useMemo(
+    () => (activeData?.raffles || []).map(mapRaffleToItem),
+    [activeData]
+  );
+
   const completedRaffles = completedData?.raffles || [];
 
-  const isRafflesLoading = isPendingActive || isLoadingActive;
-
-  // Map API data to RaffleItem format
-  const mapRaffleToItem = (r: ApiRaffle): RaffleItem => {
-    const now = new Date();
-    const raffleEnd = new Date(r.raffleDate);
-    const daysLeft = Math.max(
-      0,
-      Math.ceil(
-        (raffleEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-      ),
-    );
-
-    const imageUrl = resolveImageUrl(r.item?.imageUrl) || '';
-
-    return {
-      id: String(r.id),
-      name: r.item?.name || 'Raffle Draw',
-      image: imageUrl,
-      ticketPrice: r.ticketPrice,
-      ticketsSold: r.ticketsSold,
-      ticketsTotal: r.ticketsTotal,
-      status: r.status === 'COMPLETED' ? 'completed' : 'active',
-      endsIn: r.status === 'COMPLETED' ? 'Completed' : `${daysLeft} days`,
-    };
-  };
-
-  const items = activeRaffles.map(mapRaffleToItem);
-
-  // Recent winners ticker format
   const recentWinners = completedRaffles.map((r: ApiRaffle, idx: number) => ({
     id: idx + 1,
     userNumber: r.winner?.name || r.winner?.userNumber || `USER-${String(r.id).slice(0, 5)}`,
@@ -79,8 +79,14 @@ export default function LandingPage() {
     date: new Date(r.raffleDate).toLocaleDateString(),
   }));
 
-  // MINIMALIST CLEAN WHITE LOADING SCREEN WHILE FETCHING
-  if (isRafflesLoading) {
+  // Sliced views
+  const desktopItems = allItems.slice(0, desktopVisible);
+  const hasMoreDesktop = desktopVisible < allItems.length;
+
+  const mobileItems = allItems.slice(0, mobileVisible);
+  const hasMoreMobile = mobileVisible < allItems.length;
+
+  if (isPending) {
     return (
       <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center space-y-4">
         <h1 className="text-2xl font-black tracking-tight text-gray-900">
@@ -93,46 +99,73 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* 1. DESKTOP VIEW (Visible on medium and larger screens: md:block) */}
-      {/* ───────────────────────────────────────────────────────────── */}
+
+      {/* ── DESKTOP ─────────────────────────────────────────────── */}
       <div className="hidden md:block">
-        <LandingNavbar />
         <BannerSlider />
 
-        {/* Desktop Items Grid */}
         <section id="items" className="py-16 px-4 md:px-8 max-w-7xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
+          {/* Section header */}
+          <div className="flex items-end justify-between mb-8">
             <div>
-              <h2 className="text-3xl font-extrabold text-gray-900">
-                Live Raffle Draws
-              </h2>
-              <p className="text-gray-600 text-sm mt-1">
-                Choose an item to view details and enter the raffle draw.
-              </p>
+              <p className="text-xs font-bold text-[#C0000C] uppercase tracking-widest mb-2">Active now</p>
+              <h2 className="text-3xl font-black text-gray-900 tracking-tight">Live Raffle Draws</h2>
+              <p className="text-gray-500 text-sm mt-1">Pick an item, grab your ticket, and enter the draw.</p>
             </div>
+            {allItems.length > 0 && (
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-full text-xs font-bold text-emerald-700">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                {allItems.length} active draw{allItems.length !== 1 ? 's' : ''}
+              </div>
+            )}
           </div>
 
-          {items.length > 0 ? (
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {items.map((item: RaffleItem) => (
-                <RaffleCard
-                  key={item.id}
-                  item={item}
-                  isAuthenticated={isAuthenticated}
-                  onViewDetails={(selected: RaffleItem) => setSelectedItem(selected)}
-                />
-              ))}
-            </div>
+          {allItems.length > 0 ? (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {desktopItems.map((item) => (
+                  <RaffleCard
+                    key={item.id}
+                    item={item}
+                    isAuthenticated={isAuthenticated}
+                    onViewDetails={(selected) => setSelectedItem(selected)}
+                  />
+                ))}
+              </div>
+
+              {/* Load More */}
+              {hasMoreDesktop && (
+                <div className="mt-10 flex flex-col items-center gap-2">
+                  <p className="text-sm text-gray-400">
+                    Showing {desktopVisible} of {allItems.length} draws
+                  </p>
+                  <button
+                    onClick={() => setDesktopVisible((v) => v + DESKTOP_PAGE_SIZE)}
+                    disabled={isFetching}
+                    className="inline-flex items-center gap-2 px-8 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:border-[#C0000C] hover:text-[#C0000C] transition-colors bg-white disabled:opacity-50"
+                  >
+                    {isFetching ? (
+                      <Loader2 size={16} className="animate-spin" />
+                    ) : (
+                      <ChevronDown size={16} />
+                    )}
+                    Load More Draws
+                  </button>
+                </div>
+              )}
+
+              {/* All loaded indicator */}
+              {!hasMoreDesktop && allItems.length > DESKTOP_PAGE_SIZE && (
+                <div className="mt-8 text-center text-sm text-gray-400">
+                  All {allItems.length} draws loaded
+                </div>
+              )}
+            </>
           ) : (
             <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
               <div className="text-5xl mb-3">🎰</div>
-              <h3 className="text-lg font-bold text-gray-900 mb-1">
-                No Active Raffles Available
-              </h3>
-              <p className="text-gray-500 text-sm">
-                Check back soon for new raffle draws!
-              </p>
+              <h3 className="text-lg font-bold text-gray-900 mb-1">No Active Raffles</h3>
+              <p className="text-gray-500 text-sm">Check back soon for new raffle draws!</p>
             </div>
           )}
         </section>
@@ -144,22 +177,40 @@ export default function LandingPage() {
         <Footer />
       </div>
 
-      {/* ───────────────────────────────────────────────────────────── */}
-      {/* 2. MOBILE VIEW (Visible strictly on mobile screens: md:hidden) */}
-      {/* ───────────────────────────────────────────────────────────── */}
+      {/* ── MOBILE ──────────────────────────────────────────────── */}
       <div className="md:hidden">
-        <TopNav />
         <BannerSlider />
         <main className="py-4">
           <ItemsSection
-            items={items}
+            items={mobileItems}
             completedRaffles={completedRaffles}
-            onViewDetails={(item: RaffleItem) => setSelectedItem(item)}
+            onViewDetails={(item) => setSelectedItem(item as RaffleItem)}
           />
+
+          {/* Mobile Load More */}
+          {hasMoreMobile && (
+            <div className="px-4 pb-6 pt-2 flex flex-col items-center gap-2">
+              <p className="text-xs text-gray-400">
+                Showing {mobileVisible} of {allItems.length}
+              </p>
+              <button
+                onClick={() => setMobileVisible((v) => v + MOBILE_PAGE_SIZE)}
+                className="w-full max-w-xs py-3.5 border-2 border-gray-200 rounded-2xl text-sm font-bold text-gray-700 hover:border-[#C0000C] hover:text-[#C0000C] transition-colors bg-white flex items-center justify-center gap-2"
+              >
+                <ChevronDown size={16} />
+                Show More Draws
+              </button>
+            </div>
+          )}
+
+          {!hasMoreMobile && allItems.length > MOBILE_PAGE_SIZE && (
+            <p className="text-center text-xs text-gray-400 pb-6">
+              You&apos;ve seen all {allItems.length} draws
+            </p>
+          )}
         </main>
       </div>
 
-      {/* Item Detail Bottom Sheet (Reusable for both desktop and mobile) */}
       <ItemBottomSheet
         item={selectedItem}
         onClose={() => setSelectedItem(null)}

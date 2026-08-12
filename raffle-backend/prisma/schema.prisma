@@ -30,6 +30,7 @@ enum RaffleStatus {
   ACTIVE
   COMPLETED
   CANCELLED
+  EXPIRED
 }
 
 enum TicketStatus {

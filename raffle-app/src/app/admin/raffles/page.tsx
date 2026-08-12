@@ -21,7 +21,7 @@ import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import { convertNairaToPoints } from '@/lib/constants';
 import RafflePointsIcon from '@/components/ui/RafflePointsIcon';
 
-type RaffleStatus = 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+type RaffleStatus = 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED';
 
 // Client-side image compression using Canvas API
 async function compressImage(
@@ -84,6 +84,11 @@ export default function AdminRafflesPage() {
   const [statusFilter, setStatusFilter] = useState<RaffleStatus | 'all'>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   
+  // Extend timer modal state
+  const [extendRaffleItem, setExtendRaffleItem] = useState<{ id: string; name: string } | null>(null);
+  const [newExtendDate, setNewExtendDate] = useState('');
+  const [isExtending, setIsExtending] = useState(false);
+  
   // Confirm draw dialog state
   const [drawRaffleId, setDrawRaffleId] = useState<string | null>(null);
 
@@ -131,18 +136,39 @@ export default function AdminRafflesPage() {
     }
   };
 
+  const handleExtendTimerSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!extendRaffleItem || !newExtendDate) return;
+    setIsExtending(true);
+    try {
+      const res = await api.post(`/api/admin/raffles/${extendRaffleItem.id}/extend`, {
+        newRaffleDate: newExtendDate,
+      });
+      toast.success(res.message || 'Raffle countdown timer extended!');
+      setExtendRaffleItem(null);
+      setNewExtendDate('');
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to extend countdown timer.');
+    } finally {
+      setIsExtending(false);
+    }
+  };
+
   const getStatusBadge = (status: RaffleStatus) => {
     const styles: Record<string, string> = {
       SCHEDULED: 'bg-yellow-100 text-yellow-800',
       ACTIVE: 'bg-green-100 text-green-800',
       COMPLETED: 'bg-blue-100 text-blue-800',
-      CANCELLED: 'bg-red-100 text-red-800',
+      CANCELLED: 'bg-gray-100 text-gray-800',
+      EXPIRED: 'bg-red-100 text-red-800 border border-red-200',
     };
     const icons: Record<string, React.ReactNode> = {
       SCHEDULED: <Clock size={14} />,
       ACTIVE: <Play size={14} />,
       COMPLETED: <CheckCircle size={14} />,
       CANCELLED: <XCircle size={14} />,
+      EXPIRED: <Clock size={14} className="text-red-600" />,
     };
     return (
       <span
@@ -227,6 +253,7 @@ export default function AdminRafflesPage() {
               <option value="all">All Status</option>
               <option value="SCHEDULED">Scheduled</option>
               <option value="ACTIVE">Active</option>
+              <option value="EXPIRED">Expired (0 Sold)</option>
               <option value="COMPLETED">Completed</option>
               <option value="CANCELLED">Cancelled</option>
             </select>
@@ -329,8 +356,11 @@ export default function AdminRafflesPage() {
                     <td className="px-4 py-4">{getStatusBadge(raffle.status)}</td>
                     <td className="px-4 py-4">
                       <div className="flex gap-2">
-                        <button className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition">
-                          View
+                        <button
+                          onClick={() => setExtendRaffleItem({ id: raffle.id, name: raffle.itemName })}
+                          className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 font-medium rounded hover:bg-yellow-200 transition"
+                        >
+                          Extend Timer
                         </button>
                         {raffle.status === 'ACTIVE' && (
                           <button
@@ -367,6 +397,63 @@ export default function AdminRafflesPage() {
         onConfirm={handleStartDraw}
         onCancel={() => setDrawRaffleId(null)}
       />
+
+      {/* Extend Countdown Timer Modal */}
+      {extendRaffleItem && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1001] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b pb-3">
+              <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                <Clock className="text-yellow-600" size={20} />
+                Extend Countdown Timer
+              </h3>
+              <button
+                onClick={() => setExtendRaffleItem(null)}
+                className="text-gray-400 hover:text-gray-600 p-1"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <p className="text-sm text-gray-600">
+              Extend the raffle expiration deadline for <span className="font-bold text-gray-900">{extendRaffleItem.name}</span>. This will re-activate the raffle on the platform.
+            </p>
+
+            <form onSubmit={handleExtendTimerSubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">
+                  New End Date & Time *
+                </label>
+                <input
+                  type="datetime-local"
+                  value={newExtendDate}
+                  onChange={(e) => setNewExtendDate(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-red-600"
+                  required
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setExtendRaffleItem(null)}
+                  className="flex-1 py-2.5 border border-gray-300 text-gray-700 font-bold text-sm rounded-xl hover:bg-gray-50 transition"
+                  disabled={isExtending}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-sm rounded-xl transition shadow disabled:opacity-50"
+                  disabled={isExtending}
+                >
+                  {isExtending ? 'Saving...' : 'Save & Extend'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Unified Create Raffle Modal */}
       {isCreateModalOpen && (
@@ -480,8 +567,8 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
   const ticketPointsValue = formData.ticketPrice ? convertNairaToPoints(parseFloat(formData.ticketPrice)) : 0;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-xl overflow-hidden my-8">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1001] flex items-center justify-center p-4 overflow-y-auto">
+      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-xl overflow-hidden my-8 mb-20 sm:mb-8">
         <div className="bg-gradient-to-r from-red-600 to-red-700 px-6 py-4 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -645,13 +732,27 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
               </div>
 
               <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Countdown Expiration Date & Time *</label>
+                <input
+                  type="datetime-local"
+                  name="raffleDate"
+                  value={formData.raffleDate}
+                  onChange={handleChange}
+                  className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-red-500"
+                  required
+                  disabled={isSubmitting}
+                />
+                <p className="text-xs text-gray-400 mt-1">Select date and time when raffle countdown ends</p>
+              </div>
+
+              <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Description (Optional)</label>
                 <textarea
                   name="description"
                   value={formData.description}
                   onChange={handleChange}
                   placeholder="Additional details..."
-                  rows={4}
+                  rows={2}
                   className="w-full px-3 py-2.5 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:border-red-500 resize-none"
                   disabled={isSubmitting}
                 />

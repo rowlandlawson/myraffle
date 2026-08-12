@@ -209,10 +209,10 @@ export default function AdminWinsPage() {
 
             {/* Conversion Modal / Mobile Sheet */}
             {selectedWinForConversion && (
-                <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4">
-                    <div className="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in slide-in-from-bottom duration-200">
+                <div className="fixed inset-0 z-[1001] bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center p-0 md:p-6">
+                    <div className="bg-white rounded-t-3xl md:rounded-2xl max-w-md w-full p-6 pb-20 md:pb-6 shadow-2xl space-y-4 animate-in slide-in-from-bottom md:zoom-in-95 duration-200">
                         {/* Mobile Sheet Handle Bar */}
-                        <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto sm:hidden mb-1" />
+                        <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto md:hidden mb-1" />
 
                         <div className="flex items-center gap-3 text-purple-700">
                             <div className="p-3 bg-purple-100 rounded-xl">
@@ -227,7 +227,10 @@ export default function AdminWinsPage() {
                         <div className="p-3 bg-purple-50 rounded-xl border border-purple-100 text-xs space-y-1 text-purple-900 font-medium">
                             <p>Winner: <strong>{selectedWinForConversion.winner?.name}</strong></p>
                             <p>Prize Item: <strong>{selectedWinForConversion.item?.name}</strong></p>
-                            <p>Standard Item Value: <strong>₦{selectedWinForConversion.item?.value?.toLocaleString()}</strong></p>
+                            <p>Item Value: <strong>₦{selectedWinForConversion.item?.value?.toLocaleString()}</strong></p>
+                            <p className="text-[11px] text-purple-700 bg-purple-100/70 p-2 rounded-lg mt-1 font-normal">
+                                💡 Fund winner&apos;s account for unclaimed/expired prizes. Credited funds are <strong>non-withdrawable as cash</strong> and can only be used to purchase raffle tickets on the platform.
+                            </p>
                         </div>
 
                         <div className="space-y-3">

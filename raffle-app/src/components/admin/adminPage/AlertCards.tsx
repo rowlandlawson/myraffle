@@ -1,7 +1,8 @@
 import AlertCard from '@/components/ui/AlertCard';
+import { useRouter } from 'next/navigation';
 
 interface AlertData {
-  pendingPayouts: number;
+  unclaimedWins?: number;
   failedTransactions: number;
 }
 
@@ -10,17 +11,19 @@ interface AlertCardsProps {
 }
 
 export default function AlertCards({ alerts }: AlertCardsProps) {
+  const router = useRouter();
+
   return (
     <div className="space-y-4">
-      {alerts.pendingPayouts > 0 && (
+      {alerts.unclaimedWins && alerts.unclaimedWins > 0 ? (
         <AlertCard
           type="warning"
-          title="Pending Payouts"
-          message={`₦${(alerts.pendingPayouts / 1000000).toFixed(2)}M pending payout to ${Math.ceil(alerts.pendingPayouts / 15000)} users`}
-          actionText="Process Now"
-          onAction={() => console.log('Process payouts')}
+          title="Unclaimed / Pending Wins"
+          message={`${alerts.unclaimedWins} won raffle items pending delivery or store credit conversion`}
+          actionText="Manage Wins"
+          onAction={() => router.push('/admin/wins')}
         />
-      )}
+      ) : null}
 
       {alerts.failedTransactions > 0 && (
         <AlertCard
@@ -28,7 +31,7 @@ export default function AlertCards({ alerts }: AlertCardsProps) {
           title="Failed Transactions"
           message={`${alerts.failedTransactions} transactions failed and need review`}
           actionText="Review"
-          onAction={() => console.log('Review transactions')}
+          onAction={() => router.push('/admin/transactions')}
         />
       )}
     </div>

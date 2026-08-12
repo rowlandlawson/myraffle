@@ -147,7 +147,7 @@ export default function AdminBannersPage() {
   };
 
   return (
-    <div className="space-y-6 pb-20 md:pb-0">
+    <div className="space-y-6 pb-28 md:pb-8">
       {/* Top Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -260,8 +260,8 @@ export default function AdminBannersPage() {
 
       {/* Clean Upload Modal / Mobile Sheet */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-200">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1001] flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-6 pb-20 sm:pb-6 space-y-4 shadow-2xl animate-in slide-in-from-bottom duration-200 max-h-[90vh] overflow-y-auto">
             {/* Mobile Sheet Handle Bar */}
             <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto sm:hidden mb-2" />
 

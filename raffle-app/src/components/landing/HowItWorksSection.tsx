@@ -1,54 +1,57 @@
 export default function HowItWorksSection() {
   const steps = [
     {
-      number: 1,
+      number: '01',
       title: 'Create Account',
-      description: 'Sign up in seconds with your email and access active raffle draws.',
+      description: 'Sign up in seconds with your email and get instant access to all active raffle draws.',
     },
     {
-      number: 2,
+      number: '02',
       title: 'Complete Tasks & Earn',
-      description: 'Complete daily tasks to earn cash rewards credited directly into your wallet.',
+      description: 'Finish daily tasks to earn real cash credited directly into your raffle wallet.',
     },
     {
-      number: 3,
-      title: 'Get Tickets',
-      description: 'Use your wallet balance to buy raffle tickets for your favourite items.',
+      number: '03',
+      title: 'Buy Tickets',
+      description: 'Use your wallet balance to purchase tickets for any item you want to win.',
     },
     {
-      number: 4,
+      number: '04',
       title: 'Win & Receive',
-      description: "When tickets sell out, the draw takes place immediately and prizes get delivered.",
+      description: 'When tickets sell out the draw happens immediately — winners get their prize delivered.',
     },
   ];
 
   return (
     <section id="how" className="py-16 px-4 bg-gray-50">
       <div className="max-w-7xl mx-auto">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900">
-            How It Works
+        {/* Header */}
+        <div className="mb-12">
+          <p className="text-xs font-bold text-[#C0000C] uppercase tracking-widest mb-2">Simple process</p>
+          <h2 className="text-2xl sm:text-3xl font-black text-gray-900 tracking-tight">
+            How it works
           </h2>
-          <p className="text-sm text-gray-500 mt-2">
-            Four simple steps to start earning and winning
-          </p>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
-          {steps.map((step) => (
-            <div
-              key={step.number}
-              className="text-center bg-white p-6 rounded-xl border border-gray-200 hover:border-red-200 hover:shadow-sm transition-all duration-200"
-            >
-              <div className="inline-flex items-center justify-center w-10 h-10 bg-red-600 text-white rounded-lg font-semibold text-sm mb-4">
-                {step.number}
+        {/* Steps */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+          {steps.map((step, i) => (
+            <div key={step.number} className="relative">
+              {/* Connector line (all but last) */}
+              {i < steps.length - 1 && (
+                <div className="hidden md:block absolute top-5 left-[calc(50%+20px)] right-0 h-px bg-gray-200 z-0" />
+              )}
+              <div className="relative z-10">
+                <div className="w-10 h-10 bg-[#C0000C] text-white rounded-xl flex items-center justify-center font-black text-sm mb-4 shadow-sm">
+                  {step.number}
+                </div>
+                <h3 className="text-sm sm:text-base font-bold text-gray-900 mb-2">
+                  {step.title}
+                </h3>
+                <p className="text-gray-500 text-xs sm:text-sm leading-relaxed">
+                  {step.description}
+                </p>
               </div>
-              <h3 className="text-sm sm:text-base font-semibold text-gray-900 mb-1.5">
-                {step.title}
-              </h3>
-              <p className="text-gray-500 text-xs leading-relaxed">
-                {step.description}
-              </p>
             </div>
           ))}
         </div>

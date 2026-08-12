@@ -90,69 +90,10 @@ export const initiateDeposit = async (req: Request, res: Response) => {
 
 // POST /api/wallet/withdraw
 export const requestWithdrawal = async (req: Request, res: Response) => {
-    try {
-        const { amount, bankCode, accountNumber, accountName } = req.body;
-
-        const user = await prisma.user.findUnique({
-            where: { id: req.user!.userId },
-            select: { walletBalance: true },
-        });
-
-        if (!user) {
-            res.status(404).json({ success: false, message: 'User not found.' });
-            return;
-        }
-
-        if (user.walletBalance < amount) {
-            res.status(400).json({
-                success: false,
-                message: 'Insufficient wallet balance.',
-            });
-            return;
-        }
-
-        // Deduct balance and create withdrawal record in a transaction
-        const [withdrawal] = await prisma.$transaction([
-            prisma.withdrawal.create({
-                data: {
-                    userId: req.user!.userId,
-                    amount,
-                    bankCode,
-                    accountNumber,
-                    accountName,
-                    status: 'PENDING',
-                },
-            }),
-            prisma.user.update({
-                where: { id: req.user!.userId },
-                data: {
-                    walletBalance: { decrement: amount },
-                },
-            }),
-        ]);
-
-        // Log the transaction
-        await logTransaction({
-            userId: req.user!.userId,
-            type: 'WITHDRAWAL',
-            amount,
-            status: 'PENDING',
-            description: `Withdrawal to ${accountName} (${accountNumber})`,
-        });
-
-        res.status(200).json({
-            success: true,
-            message: 'Withdrawal request submitted. Pending admin approval.',
-            data: {
-                withdrawalId: withdrawal.id,
-                amount: withdrawal.amount,
-                status: withdrawal.status,
-            },
-        });
-    } catch (error) {
-        console.error('[Wallet] Withdrawal error:', error);
-        res.status(500).json({ success: false, message: 'Failed to process withdrawal.' });
-    }
+    res.status(400).json({
+        success: false,
+        message: 'Direct cash withdrawals are not supported. Store credits in your wallet are non-withdrawable and can be used to participate in raffles and purchase tickets on the platform.',
+    });
 };
 
 // GET /api/wallet/transactions

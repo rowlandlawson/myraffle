@@ -52,7 +52,7 @@ export default function AdminPage() {
     };
 
     const alerts = {
-        pendingPayouts: stats.pendingPayouts,
+        unclaimedWins: (data as any)?.unclaimedWinsCount ?? 0,
         failedTransactions: stats.failedTransactions,
     };
 

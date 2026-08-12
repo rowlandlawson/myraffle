@@ -48,9 +48,8 @@ export const getDashboardStats = async (req: Request, res: Response) => {
             prisma.raffle.count({
                 where: { status: 'COMPLETED', updatedAt: { gte: startOfMonth }, winnerUserId: { not: null } },
             }),
-            prisma.withdrawal.aggregate({
-                where: { status: 'PENDING' },
-                _sum: { amount: true },
+            prisma.raffle.count({
+                where: { status: 'COMPLETED', deliveryStatus: 'PENDING', winnerUserId: { not: null } },
             }),
             prisma.transaction.count({ where: { status: 'FAILED' } }),
             // Recent 5 transactions
@@ -84,9 +83,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
                     activeRaffles: activeRaffleCount,
                     totalTicketsSold,
                     winnersThisMonth,
-                    pendingPayouts: pendingPayouts._sum.amount || 0,
                     failedTransactions,
                 },
+                unclaimedWinsCount: pendingPayouts, // 24th query result represents unclaimed wins count
                 recentTransactions: recentTx,
                 activeRaffles,
             },
@@ -903,3 +902,50 @@ export const convertPrizeToWallet = async (req: Request, res: Response) => {
         res.status(500).json({ success: false, message: 'Failed to convert prize to wallet credit.' });
     }
 };
+
+// POST /api/admin/raffles/:id/extend - Extend countdown timer for expired/active raffle
+export const extendRaffleTimer = async (req: Request, res: Response) => {
+    try {
+        const raffleId = String(req.params.id);
+        const { newRaffleDate } = req.body;
+
+        if (!newRaffleDate) {
+            res.status(400).json({ success: false, message: 'Please provide a valid new expiration date & time.' });
+            return;
+        }
+
+        const targetDate = new Date(newRaffleDate);
+        if (isNaN(targetDate.getTime()) || targetDate <= new Date()) {
+            res.status(400).json({ success: false, message: 'New expiration date must be in the future.' });
+            return;
+        }
+
+        const raffle = await prisma.raffle.findUnique({
+            where: { id: raffleId },
+        });
+
+        if (!raffle) {
+            res.status(404).json({ success: false, message: 'Raffle not found.' });
+            return;
+        }
+
+        const updated = await prisma.raffle.update({
+            where: { id: raffleId },
+            data: {
+                raffleDate: targetDate,
+                status: 'ACTIVE',
+            },
+            include: { item: true },
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully extended countdown timer for "${updated.item.name}".`,
+            data: updated,
+        });
+    } catch (error) {
+        console.error('[Admin] Extend raffle timer error:', error);
+        res.status(500).json({ success: false, message: 'Failed to extend raffle timer.' });
+    }
+};
+

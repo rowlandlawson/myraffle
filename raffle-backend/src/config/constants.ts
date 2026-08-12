@@ -15,9 +15,9 @@ export const CONSTANTS = {
         POINTS_PER_NAIRA: 10, // 1,000 points = ₦100
     },
 
-    // Token Expiry
-    JWT_ACCESS_EXPIRY: '24h',
-    JWT_REFRESH_EXPIRY: '7d',
+    // Token Expiry (Session expires after 15 hours)
+    JWT_ACCESS_EXPIRY: '15h',
+    JWT_REFRESH_EXPIRY: '15h',
 
     // Commission Rates
     COMMISSION_RATE: 0.15, // 15% platform fee

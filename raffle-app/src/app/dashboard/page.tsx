@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuthStore } from '@/lib/authStore';
 import { useRaffles, ApiRaffle } from '@/lib/hooks/useRaffles';
 import { useTasks, useCompletedTasks, useCompleteTask } from '@/lib/hooks/useTasks';
@@ -13,7 +13,10 @@ import HowItWorksSection from '@/components/landing/HowItWorksSection';
 import CTASection from '@/components/landing/CTASection';
 import Footer from '@/components/landing/Footer';
 import ItemBottomSheet from '@/components/shared/ItemBottomSheet';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown } from 'lucide-react';
+
+const DESKTOP_PAGE_SIZE = 8;
+const MOBILE_PAGE_SIZE = 5;
 
 interface RaffleItem {
   id: string | number;
@@ -26,19 +29,42 @@ interface RaffleItem {
   endsIn: string;
 }
 
+function mapRaffleToItem(r: ApiRaffle): RaffleItem {
+  const now = new Date();
+  const raffleEnd = new Date(r.raffleDate);
+  const daysLeft = Math.max(0, Math.ceil((raffleEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+  const imageUrl = resolveImageUrl(r.item?.imageUrl) || '';
+  return {
+    id: String(r.id),
+    name: r.item?.name || 'Raffle Draw',
+    image: imageUrl,
+    ticketPrice: r.ticketPrice,
+    ticketsSold: r.ticketsSold,
+    ticketsTotal: r.ticketsTotal,
+    status: r.status === 'COMPLETED' ? 'completed' : 'active',
+    endsIn: r.status === 'COMPLETED' ? 'Completed' : `${daysLeft} days`,
+  };
+}
+
 export default function DashboardHome() {
   const { user, isAuthenticated } = useAuthStore();
   const [selectedItem, setSelectedItem] = useState<RaffleItem | null>(null);
+  const [desktopVisible, setDesktopVisible] = useState(DESKTOP_PAGE_SIZE);
+  const [mobileVisible, setMobileVisible] = useState(MOBILE_PAGE_SIZE);
 
-  // Fetch live active raffles from backend API
   const { data: activeData, isPending: isPendingActive, isLoading: isLoadingActive } = useRaffles({ status: 'ACTIVE' });
-  const activeRaffles = activeData?.raffles || [];
-
-  // Fetch completed winner raffles directly from database API
   const { data: completedDataRaffles } = useRaffles({ status: 'COMPLETED' });
   const completedRaffles = completedDataRaffles?.raffles || [];
-
   const isRafflesLoading = isPendingActive || isLoadingActive;
+
+  const allItems = useMemo(
+    () => (activeData?.raffles || []).map(mapRaffleToItem),
+    [activeData]
+  );
+  const desktopItems = allItems.slice(0, desktopVisible);
+  const hasMoreDesktop = desktopVisible < allItems.length;
+  const mobileItems = allItems.slice(0, mobileVisible);
+  const hasMoreMobile = mobileVisible < allItems.length;
 
   // Daily Login Reward Automation
   const { data: tasks = [] } = useTasks();
@@ -67,32 +93,8 @@ export default function DashboardHome() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks, completedData]);
 
-  // Map API data to RaffleItem format
-  const mapRaffleToItem = (r: ApiRaffle): RaffleItem => {
-    const now = new Date();
-    const raffleEnd = new Date(r.raffleDate);
-    const daysLeft = Math.max(
-      0,
-      Math.ceil(
-        (raffleEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
-      ),
-    );
-
-    const imageUrl = resolveImageUrl(r.item?.imageUrl) || '';
-
-    return {
-      id: String(r.id),
-      name: r.item?.name || 'Raffle Draw',
-      image: imageUrl,
-      ticketPrice: r.ticketPrice,
-      ticketsSold: r.ticketsSold,
-      ticketsTotal: r.ticketsTotal,
-      status: r.status === 'COMPLETED' ? 'completed' : 'active',
-      endsIn: r.status === 'COMPLETED' ? 'Completed' : `${daysLeft} days`,
-    };
-  };
-
-  const items = activeRaffles.map(mapRaffleToItem);
+  // Recent winners
+  const items = allItems;
 
   const recentWinners = completedRaffles.map((r: ApiRaffle, idx: number) => ({
     id: idx + 1,
@@ -131,17 +133,37 @@ export default function DashboardHome() {
             </div>
           </div>
 
-          {items.length > 0 ? (
-            <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {items.map((item: RaffleItem) => (
-                <RaffleCard
-                  key={item.id}
-                  item={item}
-                  isAuthenticated={isAuthenticated}
-                  onViewDetails={(selected: RaffleItem) => setSelectedItem(selected)}
-                />
-              ))}
-            </div>
+            {allItems.length > 0 ? (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {desktopItems.map((item: RaffleItem) => (
+                  <RaffleCard
+                    key={item.id}
+                    item={item}
+                    isAuthenticated={isAuthenticated}
+                    onViewDetails={(selected: RaffleItem) => setSelectedItem(selected)}
+                  />
+                ))}
+              </div>
+
+              {hasMoreDesktop && (
+                <div className="mt-10 flex flex-col items-center gap-2">
+                  <p className="text-sm text-gray-400">
+                    Showing {desktopVisible} of {allItems.length} draws
+                  </p>
+                  <button
+                    onClick={() => setDesktopVisible((v) => v + DESKTOP_PAGE_SIZE)}
+                    className="inline-flex items-center gap-2 px-8 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:border-[#C0000C] hover:text-[#C0000C] transition-colors bg-white"
+                  >
+                    <ChevronDown size={16} />
+                    Load More Draws
+                  </button>
+                </div>
+              )}
+              {!hasMoreDesktop && allItems.length > DESKTOP_PAGE_SIZE && (
+                <p className="mt-8 text-center text-sm text-gray-400">All {allItems.length} draws loaded</p>
+              )}
+            </>
           ) : (
             <div className="bg-white rounded-2xl p-12 text-center border border-gray-100 shadow-sm">
               <div className="text-5xl mb-3">🎰</div>
@@ -168,10 +190,25 @@ export default function DashboardHome() {
       <div className="md:hidden space-y-4">
         <main className="py-2">
           <ItemsSection
-            items={items}
+            items={mobileItems}
             completedRaffles={completedRaffles}
             onViewDetails={(item: RaffleItem) => setSelectedItem(item)}
           />
+          {hasMoreMobile && (
+            <div className="px-4 pb-6 pt-2 flex flex-col items-center gap-2">
+              <p className="text-xs text-gray-400">Showing {mobileVisible} of {allItems.length}</p>
+              <button
+                onClick={() => setMobileVisible((v) => v + MOBILE_PAGE_SIZE)}
+                className="w-full max-w-xs py-3.5 border-2 border-gray-200 rounded-2xl text-sm font-bold text-gray-700 hover:border-[#C0000C] hover:text-[#C0000C] transition-colors bg-white flex items-center justify-center gap-2"
+              >
+                <ChevronDown size={16} />
+                Show More Draws
+              </button>
+            </div>
+          )}
+          {!hasMoreMobile && allItems.length > MOBILE_PAGE_SIZE && (
+            <p className="text-center text-xs text-gray-400 pb-6">You&apos;ve seen all {allItems.length} draws</p>
+          )}
         </main>
       </div>
 

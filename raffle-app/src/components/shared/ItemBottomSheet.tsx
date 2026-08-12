@@ -1,12 +1,15 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { X, Clock, Users, Ticket, ChevronRight, ShoppingBag } from 'lucide-react';
+import { X, Clock, Users, Ticket, ShoppingBag, CheckCircle2, ChevronRight } from 'lucide-react';
 import { resolveImageUrl } from '@/lib/imageUrl';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import TicketCheckoutModal from './TicketCheckoutModal';
-import { useCartStore } from '@/lib/cartStore';
+import { useCartStore, getPerUserLimit } from '@/lib/cartStore';
+import CountdownTimer from './CountdownTimer';
+
+import { useAuthStore } from '@/lib/authStore';
 
 interface RaffleItem {
   id: string | number;
@@ -18,6 +21,7 @@ interface RaffleItem {
   status: 'active' | 'completed';
   endsIn: string;
   description?: string;
+  raffleDate?: string | Date;
 }
 
 interface ItemBottomSheetProps {
@@ -35,9 +39,13 @@ export default function ItemBottomSheet({
   const [isDragging, setIsDragging] = useState(false);
   const [translateY, setTranslateY] = useState(0);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
-  const { addToCart, openCart } = useCartStore();
-  const dragStartY = useRef(0);
+  const [addedToCart, setAddedToCart] = useState(false);
+  const { addToCart } = useCartStore();
+  const { user } = useAuthStore();
+  const dragStartY = useRef<number>(0);
   const sheetRef = useRef<HTMLDivElement>(null);
+
+  const isAdmin = (user as any)?.role === 'ADMIN';
 
   useEffect(() => {
     if (item) {
@@ -59,9 +67,12 @@ export default function ItemBottomSheet({
 
   const handleAddToCart = () => {
     if (!item) return;
-
+    if (isAdmin) {
+      toast.error('Admins cannot participate in raffles');
+      return;
+    }
     const maxTickets = Math.max(0, item.ticketsTotal - item.ticketsSold);
-
+    const perUserLimit = getPerUserLimit(item.ticketsTotal);
     addToCart(
       {
         raffleId: String(item.id),
@@ -70,13 +81,14 @@ export default function ItemBottomSheet({
         imageUrl: resolveImageUrl(item.image) || item.image,
         ticketPrice: item.ticketPrice,
         maxTicketsAvailable: maxTickets,
+        perUserLimit,
       },
       1
     );
-
-    toast.success(`${item.name} added to cart! 🛒`);
-    handleClose();
-    openCart();
+    setAddedToCart(true);
+    toast.success(`Ticket added! (max ${perUserLimit} per person)`);
+    // Reset the checkmark after 2s
+    setTimeout(() => setAddedToCart(false), 2000);
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -118,23 +130,27 @@ export default function ItemBottomSheet({
         onClick={handleClose}
       />
 
-      {/* Bottom Sheet */}
+      {/* Bottom Sheet on Mobile / Centered Modal on Large Screens */}
       <div
         ref={sheetRef}
-        className={`fixed inset-x-0 bottom-0 z-[120] transition-transform duration-300 ease-out ${
-          isVisible ? 'translate-y-0' : 'translate-y-full'
+        className={`fixed inset-0 z-[120] flex items-end md:items-center justify-center p-0 md:p-6 pointer-events-none transition-opacity duration-300 ${
+          isVisible ? 'opacity-100' : 'opacity-0'
         }`}
-        style={{
-          transform: isVisible
-            ? `translateY(${translateY}px)`
-            : 'translateY(100%)',
-          transition: isDragging ? 'none' : undefined,
-        }}
       >
-        <div className="bg-white rounded-t-3xl max-h-[92vh] overflow-hidden flex flex-col shadow-2xl max-w-xl mx-auto">
-          {/* Drag Handle */}
+        <div
+          className={`bg-white w-full max-w-xl rounded-t-3xl md:rounded-3xl max-h-[92vh] md:max-h-[85vh] overflow-hidden flex flex-col shadow-2xl pointer-events-auto transition-all duration-300 ease-out relative ${
+            isVisible ? 'translate-y-0 md:scale-100' : 'translate-y-full md:translate-y-0 md:scale-95'
+          }`}
+          style={{
+            transform: isVisible && translateY !== 0
+              ? `translateY(${translateY}px)`
+              : undefined,
+            transition: isDragging ? 'none' : undefined,
+          }}
+        >
+          {/* Drag Handle (Mobile only) */}
           <div
-            className="flex justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing"
+            className="flex md:hidden justify-center pt-3 pb-2 cursor-grab active:cursor-grabbing"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -212,6 +228,20 @@ export default function ItemBottomSheet({
                 </div>
               </div>
 
+              {/* Countdown Timer */}
+              {item.raffleDate && (
+                <div className="bg-slate-900 text-white rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <Clock size={20} className="text-red-500 animate-pulse" />
+                    <div>
+                      <p className="text-xs font-bold text-slate-300">Raffle Countdown</p>
+                      <p className="text-[10px] text-slate-400 font-medium">Ends automatically when timer hits zero</p>
+                    </div>
+                  </div>
+                  <CountdownTimer targetDate={item.raffleDate} />
+                </div>
+              )}
+
               {/* Progress */}
               <div>
                 <div className="flex justify-between items-center mb-1.5">
@@ -233,40 +263,54 @@ export default function ItemBottomSheet({
             </div>
           </div>
 
-          {/* Fixed CTA at bottom with padding above mobile bottom navbar */}
-          <div className="px-5 pt-3 pb-20 md:pb-6 border-t border-gray-100 bg-white">
+          {/* Fixed CTA at bottom */}
+          <div className="px-5 pt-3 pb-6 md:pb-6 border-t border-gray-100 bg-white space-y-2.5">
             {item.status === 'active' ? (
-              <div className="flex gap-2">
-                <button
-                  onClick={handleAddToCart}
-                  className="flex-1 py-3.5 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-extrabold text-sm rounded-2xl transition-all shadow flex items-center justify-center gap-1.5 active:scale-[0.98]"
-                >
-                  <ShoppingBag size={18} />
-                  Add to Cart
-                </button>
-
+              <>
+                {/* Primary: Buy Ticket */}
                 {isAuthenticated ? (
                   <button
-                    onClick={() => setCheckoutOpen(true)}
-                    className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-sm rounded-2xl transition-all shadow-md flex items-center justify-center gap-1 active:scale-[0.98]"
+                    onClick={() => {
+                      if (isAdmin) {
+                        toast.error('Admins cannot participate in raffles');
+                        return;
+                      }
+                      setCheckoutOpen(true);
+                    }}
+                    className="w-full py-4 bg-[#C0000C] hover:bg-red-700 text-white font-black text-sm rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 active:scale-[0.99]"
                   >
-                    Buy Ticket
+                    Buy Ticket Now
                     <ChevronRight size={18} />
                   </button>
                 ) : (
                   <Link
                     href="/login"
-                    className="flex-1 py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-sm rounded-2xl transition-all shadow-md flex items-center justify-center gap-1 active:scale-[0.98]"
+                    className="w-full py-4 bg-[#C0000C] hover:bg-red-700 text-white font-black text-sm rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
                   >
-                    Login to Buy
-                    <ChevronRight size={18} />
+                    Login to Buy <ChevronRight size={18} />
                   </Link>
                 )}
-              </div>
+
+                {/* Secondary: Add to Cart */}
+                <button
+                  onClick={handleAddToCart}
+                  className={`w-full py-3.5 font-bold text-sm rounded-2xl transition-all flex items-center justify-center gap-2 border-2 active:scale-[0.99] ${
+                    addedToCart
+                      ? 'border-emerald-500 bg-emerald-50 text-emerald-700'
+                      : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300 hover:bg-gray-50'
+                  }`}
+                >
+                  {addedToCart ? (
+                    <><CheckCircle2 size={17} /> Added to Cart</>
+                  ) : (
+                    <><ShoppingBag size={17} /> Add to Cart</>  
+                  )}
+                </button>
+              </>
             ) : (
               <button
                 disabled
-                className="w-full py-3.5 bg-gray-100 text-gray-400 font-bold text-base rounded-2xl cursor-not-allowed"
+                className="w-full py-4 bg-gray-100 text-gray-400 font-bold text-base rounded-2xl cursor-not-allowed"
               >
                 Draw Completed
               </button>

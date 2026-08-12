@@ -4,7 +4,8 @@ import './globals.css';
 import { Providers } from '@/components/Providers';
 import { Toaster } from 'react-hot-toast';
 import VisitorTracker from '@/components/VisitorTracker';
-import BottomNav from '@/components/navbar/BottomNav';
+import AppHeader from '@/components/nav/AppHeader';
+import AppBottomNav from '@/components/nav/AppBottomNav';
 import CartDrawer from '@/components/cart/CartDrawer';
 
 const inter = Inter({
@@ -29,8 +30,9 @@ export default function RootLayout({
         <Toaster position="top-center" />
         <Providers>
           <VisitorTracker />
+          <AppHeader />
           {children}
-          <BottomNav />
+          <AppBottomNav />
           <CartDrawer />
         </Providers>
       </body>

@@ -43,10 +43,10 @@ export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProp
   ];
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 transition-opacity animate-in fade-in duration-200">
-      <div className="bg-white w-full max-w-lg rounded-t-3xl sm:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom duration-300 border border-gray-100 max-h-[85vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-end md:items-center justify-center p-0 md:p-6 transition-opacity animate-in fade-in duration-200">
+      <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom md:zoom-in-95 duration-300 border border-gray-100 max-h-[85vh] flex flex-col">
         {/* Bottom Sheet Handle */}
-        <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto my-3 shrink-0 sm:hidden" />
+        <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto my-3 shrink-0 md:hidden" />
 
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between shrink-0">

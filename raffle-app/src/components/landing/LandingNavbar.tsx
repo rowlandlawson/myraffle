@@ -10,76 +10,72 @@ export default function LandingNavbar() {
   const { user, isAuthenticated, logout } = useAuthStore();
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="w-10 h-10 bg-gradient-to-br from-red-600 to-red-700 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-lg">R</span>
+    <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
+      <div className="max-w-7xl mx-auto px-5 py-3.5 flex items-center justify-between">
+        {/* Logo */}
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="w-8 h-8 bg-[#C0000C] rounded-lg flex items-center justify-center shadow-sm">
+            <span className="text-white font-black text-sm leading-none">M</span>
           </div>
-          <span className="font-bold text-xl text-gray-900">
-            my<span className="text-red-600">Raffle</span>
+          <span className="font-black text-xl text-gray-900 tracking-tight">
+            my<span className="text-[#C0000C]">Raffle</span>
           </span>
         </Link>
 
-        {/* Desktop Navigation */}
-        <div className="hidden md:flex items-center gap-8">
-          <a
-            href="#items"
-            className="text-gray-600 hover:text-red-600 font-medium transition"
-          >
-            Live Raffles
-          </a>
-          <a
-            href="#winners"
-            className="text-gray-600 hover:text-red-600 font-medium transition"
-          >
-            Winners
-          </a>
-          <a
-            href="#how"
-            className="text-gray-600 hover:text-red-600 font-medium transition"
-          >
-            How it Works
-          </a>
+        {/* Desktop Nav Links */}
+        <div className="hidden md:flex items-center gap-1">
+          {[
+            { href: '#items', label: 'Live Raffles' },
+            { href: '#winners', label: 'Winners' },
+            { href: '#how', label: 'How It Works' },
+          ].map((link) => (
+            <a
+              key={link.href}
+              href={link.href}
+              className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+            >
+              {link.label}
+            </a>
+          ))}
         </div>
 
-        {/* Desktop Auth Buttons / User Account */}
-        <div className="hidden md:flex items-center gap-3">
+        {/* Desktop Auth */}
+        <div className="hidden md:flex items-center gap-2">
           {isAuthenticated ? (
-            <div className="flex items-center gap-3">
+            <>
               <Link
                 href="/dashboard/earnings"
-                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 font-extrabold rounded-xl border border-emerald-200 hover:bg-emerald-100 transition text-sm shadow-xs"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 font-bold rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors text-sm"
               >
-                <Wallet size={16} className="text-emerald-600" />
-                <span>₦{(user?.walletBalance ?? 1000).toLocaleString()}</span>
+                <Wallet size={14} />
+                ₦{(user?.walletBalance ?? 1000).toLocaleString()}
               </Link>
               <Link
                 href="/dashboard"
-                className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-700 font-semibold rounded-xl hover:bg-red-100 transition border border-red-200"
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 text-gray-700 font-semibold rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors text-sm"
               >
-                <User size={18} />
-                <span>{user?.name || user?.userNumber || 'Dashboard'}</span>
+                <User size={14} />
+                {user?.name?.split(' ')[0] || user?.userNumber || 'Account'}
               </Link>
               <button
                 onClick={() => logout()}
-                className="p-2 text-gray-500 hover:text-red-600 hover:bg-gray-100 rounded-xl transition"
+                className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                 title="Sign Out"
               >
-                <LogOut size={18} />
+                <LogOut size={16} />
               </button>
-            </div>
+            </>
           ) : (
             <>
               <Link
                 href="/login"
-                className="px-6 py-2 text-gray-900 font-semibold hover:text-red-600 transition"
+                className="px-4 py-2 text-sm font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
               >
                 Sign In
               </Link>
               <Link
                 href="/register"
-                className="px-6 py-2 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:shadow-lg hover:shadow-red-600/50 transition"
+                className="px-4 py-2 text-sm font-bold bg-[#C0000C] text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm"
               >
                 Get Started
               </Link>
@@ -90,46 +86,43 @@ export default function LandingNavbar() {
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg transition"
+          className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
         >
-          {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Dropdown */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 bg-white">
-          <div className="px-4 py-4 space-y-3">
-            <a
-              href="#items"
-              className="block py-2 text-gray-700 hover:text-red-600 font-medium"
-            >
-              Live Raffles
-            </a>
-            <a
-              href="#winners"
-              className="block py-2 text-gray-700 hover:text-red-600 font-medium"
-            >
-              Winners
-            </a>
-            <a
-              href="#how"
-              className="block py-2 text-gray-700 hover:text-red-600 font-medium"
-            >
-              How it Works
-            </a>
-            <div className="pt-4 border-t border-gray-200 space-y-3">
+        <div className="md:hidden border-t border-gray-100 bg-white shadow-lg">
+          <div className="px-5 py-4 space-y-1">
+            {[
+              { href: '#items', label: 'Live Raffles' },
+              { href: '#winners', label: 'Winners' },
+              { href: '#how', label: 'How It Works' },
+            ].map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-3 py-2.5 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-colors"
+              >
+                {link.label}
+              </a>
+            ))}
+            <div className="pt-3 border-t border-gray-100 space-y-2 mt-2">
               {isAuthenticated ? (
                 <>
                   <Link
                     href="/dashboard"
-                    className="block w-full py-3 text-center bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition"
+                    className="block w-full py-2.5 text-center text-sm font-bold bg-[#C0000C] text-white rounded-lg hover:bg-red-700 transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
                   >
-                    Go to Dashboard ({user?.userNumber || 'Account'})
+                    Go to Dashboard
                   </Link>
                   <button
-                    onClick={() => logout()}
-                    className="block w-full py-3 text-center text-red-600 font-semibold border border-red-200 rounded-lg hover:bg-red-50 transition"
+                    onClick={() => { logout(); setMobileMenuOpen(false); }}
+                    className="block w-full py-2.5 text-center text-sm font-semibold text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-colors"
                   >
                     Sign Out
                   </button>
@@ -138,15 +131,17 @@ export default function LandingNavbar() {
                 <>
                   <Link
                     href="/login"
-                    className="block w-full py-3 text-center text-gray-900 font-semibold border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+                    className="block w-full py-2.5 text-center text-sm font-semibold text-gray-900 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
                   >
                     Sign In
                   </Link>
                   <Link
                     href="/register"
-                    className="block w-full py-3 text-center bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-lg hover:shadow-lg transition"
+                    className="block w-full py-2.5 text-center text-sm font-bold bg-[#C0000C] text-white rounded-lg hover:bg-red-700 transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
                   >
-                    Get Started
+                    Create Account
                   </Link>
                 </>
               )}

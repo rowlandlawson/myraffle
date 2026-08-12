@@ -1,7 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { ShoppingBag, X, Trash2, Plus, Minus, ArrowRight, ShieldCheck } from 'lucide-react';
+import {
+  ShoppingBag,
+  X,
+  Trash2,
+  Plus,
+  Minus,
+  ShieldCheck,
+  ChevronRight,
+  Loader2,
+} from 'lucide-react';
 import { useCartStore } from '@/lib/cartStore';
 import TicketCheckoutModal from '@/components/shared/TicketCheckoutModal';
 import { useAuthStore } from '@/lib/authStore';
@@ -23,17 +32,16 @@ export default function CartDrawer() {
   if (!isOpen) return null;
 
   const total = getCartTotal();
+  const totalTickets = items.reduce((acc, i) => acc + i.quantity, 0);
 
   const handleCheckoutClick = () => {
     if (!isAuthenticated) {
-      toast.error('Please log in to complete your checkout');
+      toast.error('Please log in to checkout');
       window.location.href = '/login';
       return;
     }
-
     if (items.length === 0) return;
 
-    // Default checkout with the first or aggregated item
     const firstItem = items[0]!;
     setSelectedCartItem({
       raffleId: firstItem.raffleId,
@@ -42,7 +50,6 @@ export default function CartDrawer() {
       ticketPrice: firstItem.ticketPrice,
       quantity: firstItem.quantity,
     });
-
     setCheckoutModalOpen(true);
   };
 
@@ -50,47 +57,68 @@ export default function CartDrawer() {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[70] transition-opacity"
+        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70]"
         onClick={closeCart}
       />
 
-      {/* Slide-over Drawer */}
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10 z-[80]">
-        <div className="w-screen max-w-md bg-white shadow-2xl flex flex-col">
-          {/* Header */}
-          <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50">
-            <div className="flex items-center gap-2">
-              <div className="p-2 bg-red-100 text-red-600 rounded-xl">
-                <ShoppingBag size={20} />
-              </div>
-              <div>
-                <h2 className="font-extrabold text-gray-900 text-lg">Your Ticket Cart</h2>
-                <p className="text-xs text-gray-500">{items.length} item(s) selected</p>
-              </div>
-            </div>
+      {/* Native bottom sheet */}
+      <div className="fixed inset-x-0 bottom-0 z-[80] max-w-xl mx-auto">
+        <div className="bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[88vh]">
 
-            <button
-              onClick={closeCart}
-              className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200 transition"
-            >
-              <X size={20} />
-            </button>
+          {/* Drag handle */}
+          <div className="flex justify-center pt-3 pb-1">
+            <div className="w-10 h-1.5 bg-gray-200 rounded-full" />
           </div>
 
-          {/* Cart List */}
-          <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-4">
-            {items.length === 0 ? (
-              <div className="text-center py-16 space-y-4">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto text-gray-400">
-                  <ShoppingBag size={32} />
-                </div>
-                <h3 className="font-bold text-gray-800 text-base">Your cart is empty</h3>
-                <p className="text-xs text-gray-500 max-w-xs mx-auto">
-                  Explore active raffles and add tickets to your cart to participate!
+          {/* Header */}
+          <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center">
+                <ShoppingBag size={18} className="text-[#C0000C]" />
+              </div>
+              <div>
+                <h2 className="font-black text-gray-900 text-base">Your Cart</h2>
+                <p className="text-xs text-gray-400">
+                  {totalTickets} ticket{totalTickets !== 1 ? 's' : ''} · ₦{total.toLocaleString()}
                 </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {items.length > 0 && (
+                <button
+                  onClick={() => {
+                    if (window.confirm('Clear all items from cart?')) clearCart();
+                  }}
+                  className="text-xs text-gray-400 hover:text-red-500 transition-colors font-medium px-2 py-1"
+                >
+                  Clear all
+                </button>
+              )}
+              <button
+                onClick={closeCart}
+                className="w-8 h-8 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
+              >
+                <X size={16} className="text-gray-600" />
+              </button>
+            </div>
+          </div>
+
+          {/* Cart Items */}
+          <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+            {items.length === 0 ? (
+              <div className="py-14 flex flex-col items-center text-center gap-3">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                  <ShoppingBag size={28} className="text-gray-300" />
+                </div>
+                <div>
+                  <p className="font-bold text-gray-700 text-sm">Your cart is empty</p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Browse live raffles and add tickets to get started
+                  </p>
+                </div>
                 <button
                   onClick={closeCart}
-                  className="px-5 py-2.5 bg-red-600 text-white text-xs font-bold rounded-xl shadow hover:bg-red-700 transition"
+                  className="mt-1 px-5 py-2.5 bg-[#C0000C] text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-colors"
                 >
                   Browse Raffles
                 </button>
@@ -99,91 +127,104 @@ export default function CartDrawer() {
               items.map((item) => (
                 <div
                   key={item.raffleId}
-                  className="flex gap-4 p-3.5 bg-gray-50 rounded-2xl border border-gray-100 relative group"
+                  className="flex gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100"
                 >
-                  <img
-                    src={item.imageUrl}
-                    alt={item.title}
-                    className="w-16 h-16 rounded-xl object-cover bg-white border border-gray-200"
-                  />
+                  {/* Image */}
+                  <div className="w-14 h-14 rounded-xl overflow-hidden bg-white border border-gray-200 flex-shrink-0">
+                    {item.imageUrl ? (
+                      <img
+                        src={item.imageUrl}
+                        alt={item.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-xl">📦</div>
+                    )}
+                  </div>
 
+                  {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-bold text-gray-900 text-sm truncate">{item.title}</h4>
-                    <p className="text-xs text-red-600 font-extrabold mt-0.5">
+                    <p className="font-bold text-gray-900 text-sm truncate">{item.title}</p>
+                    <p className="text-xs text-[#C0000C] font-bold mt-0.5">
                       ₦{item.ticketPrice.toLocaleString()} / ticket
                     </p>
 
-                    {/* Quantity Controls */}
-                    <div className="flex items-center gap-3 mt-2">
-                      <div className="flex items-center border border-gray-300 rounded-lg bg-white">
+                    {/* Qty + subtotal row */}
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center border border-gray-200 rounded-lg bg-white overflow-hidden">
                         <button
                           onClick={() => updateQuantity(item.raffleId, item.quantity - 1)}
-                          className="p-1 hover:bg-gray-100 text-gray-600 rounded-l-lg transition"
+                          className="w-7 h-7 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors"
                         >
-                          <Minus size={14} />
+                          <Minus size={12} />
                         </button>
-                        <span className="px-2.5 text-xs font-bold text-gray-900">
+                        <span className="px-2 text-xs font-bold text-gray-900 min-w-[20px] text-center">
                           {item.quantity}
                         </span>
                         <button
-                          onClick={() => updateQuantity(item.raffleId, item.quantity + 1)}
-                          className="p-1 hover:bg-gray-100 text-gray-600 rounded-r-lg transition"
+                          onClick={() => {
+                            const limit = item.perUserLimit || 10;
+                            if (item.quantity >= limit) {
+                              toast.error(`Max ${limit} tickets allowed per user for this draw`);
+                              return;
+                            }
+                            updateQuantity(item.raffleId, item.quantity + 1);
+                          }}
+                          disabled={item.quantity >= (item.perUserLimit || 10)}
+                          className="w-7 h-7 flex items-center justify-center text-gray-500 hover:bg-gray-100 transition-colors disabled:opacity-40"
                         >
-                          <Plus size={14} />
+                          <Plus size={12} />
                         </button>
                       </div>
-
-                      <span className="text-xs font-bold text-gray-700">
-                        = ₦{(item.ticketPrice * item.quantity).toLocaleString()}
+                      <span className="text-xs font-bold text-gray-800">
+                        ₦{(item.ticketPrice * item.quantity).toLocaleString()}
                       </span>
                     </div>
                   </div>
 
-                  {/* Remove Button */}
+                  {/* Remove */}
                   <button
                     onClick={() => removeFromCart(item.raffleId)}
-                    className="p-1.5 text-gray-400 hover:text-red-600 transition"
-                    title="Remove item"
+                    className="p-1.5 text-gray-300 hover:text-red-500 transition-colors self-start mt-0.5"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={15} />
                   </button>
                 </div>
               ))
             )}
           </div>
 
-          {/* Footer Summary & Checkout */}
+          {/* Footer */}
           {items.length > 0 && (
-            <div className="p-4 sm:p-6 border-t border-gray-100 bg-white space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between text-xs text-gray-500">
-                  <span>Subtotal ({items.reduce((acc, i) => acc + i.quantity, 0)} tickets)</span>
-                  <span className="font-bold text-gray-800">₦{total.toLocaleString()}</span>
-                </div>
-                <div className="flex justify-between text-sm font-extrabold text-gray-900 border-t border-gray-100 pt-2">
-                  <span>Total Amount</span>
-                  <span className="text-red-600 text-base">₦{total.toLocaleString()}</span>
-                </div>
+            <div className="px-5 py-4 border-t border-gray-100 space-y-3 bg-white">
+              {/* Total row */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-500">
+                  Total ({totalTickets} ticket{totalTickets !== 1 ? 's' : ''})
+                </span>
+                <span className="text-lg font-black text-gray-900">₦{total.toLocaleString()}</span>
               </div>
 
+              {/* Checkout button */}
               <button
                 onClick={handleCheckoutClick}
-                className="w-full py-3.5 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white font-black text-sm rounded-2xl shadow-lg transition flex items-center justify-center gap-2 group"
+                className="w-full py-4 bg-[#C0000C] hover:bg-red-700 text-white font-black text-sm rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 active:scale-[0.99]"
               >
-                <span>Proceed to Checkout</span>
-                <ArrowRight size={18} className="group-hover:translate-x-1 transition-transform" />
+                Proceed to Checkout
+                <ChevronRight size={18} />
               </button>
 
+              {/* Trust line */}
               <div className="flex items-center justify-center gap-1.5 text-[11px] text-gray-400">
-                <ShieldCheck size={14} className="text-green-500" />
-                <span>Monnify & Wallet Verified Checkout</span>
+                <ShieldCheck size={12} className="text-emerald-500" />
+                <span>Secured checkout · Wallet &amp; card accepted</span>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Checkout Modal triggered from Cart */}
+      {/* Checkout Modal */}
       {selectedCartItem && (
         <TicketCheckoutModal
           isOpen={checkoutModalOpen}

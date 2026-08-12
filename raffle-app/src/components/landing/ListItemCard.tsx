@@ -1,10 +1,11 @@
-'use client';
-
-import BlockProgressBar from '@/components/landing/BlockProgressBar';
 import { resolveImageUrl } from '@/lib/imageUrl';
-import { ShoppingBag } from 'lucide-react';
-import { useCartStore } from '@/lib/cartStore';
+import { useCartStore, getPerUserLimit } from '@/lib/cartStore';
+import { useAuthStore } from '@/lib/authStore';
+import BlockProgressBar from '@/components/landing/BlockProgressBar';
+import CountdownTimer from '@/components/shared/CountdownTimer';
+import { ShoppingBag, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useState } from 'react';
 
 export interface ListItem {
   id: string | number;
@@ -15,6 +16,7 @@ export interface ListItem {
   ticketsTotal: number;
   status: string;
   endsIn?: string;
+  raffleDate?: string | Date;
 }
 
 interface ListItemCardProps {
@@ -25,10 +27,19 @@ interface ListItemCardProps {
 export default function ListItemCard({ item, onViewDetails }: ListItemCardProps) {
   const imageUrl = resolveImageUrl(item.image);
   const ticketsLeft = Math.max(0, item.ticketsTotal - item.ticketsSold);
-  const { addToCart, openCart } = useCartStore();
+  const { addToCart } = useCartStore();
+  const { user } = useAuthStore();
+  const [added, setAdded] = useState(false);
+
+  const isAdmin = (user as any)?.role === 'ADMIN';
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (isAdmin) {
+      toast.error('Admins cannot participate in raffles');
+      return;
+    }
+    const perUserLimit = getPerUserLimit(item.ticketsTotal);
     addToCart({
       raffleId: String(item.id),
       itemId: String(item.id),
@@ -36,9 +47,11 @@ export default function ListItemCard({ item, onViewDetails }: ListItemCardProps)
       imageUrl: imageUrl || item.image,
       ticketPrice: item.ticketPrice,
       maxTicketsAvailable: ticketsLeft,
+      perUserLimit,
     });
-    toast.success(`Added 1 ticket for ${item.name} to cart! 🛒`);
-    openCart();
+    toast.success(`Ticket added! (max ${perUserLimit} per person)`);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
   };
 
   return (
@@ -81,10 +94,13 @@ export default function ListItemCard({ item, onViewDetails }: ListItemCardProps)
           ticketsTotal={item.ticketsTotal}
         />
 
-        {/* Item Title */}
-        <h4 className="text-xs sm:text-sm font-extrabold text-gray-900 truncate mb-1">
-          {item.name}
-        </h4>
+        {/* Item Title & Countdown Timer */}
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <h4 className="text-xs sm:text-sm font-extrabold text-gray-900 truncate">
+            {item.name}
+          </h4>
+          {item.raffleDate && <CountdownTimer targetDate={item.raffleDate} compact />}
+        </div>
 
         {/* Price Tag & Add to Cart button */}
         <div className="flex items-center justify-between">
@@ -97,11 +113,15 @@ export default function ListItemCard({ item, onViewDetails }: ListItemCardProps)
 
           <button
             onClick={handleQuickAdd}
-            className="p-2 bg-red-50 text-red-600 rounded-xl hover:bg-red-600 hover:text-white transition-colors flex items-center gap-1 text-xs font-bold shadow-sm"
+            className={`p-2 rounded-xl transition-colors flex items-center gap-1 text-xs font-bold shadow-sm ${
+              added
+                ? 'bg-emerald-50 text-emerald-600'
+                : 'bg-red-50 text-red-600 hover:bg-red-600 hover:text-white'
+            }`}
             title="Add ticket to cart"
           >
-            <ShoppingBag size={15} />
-            <span className="hidden sm:inline">Add</span>
+            {added ? <CheckCircle2 size={15} /> : <ShoppingBag size={15} />}
+            <span className="hidden sm:inline">{added ? 'Added' : 'Add'}</span>
           </button>
         </div>
       </div>

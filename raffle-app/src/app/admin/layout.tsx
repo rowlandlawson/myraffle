@@ -28,11 +28,10 @@ const ADMIN_MENU = [
     { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { label: 'Users', href: '/admin/users', icon: Users },
     { label: 'Raffles', href: '/admin/raffles', icon: Ticket },
-    { label: 'Wins', href: '/admin/wins', icon: Trophy },
+    { label: 'Wins & Claims', href: '/admin/wins', icon: Trophy },
     { label: 'Banners', href: '/admin/banners', icon: ImageIcon },
     { label: 'Terms & Conditions', href: '/admin/terms', icon: FileText },
     { label: 'Transactions', href: '/admin/transactions', icon: Receipt },
-    { label: 'Payouts', href: '/admin/payouts', icon: CreditCard },
     { label: 'Tasks', href: '/admin/tasks', icon: Zap },
     { label: 'Settings', href: '/admin/settings', icon: Settings },
 ];

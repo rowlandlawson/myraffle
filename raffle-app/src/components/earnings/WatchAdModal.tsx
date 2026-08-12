@@ -10,9 +10,9 @@ export default function WatchAdModal({ isOpen, adTimer, totalDuration }: WatchAd
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 sm:p-8 max-w-md w-full text-center shadow-2xl animate-in slide-in-from-bottom duration-200">
-        <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto sm:hidden mb-4" />
+    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-end md:items-center justify-center z-50 p-0 md:p-6">
+      <div className="bg-white rounded-t-3xl md:rounded-2xl p-6 md:p-8 max-w-md w-full text-center shadow-2xl animate-in slide-in-from-bottom md:zoom-in-95 duration-200">
+        <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto md:hidden mb-4" />
         <div className="mb-4 flex justify-center">
           <Image
             src="https://img.icons8.com/3d-fluency/94/tv.png"
