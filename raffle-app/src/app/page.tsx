@@ -123,7 +123,7 @@ export default function LandingPage() {
           {allItems.length > 0 ? (
             <>
               <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {desktopItems.map((item) => (
+                {desktopItems.map((item: RaffleItem) => (
                   <RaffleCard
                     key={item.id}
                     item={item}
