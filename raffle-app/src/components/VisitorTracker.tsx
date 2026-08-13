@@ -18,8 +18,8 @@ export default function VisitorTracker() {
   const lastTrackedTime = useRef<number>(0);
 
   useEffect(() => {
-    // Don't track API routes or the same page within 100ms (prevents duplicate tracks)
-    if (!pathname || pathname.startsWith('/api')) {
+    // Don't track API routes, admin routes, or the same page within 100ms
+    if (!pathname || pathname.startsWith('/api') || pathname.startsWith('/admin')) {
       return;
     }
 

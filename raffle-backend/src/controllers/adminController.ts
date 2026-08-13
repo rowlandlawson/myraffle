@@ -228,8 +228,8 @@ export const getAnalytics = async (req: Request, res: Response) => {
         ] = await Promise.all([
             prisma.transaction.aggregate({ where: { type: 'DEPOSIT', status: 'COMPLETED', createdAt: { gte: rangeStart } }, _sum: { amount: true } }),
             prisma.transaction.aggregate({ where: { type: 'DEPOSIT', status: 'COMPLETED', createdAt: { gte: prevRangeStart, lt: rangeStart } }, _sum: { amount: true } }),
-            prisma.user.count({ where: { createdAt: { gte: rangeStart } } }),
-            prisma.user.count({ where: { createdAt: { gte: prevRangeStart, lt: rangeStart } } }),
+            prisma.user.count({ where: { role: 'USER', createdAt: { gte: rangeStart } } }),
+            prisma.user.count({ where: { role: 'USER', createdAt: { gte: prevRangeStart, lt: rangeStart } } }),
             prisma.ticket.count({ where: { createdAt: { gte: rangeStart } } }),
             prisma.ticket.count({ where: { createdAt: { gte: prevRangeStart, lt: rangeStart } } }),
             prisma.raffle.count({ where: { status: 'ACTIVE' } }),
@@ -252,7 +252,7 @@ export const getAnalytics = async (req: Request, res: Response) => {
             orderBy: { createdAt: 'asc' },
         });
         const allNewUsers = await prisma.user.findMany({
-            where: { createdAt: { gte: rangeStart } },
+            where: { role: 'USER', createdAt: { gte: rangeStart } },
             select: { createdAt: true },
             orderBy: { createdAt: 'asc' },
         });
@@ -761,6 +761,11 @@ export const getVisitorAnalytics = async (req: Request, res: Response) => {
             createdAt: {
                 gte: startDate,
                 lt: endDate,
+            },
+            NOT: {
+                path: {
+                    startsWith: '/admin',
+                },
             },
         };
 

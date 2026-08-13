@@ -102,9 +102,9 @@ setInterval(() => {
 
 app.post('/api/track-visit', (req, res) => {
     const { path } = req.body;
-    // Accept any non-API page path (/, /items, /items/123, /dashboard, /dashboard/earnings, etc.)
-    if (!path || typeof path !== 'string' || path.startsWith('/api')) {
-        res.status(200).json({ success: true }); // Silently ignore invalid paths
+    // Accept any public page path, ignoring API and Admin paths
+    if (!path || typeof path !== 'string' || path.startsWith('/api') || path.startsWith('/admin')) {
+        res.status(200).json({ success: true }); // Silently ignore invalid or admin paths
         return;
     }
 

@@ -346,6 +346,36 @@ export default function AdminAnalyticsPage() {
         </div>
       </div>
 
+      {/* ── Ad Monetization Readiness Card ── */}
+      <div className="bg-gradient-to-r from-indigo-900 via-purple-900 to-slate-900 rounded-2xl p-6 text-white shadow-md border border-indigo-800">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 tracking-wider">
+                Ad Integration Status
+              </span>
+            </div>
+            <h2 className="text-xl font-black text-white flex items-center gap-2">
+              Public Audience & Ad Readiness
+            </h2>
+            <p className="text-xs text-indigo-200 mt-1 max-w-xl">
+              Strictly tracking real public site visitors and registered users (excluding admin activity). Use this metric to determine when your traffic is high enough to integrate Google AdSense or sponsored ads.
+            </p>
+          </div>
+          <div className="flex items-center gap-4 bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10 shrink-0">
+            <div>
+              <p className="text-[11px] text-indigo-200 font-medium">Public Visitors</p>
+              <p className="text-2xl font-black text-white">{visitorData?.uniqueVisitors?.toLocaleString() ?? 0}</p>
+            </div>
+            <div className="h-8 w-px bg-white/20" />
+            <div>
+              <p className="text-[11px] text-indigo-200 font-medium">Registered Users</p>
+              <p className="text-2xl font-black text-emerald-400">{data.platformSummary?.totalUsers?.toLocaleString() ?? 0}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* ── Website Visitors ── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
@@ -354,8 +384,8 @@ export default function AdminAnalyticsPage() {
               <Eye size={18} className="text-indigo-600" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-gray-900">Website Visitors</h2>
-              <p className="text-xs text-gray-400">Page views & unique visitors</p>
+              <h2 className="text-base font-bold text-gray-900">Public Site Traffic (Non-Admin)</h2>
+              <p className="text-xs text-gray-400">Page views & unique visitors strictly on public pages</p>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
