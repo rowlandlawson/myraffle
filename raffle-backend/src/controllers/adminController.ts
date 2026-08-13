@@ -208,80 +208,155 @@ export const getAnalytics = async (req: Request, res: Response) => {
     try {
         const range = (req.query.range as string) || '7d';
         const now = new Date();
-        let rangeStart: Date;
+        let days: number;
         switch (range) {
-            case '30d': rangeStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000); break;
-            case '90d': rangeStart = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000); break;
-            case '1y': rangeStart = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000); break;
-            default: rangeStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); break;
+            case '30d': days = 30; break;
+            case '90d': days = 90; break;
+            case '1y': days = 365; break;
+            default: days = 7; break;
         }
 
-        const [revenue, newUsers, ticketsSold, activeRaffles, topItems, recentTx, platformTotals] =
-            await Promise.all([
-                prisma.transaction.aggregate({
-                    where: { type: 'DEPOSIT', status: 'COMPLETED', createdAt: { gte: rangeStart } },
-                    _sum: { amount: true },
-                }),
-                prisma.user.count({ where: { createdAt: { gte: rangeStart } } }),
-                prisma.ticket.count({ where: { createdAt: { gte: rangeStart } } }),
-                prisma.raffle.count({ where: { status: 'ACTIVE' } }),
-                // Top items by ticket count
-                prisma.raffle.findMany({
-                    select: {
-                        ticketsSold: true,
-                        ticketPrice: true,
-                        item: { select: { name: true } },
-                    },
-                    orderBy: { ticketsSold: 'desc' },
-                    take: 5,
-                }),
-                // Recent activity
-                prisma.transaction.findMany({
-                    take: 5,
-                    orderBy: { createdAt: 'desc' },
-                    include: {
-                        user: { select: { name: true } },
-                    },
-                }),
-                // All-time platform totals
-                Promise.all([
-                    prisma.user.count(),
-                    prisma.raffle.count(),
-                    prisma.ticket.count(),
-                    prisma.transaction.aggregate({
-                        where: { type: 'WITHDRAWAL', status: 'COMPLETED' },
-                        _sum: { amount: true },
-                    }),
-                ]),
-            ]);
+        const rangeStart = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+        const prevRangeStart = new Date(rangeStart.getTime() - days * 24 * 60 * 60 * 1000);
+
+        // Core stats: current + previous period for % change
+        const [
+            currentRevenue, prevRevenue,
+            currentUsers, prevUsers,
+            currentTickets, prevTickets,
+            activeRaffles, completedRaffles,
+        ] = await Promise.all([
+            prisma.transaction.aggregate({ where: { type: 'DEPOSIT', status: 'COMPLETED', createdAt: { gte: rangeStart } }, _sum: { amount: true } }),
+            prisma.transaction.aggregate({ where: { type: 'DEPOSIT', status: 'COMPLETED', createdAt: { gte: prevRangeStart, lt: rangeStart } }, _sum: { amount: true } }),
+            prisma.user.count({ where: { createdAt: { gte: rangeStart } } }),
+            prisma.user.count({ where: { createdAt: { gte: prevRangeStart, lt: rangeStart } } }),
+            prisma.ticket.count({ where: { createdAt: { gte: rangeStart } } }),
+            prisma.ticket.count({ where: { createdAt: { gte: prevRangeStart, lt: rangeStart } } }),
+            prisma.raffle.count({ where: { status: 'ACTIVE' } }),
+            prisma.raffle.count({ where: { status: 'COMPLETED' } }),
+        ]);
+
+        const calcChange = (cur: number, prev: number) => prev === 0 ? (cur > 0 ? 100 : 0) : Math.round(((cur - prev) / prev) * 100);
+        const curRev = currentRevenue._sum.amount || 0;
+        const prvRev = prevRevenue._sum.amount || 0;
+
+        // Daily time-series for charts
+        const allTransactions = await prisma.transaction.findMany({
+            where: { createdAt: { gte: rangeStart }, status: 'COMPLETED' },
+            select: { amount: true, type: true, createdAt: true },
+            orderBy: { createdAt: 'asc' },
+        });
+        const allTickets = await prisma.ticket.findMany({
+            where: { createdAt: { gte: rangeStart } },
+            select: { createdAt: true },
+            orderBy: { createdAt: 'asc' },
+        });
+        const allNewUsers = await prisma.user.findMany({
+            where: { createdAt: { gte: rangeStart } },
+            select: { createdAt: true },
+            orderBy: { createdAt: 'asc' },
+        });
+
+        // Build daily buckets
+        const dailyMap: Record<string, { revenue: number; tickets: number; users: number; deposits: number }> = {};
+        for (let i = 0; i < days; i++) {
+            const d = new Date(rangeStart.getTime() + i * 24 * 60 * 60 * 1000);
+            const key = d.toISOString().split('T')[0];
+            dailyMap[key] = { revenue: 0, tickets: 0, users: 0, deposits: 0 };
+        }
+        for (const tx of allTransactions) {
+            const key = tx.createdAt.toISOString().split('T')[0];
+            if (dailyMap[key] && tx.type === 'DEPOSIT') {
+                dailyMap[key].revenue += tx.amount;
+                dailyMap[key].deposits += 1;
+            }
+        }
+        for (const t of allTickets) {
+            const key = t.createdAt.toISOString().split('T')[0];
+            if (dailyMap[key]) dailyMap[key].tickets += 1;
+        }
+        for (const u of allNewUsers) {
+            const key = u.createdAt.toISOString().split('T')[0];
+            if (dailyMap[key]) dailyMap[key].users += 1;
+        }
+
+        const revenueChart = Object.entries(dailyMap).map(([date, v]) => ({ date, revenue: v.revenue, deposits: v.deposits }));
+        const ticketsChart = Object.entries(dailyMap).map(([date, v]) => ({ date, tickets: v.tickets }));
+        const usersChart = Object.entries(dailyMap).map(([date, v]) => ({ date, users: v.users }));
+
+        // Transaction type breakdown (pie chart)
+        const txBreakdown = await prisma.transaction.groupBy({
+            by: ['type'],
+            where: { createdAt: { gte: rangeStart }, status: 'COMPLETED' },
+            _count: true,
+            _sum: { amount: true },
+        });
+        const transactionBreakdown = txBreakdown.map((g) => ({
+            type: g.type,
+            count: g._count,
+            amount: g._sum.amount || 0,
+        }));
+
+        // Top selling items
+        const topItems = await prisma.raffle.findMany({
+            select: { ticketsSold: true, ticketPrice: true, ticketsTotal: true, item: { select: { name: true, imageUrl: true } } },
+            orderBy: { ticketsSold: 'desc' },
+            take: 5,
+        });
+
+        // Recent activity
+        const recentTx = await prisma.transaction.findMany({
+            take: 8,
+            orderBy: { createdAt: 'desc' },
+            include: { user: { select: { name: true, userNumber: true } } },
+        });
+
+        // Platform totals
+        const [totalUsers, totalRaffles, totalTickets] = await Promise.all([
+            prisma.user.count(),
+            prisma.raffle.count(),
+            prisma.ticket.count(),
+        ]);
 
         res.status(200).json({
             success: true,
             data: {
                 stats: {
-                    totalRevenue: revenue._sum.amount || 0,
-                    newUsers,
-                    ticketsSold,
+                    totalRevenue: curRev,
+                    newUsers: currentUsers,
+                    ticketsSold: currentTickets,
                     activeRaffles,
-                    revenueChange: 0, // Would require previous period comparison
-                    usersChange: 0,
-                    ticketsChange: 0,
+                    completedRaffles,
+                    revenueChange: calcChange(curRev, prvRev),
+                    usersChange: calcChange(currentUsers, prevUsers),
+                    ticketsChange: calcChange(currentTickets, prevTickets),
                 },
+                charts: {
+                    revenue: revenueChart,
+                    tickets: ticketsChart,
+                    users: usersChart,
+                },
+                transactionBreakdown,
                 topItems: topItems.map((r) => ({
                     name: r.item.name,
+                    image: r.item.imageUrl,
                     tickets: r.ticketsSold,
+                    total: r.ticketsTotal,
                     revenue: r.ticketsSold * r.ticketPrice,
                 })),
                 recentActivity: recentTx.map((tx) => ({
                     type: tx.type.toLowerCase(),
                     message: `${tx.user.name}: ${tx.description || tx.type}`,
+                    amount: tx.amount,
+                    status: tx.status,
                     time: tx.createdAt.toISOString(),
                 })),
                 platformSummary: {
-                    totalUsers: platformTotals[0],
-                    totalRaffles: platformTotals[1],
-                    totalTicketsSold: platformTotals[2],
-                    totalPayouts: platformTotals[3]._sum.amount || 0,
+                    totalUsers,
+                    totalRaffles,
+                    totalTickets,
+                    activeRaffles,
+                    completedRaffles,
                 },
             },
         });
@@ -671,16 +746,16 @@ export const deleteTask = async (req: Request, res: Response) => {
 
 // ─── Visitor Analytics ───────────────────────────────────────
 
-// GET /api/admin/analytics/visitors?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD
 export const getVisitorAnalytics = async (req: Request, res: Response) => {
     try {
         const now = new Date();
+        // Default to last 30 days if no start date is provided
         const startDate = req.query.startDate
             ? new Date(req.query.startDate as string)
-            : new Date(now.getFullYear(), now.getMonth(), now.getDate()); // today start
+            : new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
         const endDate = req.query.endDate
-            ? new Date(new Date(req.query.endDate as string).getTime() + 24 * 60 * 60 * 1000) // end of that day
-            : new Date(now.getTime() + 24 * 60 * 60 * 1000); // end of today
+            ? new Date(new Date(req.query.endDate as string).getTime() + 24 * 60 * 60 * 1000)
+            : new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
         const where = {
             createdAt: {
@@ -689,28 +764,37 @@ export const getVisitorAnalytics = async (req: Request, res: Response) => {
             },
         };
 
-        const [totalVisits, uniqueVisitors, visitsByDay, visitsByPath] = await Promise.all([
+        const [totalVisits, uniqueVisitors, pageVisits, visitsByPathGroup] = await Promise.all([
             prisma.pageVisit.count({ where }),
             prisma.pageVisit.groupBy({
                 by: ['ip'],
                 where,
                 _count: true,
             }),
-            // Group by date
-            prisma.$queryRaw`
-                SELECT DATE(created_at) as date, COUNT(*)::int as visits
-                FROM page_visits
-                WHERE created_at >= ${startDate} AND created_at < ${endDate}
-                GROUP BY DATE(created_at)
-                ORDER BY date ASC
-            ` as Promise<{ date: string; visits: number }[]>,
-            // Group by path
+            prisma.pageVisit.findMany({
+                where,
+                select: { createdAt: true },
+                orderBy: { createdAt: 'asc' },
+            }),
             prisma.pageVisit.groupBy({
                 by: ['path'],
                 where,
                 _count: true,
+                orderBy: { _count: { path: 'desc' } },
             }),
         ]);
+
+        // Aggregate daily visits safely in JS
+        const dailyMap: Record<string, number> = {};
+        for (const visit of pageVisits) {
+            const dateStr = visit.createdAt.toISOString().split('T')[0];
+            dailyMap[dateStr] = (dailyMap[dateStr] || 0) + 1;
+        }
+
+        const visitsByDay = Object.entries(dailyMap).map(([date, visits]) => ({
+            date,
+            visits,
+        }));
 
         res.status(200).json({
             success: true,
@@ -718,7 +802,7 @@ export const getVisitorAnalytics = async (req: Request, res: Response) => {
                 totalVisits,
                 uniqueVisitors: uniqueVisitors.length,
                 visitsByDay,
-                visitsByPath: visitsByPath.map(v => ({
+                visitsByPath: visitsByPathGroup.map(v => ({
                     path: v.path,
                     visits: v._count,
                 })),

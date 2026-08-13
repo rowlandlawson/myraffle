@@ -7,6 +7,7 @@ import VisitorTracker from '@/components/VisitorTracker';
 import AppHeader from '@/components/nav/AppHeader';
 import AppBottomNav from '@/components/nav/AppBottomNav';
 import CartDrawer from '@/components/cart/CartDrawer';
+import { Analytics } from '@vercel/analytics/react';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -35,6 +36,7 @@ export default function RootLayout({
           {children}
           <AppBottomNav />
           <CartDrawer />
+          <Analytics />
         </Providers>
       </body>
     </html>

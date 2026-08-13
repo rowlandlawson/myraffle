@@ -190,17 +190,25 @@ export function useAdminAnalytics(dateRange = '7d') {
                     newUsers: number;
                     ticketsSold: number;
                     activeRaffles: number;
+                    completedRaffles: number;
                     revenueChange: number;
                     usersChange: number;
                     ticketsChange: number;
                 };
-                topItems: { name: string; tickets: number; revenue: number }[];
-                recentActivity: { type: string; message: string; time: string }[];
+                charts: {
+                    revenue: { date: string; revenue: number; deposits: number }[];
+                    tickets: { date: string; tickets: number }[];
+                    users: { date: string; users: number }[];
+                };
+                transactionBreakdown: { type: string; count: number; amount: number }[];
+                topItems: { name: string; image: string; tickets: number; total: number; revenue: number }[];
+                recentActivity: { type: string; message: string; amount: number; status: string; time: string }[];
                 platformSummary: {
                     totalUsers: number;
                     totalRaffles: number;
-                    totalTicketsSold: number;
-                    totalPayouts: number;
+                    totalTickets: number;
+                    activeRaffles: number;
+                    completedRaffles: number;
                 };
             }>(`/api/admin/analytics?range=${dateRange}`);
             if (!res.success || !res.data) throw new Error(res.message);
