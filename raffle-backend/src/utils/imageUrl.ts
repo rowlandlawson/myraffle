@@ -12,53 +12,53 @@ const CLOUDINARY_HOST = 'res.cloudinary.com/';
  * @returns Complete HTTPS URL
  */
 export function ensureCloudinaryUrl(url: string): string {
-    if (!url) return '';
+  if (!url) return '';
 
-    const value = url.trim();
-    if (!value) return '';
+  const value = url.trim();
+  if (!value) return '';
 
-    if (
-        value.startsWith(`${CLOUDINARY_BASE}https://`) ||
-        value.startsWith(`${CLOUDINARY_BASE}http://`)
-    ) {
-        return ensureCloudinaryUrl(value.slice(CLOUDINARY_BASE.length));
-    }
+  if (
+    value.startsWith(`${CLOUDINARY_BASE}https://`) ||
+    value.startsWith(`${CLOUDINARY_BASE}http://`)
+  ) {
+    return ensureCloudinaryUrl(value.slice(CLOUDINARY_BASE.length));
+  }
 
-    if (value.startsWith(CLOUDINARY_HTTP_BASE)) {
-        return `${CLOUDINARY_BASE}${value.slice(CLOUDINARY_HTTP_BASE.length)}`;
-    }
+  if (value.startsWith(CLOUDINARY_HTTP_BASE)) {
+    return `${CLOUDINARY_BASE}${value.slice(CLOUDINARY_HTTP_BASE.length)}`;
+  }
 
-    if (value.startsWith(`https://${CLOUDINARY_HOST}`)) return value;
-    if (value.startsWith(`http://${CLOUDINARY_HOST}`)) {
-        return `https://${value.slice('http://'.length)}`;
-    }
+  if (value.startsWith(`https://${CLOUDINARY_HOST}`)) return value;
+  if (value.startsWith(`http://${CLOUDINARY_HOST}`)) {
+    return `https://${value.slice('http://'.length)}`;
+  }
 
-    // If it already starts with a different full URL, return as-is.
-    if (value.startsWith('https://') || value.startsWith('http://')) return value;
+  // If it already starts with a different full URL, return as-is.
+  if (value.startsWith('https://') || value.startsWith('http://')) return value;
 
-    if (value.startsWith(CLOUDINARY_HOST)) {
-        return `https://${value}`;
-    }
+  if (value.startsWith(CLOUDINARY_HOST)) {
+    return `https://${value}`;
+  }
 
-    // If it looks like a Cloudinary partial URL (contains 'image/upload')
-    if (value.includes('image/upload')) {
-        const normalizedPath = value
-            .replace(/^\/+/, '')
-            .replace(/^https?:\/\/res\.cloudinary\.com\//, '')
-            .replace(/^res\.cloudinary\.com\//, '');
+  // If it looks like a Cloudinary partial URL (contains 'image/upload')
+  if (value.includes('image/upload')) {
+    const normalizedPath = value
+      .replace(/^\/+/, '')
+      .replace(/^https?:\/\/res\.cloudinary\.com\//, '')
+      .replace(/^res\.cloudinary\.com\//, '');
 
-        return `${CLOUDINARY_BASE}${normalizedPath}`;
-    }
+    return `${CLOUDINARY_BASE}${normalizedPath}`;
+  }
 
-    // If it starts with /, it's a local URL.
-    if (value.startsWith('/')) return value;
+  // If it starts with /, it's a local URL.
+  if (value.startsWith('/')) return value;
 
-    // Otherwise, assume it might be a partial Cloudinary path.
-    if (value.includes('/')) {
-        return `${CLOUDINARY_BASE}${value}`;
-    }
+  // Otherwise, assume it might be a partial Cloudinary path.
+  if (value.includes('/')) {
+    return `${CLOUDINARY_BASE}${value}`;
+  }
 
-    return value;
+  return value;
 }
 
 /**
@@ -67,7 +67,7 @@ export function ensureCloudinaryUrl(url: string): string {
  * @returns URL ready for storage
  */
 export function formatImageUrlForStorage(url: string): string {
-    return ensureCloudinaryUrl(url);
+  return ensureCloudinaryUrl(url);
 }
 
 /**
@@ -76,5 +76,5 @@ export function formatImageUrlForStorage(url: string): string {
  * @returns Complete HTTPS URL for display
  */
 export function getImageUrlForDisplay(storedUrl: string): string {
-    return ensureCloudinaryUrl(storedUrl);
+  return ensureCloudinaryUrl(storedUrl);
 }

@@ -1,31 +1,36 @@
 import { Router } from 'express';
 import {
-    getDashboardStats,
-    getAllUsers,
-    getAllTransactions,
-    getAnalytics,
-    getWithdrawals,
-    approveWithdrawal,
-    rejectWithdrawal,
-    getAllAdminTasks,
-    createTask,
-    updateTask,
-    deleteTask,
-    getVisitorAnalytics,
-    getAdminWins,
-    updateDeliveryStatus,
-    convertPrizeToWallet,
-    extendRaffleTimer,
+  approveWithdrawal,
+  convertPrizeToWallet,
+  createTask,
+  deleteTask,
+  extendRaffleTimer,
+  getAdminWins,
+  getAllAdminTasks,
+  getAllTransactions,
+  getAllUsers,
+  getAnalytics,
+  getDashboardStats,
+  getVisitorAnalytics,
+  getWithdrawals,
+  rejectWithdrawal,
+  sendAnnouncement,
+  updateDeliveryStatus,
+  updateTask,
 } from '../controllers/adminController';
 import {
-    getAdminBanners,
-    createBanner,
-    updateBanner,
-    deleteBanner,
+  createBanner,
+  deleteBanner,
+  getAdminBanners,
+  updateBanner,
 } from '../controllers/bannerController';
-import { updateSetting, getBonusSettings, updateBonusSettings } from '../controllers/settingsController';
+import {
+  getBonusSettings,
+  updateBonusSettings,
+  updateSetting,
+} from '../controllers/settingsController';
+import { requireAdmin, requireAuth } from '../middleware/auth';
 import { upload } from '../middleware/upload';
-import { requireAuth, requireAdmin } from '../middleware/auth';
 
 const router = Router();
 
@@ -63,5 +68,8 @@ router.delete('/banners/:id', requireAuth, requireAdmin, deleteBanner);
 router.get('/bonus-settings', requireAuth, requireAdmin, getBonusSettings);
 router.put('/bonus-settings', requireAuth, requireAdmin, updateBonusSettings);
 router.put('/settings/:key', requireAuth, requireAdmin, updateSetting);
+
+// Broadcast Announcement push notifications
+router.post('/announcements', requireAuth, requireAdmin, sendAnnouncement);
 
 export default router;

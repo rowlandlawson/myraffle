@@ -7,9 +7,8 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-declare const require: any;
-declare const module: any;
-declare const process: any;
+declare const require: { main?: unknown };
+declare const module: unknown;
 
 async function fixCloudinaryUrls() {
   try {
@@ -18,10 +17,7 @@ async function fixCloudinaryUrls() {
     // Get all items with potentially incomplete URLs
     const items = await prisma.item.findMany({
       where: {
-        NOT: [
-          { imageUrl: { startsWith: 'https://' } },
-          { imageUrl: { startsWith: 'http://' } },
-        ],
+        NOT: [{ imageUrl: { startsWith: 'https://' } }, { imageUrl: { startsWith: 'http://' } }],
       },
     });
 

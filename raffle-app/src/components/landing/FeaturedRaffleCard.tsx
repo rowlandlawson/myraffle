@@ -1,6 +1,6 @@
 import TicketButton from '@/components/landing/TicketButton';
-import { resolveImageUrl } from '@/lib/imageUrl';
 import CountdownTimer from '@/components/shared/CountdownTimer';
+import { resolveImageUrl } from '@/lib/imageUrl';
 
 export interface FeaturedItem {
   id: string | number;
@@ -17,13 +17,10 @@ export interface FeaturedItem {
 
 interface FeaturedRaffleCardProps {
   item: FeaturedItem;
-  onViewDetails?: (item: any) => void;
+  onViewDetails?: (item: FeaturedItem) => void;
 }
 
-export default function FeaturedRaffleCard({
-  item,
-  onViewDetails,
-}: FeaturedRaffleCardProps) {
+export default function FeaturedRaffleCard({ item, onViewDetails }: FeaturedRaffleCardProps) {
   const imageUrl = resolveImageUrl(item.image);
   const ticketsLeft = Math.max(0, item.ticketsTotal - item.ticketsSold);
 
@@ -36,15 +33,11 @@ export default function FeaturedRaffleCard({
       <div className="relative w-full aspect-[4/3] bg-yellow-400 overflow-hidden flex items-center justify-center p-4">
         {/* Left Top Pill Badge */}
         <div className="absolute top-4 left-4 z-10 bg-white/95 rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-sm border border-red-600">
-          <span className="text-red-600 font-extrabold text-sm sm:text-base">
-            {ticketsLeft}
-          </span>
+          <span className="text-red-600 font-extrabold text-sm sm:text-base">{ticketsLeft}</span>
           <span className="text-gray-800 text-xs font-bold">LEFT</span>
           <span className="text-gray-300 text-xs">|</span>
           <span className="text-gray-500 text-[10px] font-semibold">OUT OF</span>
-          <span className="text-gray-900 font-bold text-xs sm:text-sm">
-            {item.ticketsTotal}
-          </span>
+          <span className="text-gray-900 font-bold text-xs sm:text-sm">{item.ticketsTotal}</span>
         </div>
 
         {/* Top Right POOL Badge */}

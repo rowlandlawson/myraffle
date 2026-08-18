@@ -1,29 +1,29 @@
 'use client';
 
-import { useState, ReactNode, useEffect } from 'react';
-import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import HowItWorksModal from '@/components/landing/HowItWorksModal';
+import TermsModal from '@/components/terms/TermsModal';
 import { useAuthStore } from '@/lib/authStore';
-import toast from 'react-hot-toast';
 import {
-  Home,
-  Wallet,
-  Ticket,
-  Settings,
-  LogOut,
-  Menu,
-  X,
+  Award,
   ChevronLeft,
   ChevronRight,
-  ShoppingBag,
-  Lock,
-  Trophy,
-  Award,
-  HelpCircle,
   FileText,
+  HelpCircle,
+  Home,
+  Lock,
+  LogOut,
+  Menu,
+  Settings,
+  ShoppingBag,
+  Ticket,
+  Trophy,
+  Wallet,
+  X,
 } from 'lucide-react';
-import TermsModal from '@/components/terms/TermsModal';
-import HowItWorksModal from '@/components/landing/HowItWorksModal';
+import Image from 'next/image';
+import { usePathname, useRouter } from 'next/navigation';
+import { type ReactNode, useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 
 const USER_MENU = [
   { label: 'Dashboard', href: '/dashboard', icon: Home },
@@ -77,7 +77,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
       >
         {/* Brand Header */}
         <div className="h-20 flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <div className={`flex items-center gap-2 overflow-hidden transition-all duration-300 ${sidebarOpen ? 'w-auto opacity-100' : 'w-0 opacity-0 relative'}`}>
+          <div
+            className={`flex items-center gap-2 overflow-hidden transition-all duration-300 ${sidebarOpen ? 'w-auto opacity-100' : 'w-0 opacity-0 relative'}`}
+          >
             <Image
               src="/images/logo.png"
               alt="RaffleHub"
@@ -100,14 +102,18 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         </div>
 
         {/* User Card */}
-        <div className={`p-4 border-b border-slate-100 transition-all ${sidebarOpen ? 'block' : 'hidden'}`}>
+        <div
+          className={`p-4 border-b border-slate-100 transition-all ${sidebarOpen ? 'block' : 'hidden'}`}
+        >
           <div className="bg-slate-50/80 rounded-xl p-3 border border-slate-200/60 flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-red-600 to-orange-500 flex items-center justify-center text-white font-bold shadow-md ring-2 ring-white">
               {user?.name?.charAt(0) || 'U'}
             </div>
             <div className="overflow-hidden">
               <p className="text-sm font-bold text-slate-800 truncate">{user?.name}</p>
-              <p className="text-xs text-slate-500 font-medium font-mono">{user?.userNumber || 'Member'}</p>
+              <p className="text-xs text-slate-500 font-medium font-mono">
+                {user?.userNumber || 'Member'}
+              </p>
             </div>
           </div>
         </div>
@@ -127,15 +133,23 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 } ${sidebarOpen ? 'justify-start' : 'justify-center'}`}
                 title={!sidebarOpen ? item.label : undefined}
               >
-                {isActive && <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-600 rounded-r-full" />}
+                {isActive && (
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-600 rounded-r-full" />
+                )}
                 <div className="relative shrink-0">
                   <item.icon
                     size={sidebarOpen ? 20 : 22}
                     strokeWidth={isActive ? 2.5 : 2}
-                    className={isActive ? 'text-red-600 relative z-10' : 'text-slate-400 group-hover:text-slate-600 transition-colors'}
+                    className={
+                      isActive
+                        ? 'text-red-600 relative z-10'
+                        : 'text-slate-400 group-hover:text-slate-600 transition-colors'
+                    }
                   />
                 </div>
-                <span className={`font-semibold tracking-wide text-sm whitespace-nowrap transition-all duration-300 relative z-10 ${sidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 hidden'}`}>
+                <span
+                  className={`font-semibold tracking-wide text-sm whitespace-nowrap transition-all duration-300 relative z-10 ${sidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 hidden'}`}
+                >
                   {item.label}
                 </span>
               </a>
@@ -153,7 +167,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             title={!sidebarOpen ? 'Sign Out' : undefined}
           >
             <LogOut size={20} strokeWidth={2} className="shrink-0" />
-            <span className={`font-semibold text-sm whitespace-nowrap transition-all duration-300 ${sidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 hidden'}`}>
+            <span
+              className={`font-semibold text-sm whitespace-nowrap transition-all duration-300 ${sidebarOpen ? 'opacity-100 w-auto' : 'opacity-0 w-0 hidden'}`}
+            >
               Sign Out
             </span>
           </button>
@@ -164,18 +180,22 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           onClick={() => setSidebarOpen(!sidebarOpen)}
           className="hidden md:flex absolute -right-3.5 top-24 bg-white border border-slate-200 text-slate-400 hover:text-slate-700 hover:border-slate-300 p-1.5 rounded-full shadow-sm z-50 transition-all"
         >
-          {sidebarOpen ? <ChevronLeft size={14} strokeWidth={3} /> : <ChevronRight size={14} strokeWidth={3} />}
+          {sidebarOpen ? (
+            <ChevronLeft size={14} strokeWidth={3} />
+          ) : (
+            <ChevronRight size={14} strokeWidth={3} />
+          )}
         </button>
       </aside>
 
       {/* Main Content Area */}
-      <main className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}>
+      <main
+        className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${sidebarOpen ? 'md:ml-64' : 'md:ml-20'}`}
+      >
         {/* Top Navbar (Desktop) */}
         <header className="hidden md:flex h-20 bg-white/80 backdrop-blur-md border-b border-slate-200/80 items-center justify-between px-8 sticky top-0 z-30">
           <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-800">
-              Dashboard
-            </h1>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-800">Dashboard</h1>
           </div>
           <div className="flex items-center gap-5">
             {/* Wallet Balance Badge */}
@@ -189,7 +209,9 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
 
             <div className="hidden lg:block text-right">
               <p className="text-sm font-bold text-slate-800">{user?.name}</p>
-              <p className="text-xs font-semibold text-slate-500 tracking-wide">{user?.userNumber}</p>
+              <p className="text-xs font-semibold text-slate-500 tracking-wide">
+                {user?.userNumber}
+              </p>
             </div>
             <div className="w-11 h-11 rounded-full bg-gradient-to-tr from-red-600 to-orange-500 flex items-center justify-center shadow-md border-2 border-white ring-2 ring-slate-100">
               <span className="text-white font-bold text-lg">{user?.name?.charAt(0) || 'U'}</span>

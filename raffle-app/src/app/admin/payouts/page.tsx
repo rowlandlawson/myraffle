@@ -1,7 +1,7 @@
 'use client';
 
+import { ArrowRight, ShieldAlert, Trophy } from 'lucide-react';
 import Link from 'next/link';
-import { ShieldAlert, Trophy, ArrowRight } from 'lucide-react';
 
 export default function AdminPayoutsPage() {
   return (
@@ -12,7 +12,11 @@ export default function AdminPayoutsPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">Direct Cash Payouts Disabled</h1>
         <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-          The platform does not support direct cash bank payouts. If a physical raffle prize remains unclaimed by a winner over a period of time, administrators can convert the prize value into store credits on the winner&apos;s account. These wallet credits are non-withdrawable as cash and can be used by the winner to purchase tickets for upcoming raffles on the platform.
+          The platform does not support direct cash bank payouts. If a physical raffle prize remains
+          unclaimed by a winner over a period of time, administrators can convert the prize value
+          into store credits on the winner&apos;s account. These wallet credits are non-withdrawable
+          as cash and can be used by the winner to purchase tickets for upcoming raffles on the
+          platform.
         </p>
       </div>
 

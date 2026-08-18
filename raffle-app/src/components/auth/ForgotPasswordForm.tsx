@@ -1,10 +1,10 @@
 'use client';
 
+import { api } from '@/lib/api';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { api } from '@/lib/api';
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
@@ -54,10 +54,7 @@ export function ForgotPasswordForm({ onSuccess }: ForgotPasswordFormProps) {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Email Field */}
       <div>
-        <label
-          htmlFor="email"
-          className="block text-sm font-medium text-gray-700 mb-2"
-        >
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
           Email Address
         </label>
         <input
@@ -66,9 +63,7 @@ export function ForgotPasswordForm({ onSuccess }: ForgotPasswordFormProps) {
           placeholder="you@example.com"
           className="w-full px-4 py-3 bg-gray-50 border border-gray-300 rounded-lg text-gray-800 placeholder-gray-400 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-500/20 transition-all"
         />
-        {errors.email && (
-          <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>
-        )}
+        {errors.email && <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>}
       </div>
 
       {/* Error Message */}
@@ -86,7 +81,7 @@ export function ForgotPasswordForm({ onSuccess }: ForgotPasswordFormProps) {
       >
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">
-            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
             Sending...
           </span>
         ) : (
@@ -97,10 +92,7 @@ export function ForgotPasswordForm({ onSuccess }: ForgotPasswordFormProps) {
       {/* Back to Login */}
       <p className="text-center text-sm text-gray-600">
         Remember your password?{' '}
-        <a
-          href="/login"
-          className="text-red-600 hover:text-red-500 font-semibold"
-        >
+        <a href="/login" className="text-red-600 hover:text-red-500 font-semibold">
           Back to login
         </a>
       </p>

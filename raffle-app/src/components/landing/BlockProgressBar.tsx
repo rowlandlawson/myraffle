@@ -20,7 +20,7 @@ export default function BlockProgressBar({
         const isFilled = index < filledBlocks;
         return (
           <div
-            key={index}
+            key={`progress-block-${index + 1}`}
             className={`h-2.5 flex-1 rounded-[2px] transition-colors ${
               isFilled ? 'bg-red-600' : 'bg-gray-200'
             }`}

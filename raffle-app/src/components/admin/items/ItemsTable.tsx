@@ -1,8 +1,8 @@
 'use client';
 
-import { Edit2, Trash2, Eye } from 'lucide-react';
-import { Item } from '@/types/items';
 import EmptyState from '@/components/admin/items/EmptyState';
+import type { Item } from '@/types/items';
+import { Edit2, Eye, Trash2 } from 'lucide-react';
 
 interface ItemsTableProps {
   items: Item[];
@@ -11,16 +11,9 @@ interface ItemsTableProps {
   onView: (item: Item) => void;
 }
 
-export default function ItemsTable({
-  items,
-  onDelete,
-  onEdit,
-  onView,
-}: ItemsTableProps) {
+export default function ItemsTable({ items, onDelete, onEdit, onView }: ItemsTableProps) {
   const getStatusColor = (status: Item['status']) => {
-    return status === 'active'
-      ? 'bg-green-100 text-green-700'
-      : 'bg-gray-100 text-gray-700';
+    return status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700';
   };
 
   const getProgressPercentage = (sold: number, total: number) => {
@@ -33,66 +26,39 @@ export default function ItemsTable({
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Item
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Category
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Value
-              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Item</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Category</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Value</th>
               <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
                 Ticket Price
               </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Tickets
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Status
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Actions
-              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Tickets</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
             </tr>
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr
-                key={item.id}
-                className="border-b border-gray-200 hover:bg-gray-50 transition"
-              >
+              <tr key={item.id} className="border-b border-gray-200 hover:bg-gray-50 transition">
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <span className="text-3xl">{item.image}</span>
                     <div>
-                      <div className="font-semibold text-gray-900">
-                        {item.name}
-                      </div>
-                      <div className="text-xs text-gray-600">
-                        {item.createdDate}
-                      </div>
+                      <div className="font-semibold text-gray-900">{item.name}</div>
+                      <div className="text-xs text-gray-600">{item.createdDate}</div>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 text-gray-600 capitalize">
-                  {item.category}
-                </td>
+                <td className="px-6 py-4 text-gray-600 capitalize">{item.category}</td>
                 <td className="px-6 py-4 font-bold text-gray-900">
-                  ₦{(item.price / 1000).toFixed(0)}k
+                  ₦{item.price.toLocaleString('en-NG')}
                 </td>
-                <td className="px-6 py-4 text-gray-600">
-                  ₦{item.ticketPrice.toLocaleString()}
-                </td>
+                <td className="px-6 py-4 text-gray-600">₦{item.ticketPrice.toLocaleString()}</td>
                 <td className="px-6 py-4">
                   <div className="text-sm text-gray-600">
                     {item.ticketsSold} / {item.ticketsTotal}
                     <span className="ml-2 text-xs">
-                      (
-                      {getProgressPercentage(
-                        item.ticketsSold,
-                        item.ticketsTotal,
-                      )}
+                      ({getProgressPercentage(item.ticketsSold, item.ticketsTotal)}
                       %)
                     </span>
                   </div>

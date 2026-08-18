@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { AlertTriangle, X } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -89,7 +89,9 @@ export default function ConfirmDialog({
 
         <div className="pt-2 pb-4">
           {/* Icon */}
-          <div className={`w-12 h-12 rounded-full ${styles.icon} flex items-center justify-center mx-auto mb-4`}>
+          <div
+            className={`w-12 h-12 rounded-full ${styles.icon} flex items-center justify-center mx-auto mb-4`}
+          >
             <AlertTriangle size={24} />
           </div>
 

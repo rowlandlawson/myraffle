@@ -1,7 +1,7 @@
 'use client';
 
+import type { Category } from '@/types/publicItems';
 import { Filter } from 'lucide-react';
-import { Category } from '@/types/publicItems';
 
 interface CategoryFilterProps {
   categories: Category[];

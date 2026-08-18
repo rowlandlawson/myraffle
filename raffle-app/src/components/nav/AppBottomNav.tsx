@@ -1,34 +1,34 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import HowItWorksModal from '@/components/landing/HowItWorksModal';
+import TermsModal from '@/components/terms/TermsModal';
+import { useAuthStore } from '@/lib/authStore';
 import {
-  Home,
-  Ticket,
   Award,
-  Menu,
-  X,
-  LogOut,
-  Settings,
-  Wallet,
-  HelpCircle,
-  FileText,
-  User,
-  LayoutDashboard,
-  Trophy,
-  Users as UsersIcon,
-  Image as ImageIcon,
   CreditCard,
+  FileText,
+  HelpCircle,
+  Home,
+  Image as ImageIcon,
+  LayoutDashboard,
+  LogOut,
+  Menu,
   Receipt,
+  Settings,
+  Ticket,
+  Trophy,
+  User,
+  Users as UsersIcon,
+  Wallet,
+  X,
   Zap,
 } from 'lucide-react';
-import { useAuthStore } from '@/lib/authStore';
-import TermsModal from '@/components/terms/TermsModal';
-import HowItWorksModal from '@/components/landing/HowItWorksModal';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 
-// Pages where the bottom nav should be completely hidden
-const HIDDEN_PATHS = ['/login', '/register', '/forgot-password'];
+// Pages where the bottom nav should be completely hidden (auth & admin panel layout)
+const HIDDEN_PATHS = ['/login', '/register', '/forgot-password', '/admin'];
 
 export default function AppBottomNav() {
   const pathname = usePathname();
@@ -38,23 +38,23 @@ export default function AppBottomNav() {
   const [termsOpen, setTermsOpen] = useState(false);
   const [howItWorksOpen, setHowItWorksOpen] = useState(false);
 
-  const isAdmin = isAuthenticated && (user as any)?.role === 'ADMIN';
+  const isAdmin = isAuthenticated && user?.role === 'ADMIN';
   const isHidden = HIDDEN_PATHS.some((p) => pathname?.startsWith(p));
   const isAdminPage = pathname?.startsWith('/admin') || isAdmin;
-  const isDashboardPage = pathname?.startsWith('/dashboard');
+  const _isDashboardPage = pathname?.startsWith('/dashboard');
 
   const isActive = (path: string) => {
     if (path === '/dashboard' || path === '/admin' || path === '/') return pathname === path;
-    return pathname === path || pathname?.startsWith(path + '/');
+    return pathname === path || pathname?.startsWith(`${path}/`);
   };
 
   const tabClass = (active: boolean) =>
     `flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition-colors ${
-      active ? 'text-[#C0000C]' : 'text-gray-500 hover:text-gray-800'
+      active ? 'text-[#E10600]' : 'text-gray-500 hover:text-gray-800'
     }`;
 
   const labelClass = (active: boolean) =>
-    `text-[10px] font-bold ${active ? 'text-[#C0000C]' : 'text-gray-500'}`;
+    `text-[10px] font-bold ${active ? 'text-[#E10600]' : 'text-gray-500'}`;
 
   if (isHidden) return null;
 
@@ -134,13 +134,55 @@ export default function AppBottomNav() {
               </div>
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { href: '/admin/users', icon: UsersIcon, label: 'Users', sub: 'Manage Accounts', color: 'bg-blue-100 text-blue-600' },
-                  { href: '/admin/banners', icon: ImageIcon, label: 'Banners', sub: 'Promos & Slides', color: 'bg-emerald-100 text-emerald-600' },
-                  { href: '/admin/analytics', icon: Trophy, label: 'Analytics', sub: 'Platform Stats', color: 'bg-amber-100 text-amber-600' },
-                  { href: '/admin/transactions', icon: Receipt, label: 'Transactions', sub: 'Audit Logs', color: 'bg-purple-100 text-purple-600' },
-                  { href: '/admin/tasks', icon: Zap, label: 'Tasks', sub: 'Earn Rules', color: 'bg-orange-100 text-orange-600' },
-                  { href: '/admin/terms', icon: FileText, label: 'Terms', sub: 'Site Content', color: 'bg-teal-100 text-teal-600' },
-                  { href: '/admin/settings', icon: Settings, label: 'Settings', sub: 'System Config', color: 'bg-indigo-100 text-indigo-600' },
+                  {
+                    href: '/admin/users',
+                    icon: UsersIcon,
+                    label: 'Users',
+                    sub: 'Manage Accounts',
+                    color: 'bg-blue-100 text-blue-600',
+                  },
+                  {
+                    href: '/admin/banners',
+                    icon: ImageIcon,
+                    label: 'Banners',
+                    sub: 'Promos & Slides',
+                    color: 'bg-emerald-100 text-emerald-600',
+                  },
+                  {
+                    href: '/admin/analytics',
+                    icon: Trophy,
+                    label: 'Analytics',
+                    sub: 'Platform Stats',
+                    color: 'bg-amber-100 text-amber-600',
+                  },
+                  {
+                    href: '/admin/transactions',
+                    icon: Receipt,
+                    label: 'Transactions',
+                    sub: 'Audit Logs',
+                    color: 'bg-purple-100 text-purple-600',
+                  },
+                  {
+                    href: '/admin/tasks',
+                    icon: Zap,
+                    label: 'Tasks',
+                    sub: 'Earn Rules',
+                    color: 'bg-orange-100 text-orange-600',
+                  },
+                  {
+                    href: '/admin/terms',
+                    icon: FileText,
+                    label: 'Terms',
+                    sub: 'Site Content',
+                    color: 'bg-teal-100 text-teal-600',
+                  },
+                  {
+                    href: '/admin/settings',
+                    icon: Settings,
+                    label: 'Settings',
+                    sub: 'System Config',
+                    color: 'bg-indigo-100 text-indigo-600',
+                  },
                 ].map((item) => (
                   <Link
                     key={item.href}
@@ -160,7 +202,11 @@ export default function AppBottomNav() {
               </div>
               <div className="border-t border-gray-100 pt-2">
                 <button
-                  onClick={() => { setDrawerOpen(false); logout(); router.push('/'); }}
+                  onClick={() => {
+                    setDrawerOpen(false);
+                    logout();
+                    router.push('/');
+                  }}
                   className="w-full flex items-center justify-center gap-2 py-3 text-red-600 font-bold text-sm bg-red-50 rounded-2xl border border-red-100 hover:bg-red-100 transition-colors"
                 >
                   <LogOut size={16} /> Sign Out
@@ -218,7 +264,7 @@ export default function AppBottomNav() {
 
             {/* User card */}
             <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
-              <div className="w-10 h-10 bg-[#C0000C] rounded-full flex items-center justify-center text-white font-black text-lg shadow-sm">
+              <div className="w-10 h-10 bg-[#E10600] rounded-full flex items-center justify-center text-white font-black text-lg shadow-sm">
                 {user?.name?.charAt(0)?.toUpperCase() || 'U'}
               </div>
               <div className="flex-1 min-w-0">
@@ -235,8 +281,20 @@ export default function AppBottomNav() {
 
             <div className="grid grid-cols-2 gap-3">
               {[
-                { href: '/dashboard/wallet', icon: Wallet, label: 'Wallet', sub: 'Balance & Funds', color: 'bg-emerald-100 text-emerald-600' },
-                { href: '/dashboard/settings', icon: Settings, label: 'Settings', sub: 'Profile & Security', color: 'bg-blue-100 text-blue-600' },
+                {
+                  href: '/dashboard/wallet',
+                  icon: Wallet,
+                  label: 'Wallet',
+                  sub: 'Balance & Funds',
+                  color: 'bg-emerald-100 text-emerald-600',
+                },
+                {
+                  href: '/dashboard/settings',
+                  icon: Settings,
+                  label: 'Settings',
+                  sub: 'Profile & Security',
+                  color: 'bg-blue-100 text-blue-600',
+                },
               ].map((item) => (
                 <Link
                   key={item.href}
@@ -255,10 +313,15 @@ export default function AppBottomNav() {
               ))}
 
               <button
-                onClick={() => { setDrawerOpen(false); setHowItWorksOpen(true); }}
+                onClick={() => {
+                  setDrawerOpen(false);
+                  setHowItWorksOpen(true);
+                }}
                 className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 hover:bg-gray-100 transition-colors text-left"
               >
-                <div className="p-2 rounded-xl bg-amber-100 text-amber-600"><HelpCircle size={18} /></div>
+                <div className="p-2 rounded-xl bg-amber-100 text-amber-600">
+                  <HelpCircle size={18} />
+                </div>
                 <div>
                   <div className="font-bold text-gray-900 text-xs">How it Works</div>
                   <div className="text-[10px] text-gray-400">Raffle guide</div>
@@ -266,10 +329,15 @@ export default function AppBottomNav() {
               </button>
 
               <button
-                onClick={() => { setDrawerOpen(false); setTermsOpen(true); }}
+                onClick={() => {
+                  setDrawerOpen(false);
+                  setTermsOpen(true);
+                }}
                 className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100 hover:bg-gray-100 transition-colors text-left"
               >
-                <div className="p-2 rounded-xl bg-purple-100 text-purple-600"><FileText size={18} /></div>
+                <div className="p-2 rounded-xl bg-purple-100 text-purple-600">
+                  <FileText size={18} />
+                </div>
                 <div>
                   <div className="font-bold text-gray-900 text-xs">Terms</div>
                   <div className="text-[10px] text-gray-400">Policy & Rules</div>
@@ -279,7 +347,11 @@ export default function AppBottomNav() {
 
             <div className="border-t border-gray-100 pt-2">
               <button
-                onClick={() => { setDrawerOpen(false); logout(); router.push('/'); }}
+                onClick={() => {
+                  setDrawerOpen(false);
+                  logout();
+                  router.push('/');
+                }}
                 className="w-full flex items-center justify-center gap-2 py-3 text-red-600 font-bold text-sm bg-red-50 rounded-2xl border border-red-100 hover:bg-red-100 transition-colors"
               >
                 <LogOut size={16} /> Sign Out ({user?.userNumber || 'Account'})

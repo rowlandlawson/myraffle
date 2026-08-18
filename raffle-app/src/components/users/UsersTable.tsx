@@ -1,8 +1,8 @@
 'use client';
 
-import { User } from '@/types/users';
 import EmptyState from '@/components/users/EmptyState';
-import { Trash2, Edit2, Eye } from 'lucide-react';
+import type { User } from '@/types/users';
+import { Edit2, Eye, Trash2 } from 'lucide-react';
 
 interface UsersTableProps {
   users: User[];
@@ -20,18 +20,11 @@ export default function UsersTable({
   onDelete, // Add this to destructuring
 }: UsersTableProps) {
   const getStatusColor = (status: User['status']) => {
-    return status === 'active'
-      ? 'bg-green-100 text-green-700'
-      : 'bg-red-100 text-red-700';
+    return status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
   };
 
   const formatBalance = (balance: number) => {
-    if (balance >= 1000000) {
-      return `₦${(balance / 1000000).toFixed(2)}M`;
-    } else if (balance >= 1000) {
-      return `₦${(balance / 1000).toFixed(1)}k`;
-    }
-    return `₦${balance.toLocaleString()}`;
+    return `₦${balance.toLocaleString('en-NG')}`;
   };
 
   return (
@@ -40,40 +33,21 @@ export default function UsersTable({
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                User
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Contact
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Status
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Balance
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Activity
-              </th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
-                Actions
-              </th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">User</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Contact</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Status</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Balance</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Activity</th>
+              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Actions</th>
             </tr>
           </thead>
           <tbody>
             {users.map((user) => (
-              <tr
-                key={user.id}
-                className="border-b border-gray-200 hover:bg-gray-50 transition"
-              >
+              <tr key={user.id} className="border-b border-gray-200 hover:bg-gray-50 transition">
                 <td className="px-6 py-4">
                   <div>
-                    <div className="font-semibold text-gray-900">
-                      {user.name}
-                    </div>
-                    <div className="text-xs text-gray-600">
-                      {user.userNumber}
-                    </div>
+                    <div className="font-semibold text-gray-900">{user.name}</div>
+                    <div className="text-xs text-gray-600">{user.userNumber}</div>
                   </div>
                 </td>
                 <td className="px-6 py-4">
@@ -88,12 +62,7 @@ export default function UsersTable({
                   </span>
                 </td>
                 <td className="px-6 py-4">
-                  <div className="font-bold text-gray-900">
-                    {formatBalance(user.balance)}
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    {user.rafflePoints.toLocaleString()} points
-                  </div>
+                  <div className="font-bold text-gray-900">{formatBalance(user.balance)}</div>
                 </td>
                 <td className="px-6 py-4">
                   <div className="text-sm text-gray-600">
@@ -130,11 +99,7 @@ export default function UsersTable({
                           ? 'bg-red-50 text-red-600 hover:bg-red-100'
                           : 'bg-green-50 text-green-600 hover:bg-green-100'
                       }`}
-                      title={
-                        user.status === 'active'
-                          ? 'Suspend User'
-                          : 'Activate User'
-                      }
+                      title={user.status === 'active' ? 'Suspend User' : 'Activate User'}
                     >
                       {user.status === 'active' ? '⛔' : '✓'}
                     </button>

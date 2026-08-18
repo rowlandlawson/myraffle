@@ -36,12 +36,7 @@ export default function AuthFeedback({
             stroke="currentColor"
             viewBox="0 0 24 24"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M5 13l4 4L19 7"
-            />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
         ) : (
           <svg
@@ -67,9 +62,7 @@ export default function AuthFeedback({
       <p className="text-gray-600">{message}</p>
 
       {/* Additional Message */}
-      {additionalMessage && (
-        <p className="text-gray-500 text-sm mt-4">{additionalMessage}</p>
-      )}
+      {additionalMessage && <p className="text-gray-500 text-sm mt-4">{additionalMessage}</p>}
 
       {/* Link */}
       {linkText && linkHref && (

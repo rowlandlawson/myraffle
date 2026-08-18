@@ -1,8 +1,8 @@
 'use client';
 
-import { Item } from '@/types/publicItems';
-import ItemCard from '@/components/publicItems/ItemCard';
 import EmptyState from '@/components/publicItems/EmptyState';
+import ItemCard from '@/components/publicItems/ItemCard';
+import type { Item } from '@/types/publicItems';
 
 interface ItemsGridProps {
   items: Item[];

@@ -1,19 +1,19 @@
 'use client';
 
-import { useState } from 'react';
-import {
-  ShoppingBag,
-  X,
-  Trash2,
-  Plus,
-  Minus,
-  ShieldCheck,
-  ChevronRight,
-  Loader2,
-} from 'lucide-react';
-import { useCartStore } from '@/lib/cartStore';
 import TicketCheckoutModal from '@/components/shared/TicketCheckoutModal';
 import { useAuthStore } from '@/lib/authStore';
+import { useCartStore } from '@/lib/cartStore';
+import {
+  ChevronRight,
+  Loader2,
+  Minus,
+  Plus,
+  ShieldCheck,
+  ShoppingBag,
+  Trash2,
+  X,
+} from 'lucide-react';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
 
 export default function CartDrawer() {
@@ -56,15 +56,11 @@ export default function CartDrawer() {
   return (
     <>
       {/* Backdrop */}
-      <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70]"
-        onClick={closeCart}
-      />
+      <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[70]" onClick={closeCart} />
 
       {/* Native bottom sheet */}
       <div className="fixed inset-x-0 bottom-0 z-[80] max-w-xl mx-auto">
         <div className="bg-white rounded-t-3xl shadow-2xl flex flex-col max-h-[88vh]">
-
           {/* Drag handle */}
           <div className="flex justify-center pt-3 pb-1">
             <div className="w-10 h-1.5 bg-gray-200 rounded-full" />
@@ -74,7 +70,7 @@ export default function CartDrawer() {
           <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100">
             <div className="flex items-center gap-2.5">
               <div className="w-9 h-9 bg-red-50 rounded-xl flex items-center justify-center">
-                <ShoppingBag size={18} className="text-[#C0000C]" />
+                <ShoppingBag size={18} className="text-[#E10600]" />
               </div>
               <div>
                 <h2 className="font-black text-gray-900 text-base">Your Cart</h2>
@@ -118,7 +114,7 @@ export default function CartDrawer() {
                 </div>
                 <button
                   onClick={closeCart}
-                  className="mt-1 px-5 py-2.5 bg-[#C0000C] text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-colors"
+                  className="mt-1 px-5 py-2.5 bg-[#E10600] text-white text-xs font-bold rounded-xl hover:bg-red-700 transition-colors"
                 >
                   Browse Raffles
                 </button>
@@ -138,14 +134,16 @@ export default function CartDrawer() {
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-xl">📦</div>
+                      <div className="w-full h-full flex items-center justify-center text-xl">
+                        📦
+                      </div>
                     )}
                   </div>
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
                     <p className="font-bold text-gray-900 text-sm truncate">{item.title}</p>
-                    <p className="text-xs text-[#C0000C] font-bold mt-0.5">
+                    <p className="text-xs text-[#E10600] font-bold mt-0.5">
                       ₦{item.ticketPrice.toLocaleString()} / ticket
                     </p>
 
@@ -208,7 +206,7 @@ export default function CartDrawer() {
               {/* Checkout button */}
               <button
                 onClick={handleCheckoutClick}
-                className="w-full py-4 bg-[#C0000C] hover:bg-red-700 text-white font-black text-sm rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 active:scale-[0.99]"
+                className="w-full py-4 bg-[#E10600] hover:bg-red-700 text-white font-black text-sm rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 active:scale-[0.99]"
               >
                 Proceed to Checkout
                 <ChevronRight size={18} />

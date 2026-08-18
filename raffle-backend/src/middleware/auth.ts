@@ -1,66 +1,66 @@
-import { Request, Response, NextFunction } from 'express';
+import type { NextFunction, Request, Response } from 'express';
 import { verifyAccessToken } from '../services/jwt';
 
 // Extend Express Request to include user info
 declare global {
-    namespace Express {
-        interface Request {
-            user?: {
-                userId: string;
-                role: string;
-            };
-        }
+  namespace Express {
+    interface Request {
+      user?: {
+        userId: string;
+        role: string;
+      };
     }
+  }
 }
 
 export const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.headers.authorization;
+  const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        res.status(401).json({
-            success: false,
-            message: 'Access denied. No token provided.',
-        });
-        return;
-    }
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    res.status(401).json({
+      success: false,
+      message: 'Access denied. No token provided.',
+    });
+    return;
+  }
 
-    const token = authHeader.split(' ')[1];
+  const token = authHeader.split(' ')[1];
 
-    try {
-        const decoded = verifyAccessToken(token!);
-        req.user = decoded;
-        next();
-    } catch {
-        res.status(401).json({
-            success: false,
-            message: 'Invalid or expired token.',
-        });
-        return;
-    }
+  try {
+    const decoded = verifyAccessToken(token!);
+    req.user = decoded;
+    next();
+  } catch {
+    res.status(401).json({
+      success: false,
+      message: 'Invalid or expired token.',
+    });
+    return;
+  }
 };
 
 /** Like requireAuth, but does NOT reject — just sets req.user if token is valid */
-export const optionalAuth = (req: Request, res: Response, next: NextFunction) => {
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-        const token = authHeader.split(' ')[1];
-        try {
-            const decoded = verifyAccessToken(token!);
-            req.user = decoded;
-        } catch {
-            // Ignore invalid tokens — treat as anonymous
-        }
+export const optionalAuth = (req: Request, _res: Response, next: NextFunction) => {
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = verifyAccessToken(token!);
+      req.user = decoded;
+    } catch {
+      // Ignore invalid tokens — treat as anonymous
     }
-    next();
+  }
+  next();
 };
 
 export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user || req.user.role !== 'ADMIN') {
-        res.status(403).json({
-            success: false,
-            message: 'Access denied. Admin privileges required.',
-        });
-        return;
-    }
-    next();
+  if (!req.user || req.user.role !== 'ADMIN') {
+    res.status(403).json({
+      success: false,
+      message: 'Access denied. Admin privileges required.',
+    });
+    return;
+  }
+  next();
 };

@@ -2,13 +2,10 @@ export default function ReferralSection() {
   return (
     <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white rounded-xl shadow-lg p-6 md:p-12">
       <div className="max-w-2xl">
-        <h3 className="font-bold text-2xl mb-3">
-          Refer Friends & Get Rewarded
-        </h3>
+        <h3 className="font-bold text-2xl mb-3">Refer Friends & Get Rewarded</h3>
         <p className="text-white/90 mb-6">
-          Share your unique referral link with friends. When they sign up, you
-          both get bonus Naira cash! There&apos;s no limit to how many
-          friends you can invite.
+          Share your unique referral link with friends. When they sign up, you both get bonus Naira
+          cash! There&apos;s no limit to how many friends you can invite.
         </p>
 
         <div className="bg-white/10 border border-white/30 rounded-lg p-4 mb-6">

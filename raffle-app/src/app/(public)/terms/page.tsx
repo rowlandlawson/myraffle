@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import TopNav from '@/components/navbar/TopNav';
 import BottomNav from '@/components/navbar/BottomNav';
-import Link from 'next/link';
+import TopNav from '@/components/navbar/TopNav';
 import { api } from '@/lib/api';
+import Link from 'next/link';
+import { useEffect, useState } from 'react';
 
 export default function TermsPage() {
   const [content, setContent] = useState('');
@@ -12,8 +12,8 @@ export default function TermsPage() {
 
   useEffect(() => {
     api
-      .get('/api/settings/terms_and_conditions')
-      .then((res: any) => {
+      .get<{ value?: string }>('/api/settings/terms_and_conditions')
+      .then((res) => {
         if (res.success && res.data?.value) {
           setContent(res.data.value);
         }
@@ -36,9 +36,7 @@ export default function TermsPage() {
             <h1 className="text-2xl font-black text-gray-900 uppercase tracking-tight">
               Terms & Conditions
             </h1>
-            <p className="text-xs text-gray-500 mt-1">
-              Official MyRaffle Platform Terms and Rules
-            </p>
+            <p className="text-xs text-gray-500 mt-1">Official MyRaffle Platform Terms and Rules</p>
           </div>
 
           {isLoading ? (

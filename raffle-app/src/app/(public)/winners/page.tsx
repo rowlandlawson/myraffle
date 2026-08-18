@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Trophy, Calendar } from 'lucide-react';
 import { api } from '@/lib/api';
+import { Calendar, Trophy } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface WinnerData {
   raffle: {
@@ -33,14 +33,15 @@ export default function WinnersPage() {
       setLoading(true);
       try {
         // Get completed raffles
-        const res = await api.get('/api/raffles?status=COMPLETED&limit=50');
-        const resData = res.data as any;
-        const completedRaffles = resData.raffles;
+        const res = await api.get<{ raffles: Array<{ id: string }> }>(
+          '/api/raffles?status=COMPLETED&limit=50',
+        );
+        const completedRaffles = res.data?.raffles ?? [];
 
         // For each completed raffle, get winner details
-        const winnerPromises = completedRaffles.map(async (raffle: any) => {
+        const winnerPromises = completedRaffles.map(async (raffle: { id: string }) => {
           try {
-            const winnerRes = await api.get(`/api/raffles/${raffle.id}/winners`);
+            const winnerRes = await api.get<WinnerData>(`/api/raffles/${raffle.id}/winners`);
             return winnerRes.data;
           } catch {
             return null;
@@ -48,7 +49,7 @@ export default function WinnersPage() {
         });
 
         const results = await Promise.all(winnerPromises);
-        setWinners(results.filter(Boolean));
+        setWinners(results.filter((w): w is WinnerData => Boolean(w)));
       } catch (err) {
         console.error('Failed to load winners:', err);
       } finally {
@@ -103,9 +104,7 @@ export default function WinnersPage() {
           <h1 className="text-3xl font-bold mb-2 flex items-center gap-2">
             <Trophy size={32} /> Recent Winners
           </h1>
-          <p className="text-white/90">
-            Celebrate our lucky winners
-          </p>
+          <p className="text-white/90">Celebrate our lucky winners</p>
         </div>
       </div>
 
@@ -113,15 +112,11 @@ export default function WinnersPage() {
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow p-6">
-            <p className="text-gray-600 font-semibold mb-2">
-              Total Winners
-            </p>
+            <p className="text-gray-600 font-semibold mb-2">Total Winners</p>
             <p className="text-4xl font-bold text-gray-900">{winners.length}</p>
           </div>
           <div className="bg-white rounded-xl shadow p-6">
-            <p className="text-gray-600 font-semibold mb-2">
-              Total Value Distributed
-            </p>
+            <p className="text-gray-600 font-semibold mb-2">Total Value Distributed</p>
             <p className="text-4xl font-bold text-red-600">
               ₦{winners.reduce((sum, w) => sum + (w.item?.value || 0), 0).toLocaleString()}
             </p>
@@ -129,8 +124,11 @@ export default function WinnersPage() {
           <div className="bg-white rounded-xl shadow p-6">
             <p className="text-gray-600 font-semibold mb-2">Average Win</p>
             <p className="text-4xl font-bold text-green-600">
-              ₦{winners.length > 0
-                ? Math.round(winners.reduce((sum, w) => sum + (w.item?.value || 0), 0) / winners.length).toLocaleString()
+              ₦
+              {winners.length > 0
+                ? Math.round(
+                    winners.reduce((sum, w) => sum + (w.item?.value || 0), 0) / winners.length,
+                  ).toLocaleString()
                 : '0'}
             </p>
           </div>
@@ -151,9 +149,7 @@ export default function WinnersPage() {
             {/* Top 3 Winners */}
             {topWinners.length > 0 && (
               <div className="mb-8">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                  🏆 Top Winners
-                </h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">🏆 Top Winners</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {topWinners.map((w, index) => (
                     <div
@@ -164,9 +160,7 @@ export default function WinnersPage() {
                         {getMedalEmoji(index + 1)}
                       </div>
                       <div className="relative z-10">
-                        <p className="text-4xl font-bold mb-2">
-                          {getMedalEmoji(index + 1)}
-                        </p>
+                        <p className="text-4xl font-bold mb-2">{getMedalEmoji(index + 1)}</p>
                         <div className="text-6xl mb-4">
                           {getImageSrc(w.item.imageUrl).startsWith('http') ? (
                             <img
@@ -179,15 +173,11 @@ export default function WinnersPage() {
                           )}
                         </div>
                         <h3 className="text-xl font-bold mb-1">{w.item.name}</h3>
-                        <p className="font-semibold mb-3 text-sm opacity-90">
-                          {w.winner.name}
-                        </p>
+                        <p className="font-semibold mb-3 text-sm opacity-90">{w.winner.name}</p>
                         <p className="text-xs opacity-75 mb-4">{w.winner.userNumber}</p>
                         <div className="border-t border-current/30 pt-4 mt-4">
                           <p className="text-sm opacity-90">Prize Value</p>
-                          <p className="text-2xl font-bold">
-                            ₦{w.item.value.toLocaleString()}
-                          </p>
+                          <p className="text-2xl font-bold">₦{w.item.value.toLocaleString()}</p>
                         </div>
                       </div>
                     </div>
@@ -199,9 +189,7 @@ export default function WinnersPage() {
             {/* All Winners List */}
             {otherWinners.length > 0 && (
               <div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                  All Recent Winners
-                </h2>
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">All Recent Winners</h2>
                 <div className="space-y-4">
                   {otherWinners.map((w, index) => (
                     <div
@@ -209,9 +197,7 @@ export default function WinnersPage() {
                       className="bg-white rounded-xl shadow p-6 hover:shadow-lg transition flex items-center gap-6 border-l-4 border-blue-500"
                     >
                       <div className="flex-shrink-0 w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span className="text-2xl font-bold text-blue-600">
-                          #{index + 4}
-                        </span>
+                        <span className="text-2xl font-bold text-blue-600">#{index + 4}</span>
                       </div>
                       <div className="flex-shrink-0">
                         {getImageSrc(w.item.imageUrl).startsWith('http') ? (
@@ -225,9 +211,7 @@ export default function WinnersPage() {
                         )}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-bold text-gray-900">
-                          {w.item.name}
-                        </h3>
+                        <h3 className="text-lg font-bold text-gray-900">{w.item.name}</h3>
                         <p className="text-gray-600">
                           {w.winner.name} ({w.winner.userNumber})
                         </p>
@@ -252,37 +236,34 @@ export default function WinnersPage() {
 
         {/* FAQ Section */}
         <div className="mt-16 bg-white rounded-xl shadow p-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-6">
-            ❓ Frequently Asked Questions
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">❓ Frequently Asked Questions</h2>
           <div className="space-y-6">
             <div>
               <h3 className="font-bold text-gray-900 mb-2">How are winners selected?</h3>
               <p className="text-gray-600">
-                Winners are selected using a provably fair random algorithm.
-                Each ticket has an equal chance of winning, regardless of when it was purchased.
+                Winners are selected using a provably fair random algorithm. Each ticket has an
+                equal chance of winning, regardless of when it was purchased.
               </p>
             </div>
             <div>
               <h3 className="font-bold text-gray-900 mb-2">When are winners announced?</h3>
               <p className="text-gray-600">
-                Winners are announced within 1 hour of raffle completion.
-                You&apos;ll receive an SMS and email notification immediately if you&apos;ve won.
+                Winners are announced within 1 hour of raffle completion. You&apos;ll receive an SMS
+                and email notification immediately if you&apos;ve won.
               </p>
             </div>
             <div>
               <h3 className="font-bold text-gray-900 mb-2">How do I claim my prize?</h3>
               <p className="text-gray-600">
-                Winners are contacted directly by our team. Prizes are shipped
-                to your registered address within 5-7 business days.
+                Winners are contacted directly by our team. Prizes are shipped to your registered
+                address within 5-7 business days.
               </p>
             </div>
             <div>
               <h3 className="font-bold text-gray-900 mb-2">What are my chances of winning?</h3>
               <p className="text-gray-600">
-                Your chances depend on how many tickets are sold. For example,
-                if 100 tickets are sold, you have a 1/100 (1%) chance with one
-                ticket.
+                Your chances depend on how many tickets are sold. For example, if 100 tickets are
+                sold, you have a 1/100 (1%) chance with one ticket.
               </p>
             </div>
           </div>
@@ -292,8 +273,8 @@ export default function WinnersPage() {
         <div className="mt-8 bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-8 md:p-12 text-white text-center">
           <h2 className="text-3xl font-bold mb-4">Ready to Win?</h2>
           <p className="text-red-100 mb-6 max-w-2xl mx-auto">
-            You could be next! Browse our available items and buy your raffle
-            ticket today. The odds are in your favor!
+            You could be next! Browse our available items and buy your raffle ticket today. The odds
+            are in your favor!
           </p>
           <a
             href="/items"

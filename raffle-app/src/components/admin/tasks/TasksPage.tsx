@@ -1,16 +1,28 @@
 'use client';
 
-import { useState } from 'react';
-import { Plus, Edit2, Trash2, ExternalLink, Clock, Users, Zap, X, Save, CheckCircle, Pin } from 'lucide-react';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import {
+  type AdminTask,
+  type CreateTaskInput,
   useAdminTasks,
   useCreateTask,
-  useUpdateTask,
   useDeleteTask,
-  AdminTask,
-  CreateTaskInput,
+  useUpdateTask,
 } from '@/lib/hooks/useAdminTasks';
+import {
+  CheckCircle,
+  Clock,
+  Edit2,
+  ExternalLink,
+  Pin,
+  Plus,
+  Save,
+  Trash2,
+  Users,
+  X,
+  Zap,
+} from 'lucide-react';
+import { useState } from 'react';
 
 const TASK_TYPE_LABELS: Record<string, string> = {
   WATCH_AD_VIDEO: 'Video Ad',
@@ -42,7 +54,7 @@ const TASK_TYPE_COLORS: Record<string, string> = {
 const AD_TASK_TYPES = ['WATCH_AD_VIDEO', 'WATCH_AD_PICTURE', 'WATCH_AD_BANNER'];
 
 // Only non-ad types available for manual creation
-const CREATABLE_TASK_TYPES = Object.entries(TASK_TYPE_LABELS).filter(
+const _CREATABLE_TASK_TYPES = Object.entries(TASK_TYPE_LABELS).filter(
   ([key]) => !AD_TASK_TYPES.includes(key),
 );
 
@@ -83,7 +95,9 @@ export default function AdminTasksPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<AdminTask | null>(null);
   const [form, setForm] = useState<CreateTaskInput>(EMPTY_FORM);
-  const [adEdits, setAdEdits] = useState<Record<string, { points: number; dailyLimit: number }>>({});
+  const [adEdits, setAdEdits] = useState<Record<string, { points: number; dailyLimit: number }>>(
+    {},
+  );
   const [savingAdId, setSavingAdId] = useState<string | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -91,7 +105,7 @@ export default function AdminTasksPage() {
     title: string;
     message: string;
     onConfirm: () => void;
-  }>({ open: false, title: '', message: '', onConfirm: () => { } });
+  }>({ open: false, title: '', message: '', onConfirm: () => {} });
 
   const tasks = data?.tasks ?? [];
   const pagination = data?.pagination;
@@ -137,8 +151,9 @@ export default function AdminTasksPage() {
       setEditingTask(null);
       setForm(EMPTY_FORM);
       showToast(editingTask ? 'Task updated successfully!' : 'Task created successfully!');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to save task');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to save task';
+      showToast(msg);
     }
   };
 
@@ -152,8 +167,9 @@ export default function AdminTasksPage() {
         try {
           await deleteMutation.mutateAsync(task.id);
           showToast('Task deleted successfully.');
-        } catch (err: any) {
-          showToast(err.message || 'Failed to delete task');
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : 'Failed to delete task';
+          showToast(msg);
         }
       },
     });
@@ -161,23 +177,33 @@ export default function AdminTasksPage() {
 
   const handleToggleActive = async (task: AdminTask) => {
     try {
-      await updateMutation.mutateAsync({ id: task.id, isActive: !task.isActive });
+      await updateMutation.mutateAsync({
+        id: task.id,
+        isActive: !task.isActive,
+      });
       showToast(`Task ${task.isActive ? 'deactivated' : 'activated'} successfully.`);
-    } catch (err: any) {
-      showToast(err.message || 'Failed to toggle task');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to toggle task';
+      showToast(msg);
     }
   };
 
   const handleTogglePin = async (task: AdminTask) => {
     try {
-      await updateMutation.mutateAsync({ id: task.id, isPinned: !task.isPinned });
+      await updateMutation.mutateAsync({
+        id: task.id,
+        isPinned: !task.isPinned,
+      });
       showToast(`Task ${task.isPinned ? 'unpinned' : 'pinned'} successfully.`);
-    } catch (err: any) {
-      showToast(err.message || 'Failed to toggle pin');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to toggle pin';
+      showToast(msg);
     }
   };
 
-  const isSocialType = ['SOCIAL_LIKE', 'SOCIAL_COMMENT', 'SOCIAL_SHARE', 'SOCIAL_FOLLOW'].includes(form.type);
+  const isSocialType = ['SOCIAL_LIKE', 'SOCIAL_COMMENT', 'SOCIAL_SHARE', 'SOCIAL_FOLLOW'].includes(
+    form.type,
+  );
   const isAdType = form.type.startsWith('WATCH_AD');
 
   // Separate ad tasks from regular tasks for display
@@ -185,14 +211,19 @@ export default function AdminTasksPage() {
   const regularTasks = tasks.filter((t) => !AD_TASK_TYPES.includes(t.type));
 
   const getAdEdit = (task: AdminTask) => {
-    return adEdits[task.id] || { points: task.points, dailyLimit: task.dailyLimit || 5 };
+    return (
+      adEdits[task.id] || {
+        points: task.points,
+        dailyLimit: task.dailyLimit || 5,
+      }
+    );
   };
 
   const setAdEdit = (taskId: string, field: 'points' | 'dailyLimit', value: number) => {
     setAdEdits((prev) => ({
       ...prev,
       [taskId]: {
-        ...prev[taskId] || {},
+        ...(prev[taskId] || {}),
         points: prev[taskId]?.points ?? tasks.find((t) => t.id === taskId)?.points ?? 0,
         dailyLimit: prev[taskId]?.dailyLimit ?? tasks.find((t) => t.id === taskId)?.dailyLimit ?? 5,
         [field]: value,
@@ -215,10 +246,15 @@ export default function AdminTasksPage() {
         points: edit.points,
         dailyLimit: edit.dailyLimit,
       });
-      setAdEdits((prev) => { const n = { ...prev }; delete n[task.id]; return n; });
+      setAdEdits((prev) => {
+        const n = { ...prev };
+        delete n[task.id];
+        return n;
+      });
       showToast(`${TASK_TYPE_LABELS[task.type]} updated successfully!`);
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update ad pricing');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to update ad pricing';
+      showToast(msg);
     } finally {
       setSavingAdId(null);
     }
@@ -230,7 +266,9 @@ export default function AdminTasksPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Task Management</h1>
-          <p className="text-gray-500 mt-1">Create and manage user tasks for earning raffle points</p>
+          <p className="text-gray-500 mt-1">
+            Create and manage user tasks for earning raffle points
+          </p>
         </div>
         <button
           onClick={openCreateForm}
@@ -242,176 +280,214 @@ export default function AdminTasksPage() {
 
       {/* Task Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center px-4 pt-20 pb-8 sm:px-6 sm:pt-24 sm:pb-12">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[75vh] flex flex-col my-auto overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 shrink-0 bg-white">
               <h2 className="text-lg font-bold text-gray-900">
                 {editingTask ? 'Edit Task' : 'Create New Task'}
               </h2>
-              <button onClick={() => setShowForm(false)} className="p-1 hover:bg-gray-100 rounded-lg">
+              <button
+                onClick={() => setShowForm(false)}
+                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition"
+              >
                 <X size={20} />
               </button>
             </div>
-            <form onSubmit={handleSubmit} className="p-5 space-y-4">
-              {/* Type */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Task Type</label>
-                <select
-                  value={form.type}
-                  onChange={(e) => setForm({ ...form, type: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                >
-                  {Object.entries(TASK_TYPE_LABELS)
-                    .filter(([key]) => !AD_TASK_TYPES.includes(key))
-                    .map(([value, label]) => (
-                      <option key={value} value={value}>{label}</option>
-                    ))}
-                </select>
-              </div>
 
-              {/* Title */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input
-                  type="text"
-                  value={form.title}
-                  onChange={(e) => setForm({ ...form, title: e.target.value })}
-                  placeholder="e.g., Like our TikTok video"
-                  required
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Description */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea
-                  value={form.description}
-                  onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="Describe what the user needs to do"
-                  required
-                  rows={3}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
-                />
-              </div>
-
-              {/* Points */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Points Reward</label>
-                <input
-                  type="number"
-                  value={form.points}
-                  onChange={(e) => setForm({ ...form, points: parseInt(e.target.value) || 0 })}
-                  min={1}
-                  required
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Platform (for social tasks) */}
-              {isSocialType && (
+            {/* Modal Form */}
+            <form onSubmit={handleSubmit} className="flex flex-col flex-1 overflow-hidden">
+              <div className="p-5 space-y-4 overflow-y-auto flex-1 custom-scrollbar">
+                {/* Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Platform</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Task Type</label>
                   <select
-                    value={form.platform || ''}
-                    onChange={(e) => setForm({ ...form, platform: e.target.value })}
+                    value={form.type}
+                    onChange={(e) => setForm({ ...form, type: e.target.value })}
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   >
-                    {PLATFORM_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
+                    {Object.entries(TASK_TYPE_LABELS)
+                      .filter(([key]) => !AD_TASK_TYPES.includes(key))
+                      .map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
                   </select>
                 </div>
-              )}
 
-              {/* Action URL (for social tasks) */}
-              {isSocialType && (
+                {/* Title */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Post URL</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
                   <input
-                    type="url"
-                    value={form.actionUrl || ''}
-                    onChange={(e) => setForm({ ...form, actionUrl: e.target.value })}
-                    placeholder="https://www.tiktok.com/@yourpage/video/..."
+                    type="text"
+                    value={form.title}
+                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    placeholder="e.g., Like our TikTok video"
+                    required
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   />
                 </div>
-              )}
 
-              {/* Ad Duration (for ad tasks) */}
-              {isAdType && (
+                {/* Description */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Ad Duration (seconds)</label>
-                  <input
-                    type="number"
-                    value={form.adDuration || ''}
-                    onChange={(e) => setForm({ ...form, adDuration: parseInt(e.target.value) || undefined })}
-                    placeholder="30"
-                    min={5}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Description
+                  </label>
+                  <textarea
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                    placeholder="Describe what the user needs to do"
+                    required
+                    rows={3}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
                   />
                 </div>
-              )}
 
-              {/* Expiry Date */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Expires At (optional)</label>
-                <input
-                  type="date"
-                  value={form.expiresAt || ''}
-                  onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                />
-              </div>
-
-              {/* Priority & Pin */}
-              <div className="grid grid-cols-2 gap-4">
+                {/* Points */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Points Reward
+                  </label>
                   <input
                     type="number"
-                    value={form.priority ?? 0}
-                    onChange={(e) => setForm({ ...form, priority: parseInt(e.target.value) || 0 })}
-                    min={0}
-                    max={100}
+                    value={form.points}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        points: Number.parseInt(e.target.value) || 0,
+                      })
+                    }
+                    min={1}
+                    required
                     className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
                   />
-                  <p className="text-xs text-gray-400 mt-1">Higher = shown first</p>
                 </div>
+
+                {/* Platform (for social tasks) */}
+                {isSocialType && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Platform</label>
+                    <select
+                      value={form.platform || ''}
+                      onChange={(e) => setForm({ ...form, platform: e.target.value })}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    >
+                      {PLATFORM_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Action URL (for social tasks) */}
+                {isSocialType && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Post URL</label>
+                    <input
+                      type="url"
+                      value={form.actionUrl || ''}
+                      onChange={(e) => setForm({ ...form, actionUrl: e.target.value })}
+                      placeholder="https://www.tiktok.com/@yourpage/video/..."
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                  </div>
+                )}
+
+                {/* Ad Duration (for ad tasks) */}
+                {isAdType && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Ad Duration (seconds)
+                    </label>
+                    <input
+                      type="number"
+                      value={form.adDuration || ''}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          adDuration: Number.parseInt(e.target.value) || undefined,
+                        })
+                      }
+                      placeholder="30"
+                      min={5}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                  </div>
+                )}
+
+                {/* Expiry Date */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pinned</label>
-                  <button
-                    type="button"
-                    onClick={() => setForm({ ...form, isPinned: !form.isPinned })}
-                    className={`w-full flex items-center justify-center gap-2 border rounded-lg px-3 py-2 text-sm font-semibold transition ${form.isPinned
-                        ? 'bg-amber-50 border-amber-300 text-amber-700'
-                        : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Expires At (optional)
+                  </label>
+                  <input
+                    type="date"
+                    value={form.expiresAt || ''}
+                    onChange={(e) => setForm({ ...form, expiresAt: e.target.value })}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  />
+                </div>
+
+                {/* Priority & Pin */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                    <input
+                      type="number"
+                      value={form.priority ?? 0}
+                      onChange={(e) =>
+                        setForm({
+                          ...form,
+                          priority: Number.parseInt(e.target.value) || 0,
+                        })
+                      }
+                      min={0}
+                      max={100}
+                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">Higher = shown first</p>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Pinned</label>
+                    <button
+                      type="button"
+                      onClick={() => setForm({ ...form, isPinned: !form.isPinned })}
+                      className={`w-full flex items-center justify-center gap-2 border rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                        form.isPinned
+                          ? 'bg-amber-50 border-amber-300 text-amber-700'
+                          : 'border-gray-200 text-gray-500 hover:border-gray-300'
                       }`}
-                  >
-                    <Pin size={14} className={form.isPinned ? 'text-amber-600' : ''} />
-                    {form.isPinned ? 'Pinned' : 'Not Pinned'}
-                  </button>
-                  <p className="text-xs text-gray-400 mt-1">Always shown to users</p>
+                    >
+                      <Pin size={14} className={form.isPinned ? 'text-amber-600' : ''} />
+                      {form.isPinned ? 'Pinned' : 'Not Pinned'}
+                    </button>
+                    <p className="text-xs text-gray-400 mt-1">Always shown to users</p>
+                  </div>
                 </div>
               </div>
 
-              {/* Submit */}
-              <div className="flex gap-3 pt-2">
+              {/* Submit Footer */}
+              <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex gap-3 shrink-0">
                 <button
                   type="button"
                   onClick={() => setShowForm(false)}
-                  className="flex-1 py-2.5 border border-gray-200 rounded-xl font-semibold text-gray-600 hover:bg-gray-50 transition"
+                  className="flex-1 py-2.5 border border-gray-200 bg-white rounded-xl font-semibold text-gray-600 hover:bg-gray-50 transition"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={createMutation.isPending || updateMutation.isPending}
-                  className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-red-600 text-white rounded-xl font-semibold hover:bg-red-700 transition disabled:opacity-50 shadow-sm"
                 >
                   {createMutation.isPending || updateMutation.isPending
                     ? 'Saving...'
-                    : editingTask ? 'Update Task' : 'Create Task'}
+                    : editingTask
+                      ? 'Update Task'
+                      : 'Create Task'}
                 </button>
               </div>
             </form>
@@ -423,15 +499,22 @@ export default function AdminTasksPage() {
       {adTasks.length > 0 && (
         <div className="bg-white rounded-2xl border border-gray-100 p-6">
           <h2 className="text-lg font-bold text-gray-900 mb-1">Ad Pricing & Limits</h2>
-          <p className="text-sm text-gray-500 mb-5">Adjust the points and daily limits for each ad format. Click Save to apply changes.</p>
+          <p className="text-sm text-gray-500 mb-5">
+            Adjust the points and daily limits for each ad format. Click Save to apply changes.
+          </p>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {adTasks.map((task) => {
               const edit = getAdEdit(task);
               const changed = hasAdChanged(task);
               return (
-                <div key={task.id} className={`rounded-xl border p-5 ${task.isActive ? 'border-gray-200' : 'border-gray-100 opacity-50'}`}>
+                <div
+                  key={task.id}
+                  className={`rounded-xl border p-5 ${task.isActive ? 'border-gray-200' : 'border-gray-100 opacity-50'}`}
+                >
                   <div className="flex items-center justify-between mb-4">
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${TASK_TYPE_COLORS[task.type] || 'bg-gray-100 text-gray-700'}`}>
+                    <span
+                      className={`text-xs font-semibold px-2.5 py-1 rounded-full ${TASK_TYPE_COLORS[task.type] || 'bg-gray-100 text-gray-700'}`}
+                    >
                       {TASK_TYPE_LABELS[task.type] || task.type}
                     </span>
                     <button
@@ -444,22 +527,30 @@ export default function AdminTasksPage() {
                   <h3 className="font-semibold text-gray-900 mb-3">{task.title}</h3>
                   <div className="space-y-3">
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Points per completion</label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">
+                        Points per completion
+                      </label>
                       <input
                         type="number"
                         value={edit.points}
                         min={1}
-                        onChange={(e) => setAdEdit(task.id, 'points', parseInt(e.target.value) || 0)}
+                        onChange={(e) =>
+                          setAdEdit(task.id, 'points', Number.parseInt(e.target.value) || 0)
+                        }
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium text-gray-500 mb-1">Daily limit per user</label>
+                      <label className="block text-xs font-medium text-gray-500 mb-1">
+                        Daily limit per user
+                      </label>
                       <input
                         type="number"
                         value={edit.dailyLimit}
                         min={1}
-                        onChange={(e) => setAdEdit(task.id, 'dailyLimit', parseInt(e.target.value) || 1)}
+                        onChange={(e) =>
+                          setAdEdit(task.id, 'dailyLimit', Number.parseInt(e.target.value) || 1)
+                        }
                         className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-semibold focus:ring-2 focus:ring-red-500 focus:border-transparent"
                       />
                     </div>
@@ -471,10 +562,11 @@ export default function AdminTasksPage() {
                       <button
                         onClick={() => handleSaveAd(task)}
                         disabled={!changed || savingAdId === task.id}
-                        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition shadow-sm ${changed
-                          ? 'bg-red-600 text-white hover:bg-red-700'
-                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                          }`}
+                        className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition shadow-sm ${
+                          changed
+                            ? 'bg-red-600 text-white hover:bg-red-700'
+                            : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        }`}
                       >
                         <Save size={14} />
                         {savingAdId === task.id ? 'Saving...' : 'Save'}
@@ -496,7 +588,9 @@ export default function AdminTasksPage() {
         </div>
       ) : error ? (
         <div className="text-center py-12">
-          <p className="text-red-600">{error instanceof Error ? error.message : 'Failed to load tasks'}</p>
+          <p className="text-red-600">
+            {error instanceof Error ? error.message : 'Failed to load tasks'}
+          </p>
         </div>
       ) : regularTasks.length === 0 ? (
         <div className="text-center py-16 bg-white rounded-2xl border border-gray-100">
@@ -531,15 +625,22 @@ export default function AdminTasksPage() {
               </thead>
               <tbody>
                 {regularTasks.map((task) => (
-                  <tr key={task.id} className="border-b border-gray-50 hover:bg-gray-50/50 transition">
+                  <tr
+                    key={task.id}
+                    className="border-b border-gray-50 hover:bg-gray-50/50 transition"
+                  >
                     <td className="py-3 px-4">
                       <div>
                         <p className="font-medium text-gray-900">{task.title}</p>
-                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{task.description}</p>
+                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">
+                          {task.description}
+                        </p>
                       </div>
                     </td>
                     <td className="py-3 px-4">
-                      <span className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ${TASK_TYPE_COLORS[task.type] || 'bg-gray-100 text-gray-700'}`}>
+                      <span
+                        className={`inline-block text-xs font-semibold px-2.5 py-1 rounded-full ${TASK_TYPE_COLORS[task.type] || 'bg-gray-100 text-gray-700'}`}
+                      >
                         {TASK_TYPE_LABELS[task.type] || task.type}
                       </span>
                     </td>
@@ -560,7 +661,9 @@ export default function AdminTasksPage() {
                             <Pin size={10} /> Pinned
                           </span>
                         )}
-                        <span className="text-xs font-mono text-gray-500">{task.priority ?? 0}</span>
+                        <span className="text-xs font-mono text-gray-500">
+                          {task.priority ?? 0}
+                        </span>
                       </div>
                     </td>
                     <td className="py-3 px-4">
@@ -572,10 +675,11 @@ export default function AdminTasksPage() {
                     <td className="py-3 px-4">
                       <button
                         onClick={() => handleToggleActive(task)}
-                        className={`text-xs font-semibold px-2.5 py-1 rounded-full transition cursor-pointer ${task.isActive
-                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-                          }`}
+                        className={`text-xs font-semibold px-2.5 py-1 rounded-full transition cursor-pointer ${
+                          task.isActive
+                            ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        }`}
                       >
                         {task.isActive ? 'Active' : 'Inactive'}
                       </button>

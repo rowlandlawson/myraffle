@@ -1,15 +1,33 @@
 'use client';
 
-import { useState } from 'react';
 import ItemsHeader from '@/components/admin/items/ItemsHeader';
-import UploadForm from '@/components/admin/items/UploadForm';
-import SearchFilters from '@/components/admin/items/SearchFilters';
-import ItemsTable from '@/components/admin/items/ItemsTable';
 import ItemsStats from '@/components/admin/items/ItemsStats';
+import ItemsTable from '@/components/admin/items/ItemsTable';
+import SearchFilters from '@/components/admin/items/SearchFilters';
+import UploadForm from '@/components/admin/items/UploadForm';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
-import { Item } from '@/types/items';
-import { useItems, useCreateItem, useDeleteItem } from '@/lib/hooks/useItems';
+import { useCreateItem, useDeleteItem, useItems } from '@/lib/hooks/useItems';
+import type { Item } from '@/types/items';
+import { useState } from 'react';
 import toast from 'react-hot-toast';
+
+interface ApiRaffle {
+  ticketPrice: number;
+  ticketsTotal: number;
+  ticketsSold: number;
+  raffleDate: string;
+}
+
+interface ApiItemData {
+  id: string | number;
+  name: string;
+  imageUrl?: string;
+  value: number;
+  category: string;
+  status: string;
+  createdAt: string;
+  raffles: ApiRaffle[];
+}
 
 export function AdminItemsPage() {
   const [showUploadForm, setShowUploadForm] = useState(false);
@@ -19,10 +37,17 @@ export function AdminItemsPage() {
   });
 
   // Delete confirmation state
-  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
 
   // Fetch items from API — show all statuses for admin
-  const { data: itemsData, isLoading: loading, error } = useItems({
+  const {
+    data: itemsData,
+    isLoading: loading,
+    error,
+  } = useItems({
     search: filters.searchTerm || undefined,
     status: filters.status !== 'all' ? filters.status.toUpperCase() : undefined,
     limit: 50,
@@ -34,10 +59,10 @@ export function AdminItemsPage() {
   const deleteItem = useDeleteItem();
 
   // Map API items to the admin Item type
-  const items: Item[] = apiItems.map((item: any) => {
+  const items: Item[] = apiItems.map((item: ApiItemData) => {
     const activeRaffle = item.raffles[0];
     return {
-      id: item.id as any,
+      id: typeof item.id === 'number' ? item.id : Number.parseInt(String(item.id)) || 0,
       name: item.name,
       image: item.imageUrl?.startsWith('/uploads')
         ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${item.imageUrl}`
@@ -48,19 +73,15 @@ export function AdminItemsPage() {
       ticketPrice: activeRaffle?.ticketPrice ?? 0,
       ticketsTotal: activeRaffle?.ticketsTotal ?? 0,
       ticketsSold: activeRaffle?.ticketsSold ?? 0,
-      endsIn: activeRaffle
-        ? getEndsIn(activeRaffle.raffleDate)
-        : 'No raffle',
+      endsIn: activeRaffle ? getEndsIn(activeRaffle.raffleDate) : 'No raffle',
       createdDate: new Date(item.createdAt).toISOString().split('T')[0]!,
       createdBy: 'Admin',
     };
   });
 
   // Filter items client-side for search (API already filters by status)
-  const filteredItems = items.filter((item: any) => {
-    const searchMatch = item.name
-      .toLowerCase()
-      .includes(filters.searchTerm.toLowerCase());
+  const filteredItems = items.filter((item: Item) => {
+    const searchMatch = item.name.toLowerCase().includes(filters.searchTerm.toLowerCase());
     return searchMatch;
   });
 
@@ -75,8 +96,9 @@ export function AdminItemsPage() {
     try {
       await deleteItem.mutateAsync(String(deleteTarget.id));
       toast.success('Item deleted successfully');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete item');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to delete item';
+      toast.error(msg);
     } finally {
       setDeleteTarget(null);
     }
@@ -90,15 +112,16 @@ export function AdminItemsPage() {
     console.log('View item:', item);
   };
 
-  const handleUploadSubmit = async (formData: any) => {
+  const handleUploadSubmit = async (formData: FormData) => {
     try {
       // Use the formData directly as it now contains all required fields
       // including ticketPrice, totalTickets, and raffleDate
       await createItem.mutateAsync(formData);
       setShowUploadForm(false);
       toast.success('Item and raffle created successfully!');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to create item and raffle');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to create item and raffle';
+      toast.error(msg);
     }
   };
 
@@ -116,10 +139,7 @@ export function AdminItemsPage() {
 
       {/* Upload Form */}
       {showUploadForm && (
-        <UploadForm
-          onCancel={() => setShowUploadForm(false)}
-          onSubmit={handleUploadSubmit}
-        />
+        <UploadForm onCancel={() => setShowUploadForm(false)} onSubmit={handleUploadSubmit} />
       )}
 
       {/* Search & Filters */}
@@ -138,7 +158,9 @@ export function AdminItemsPage() {
         </div>
       ) : error ? (
         <div className="text-center py-12">
-          <p className="text-red-600">{error instanceof Error ? error.message : 'Failed to load items'}</p>
+          <p className="text-red-600">
+            {error instanceof Error ? error.message : 'Failed to load items'}
+          </p>
         </div>
       ) : (
         <>

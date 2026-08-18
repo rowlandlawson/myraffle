@@ -3,10 +3,7 @@ interface DashboardHeaderProps {
   subtitle?: string;
 }
 
-export default function DashboardHeader({
-  title,
-  subtitle,
-}: DashboardHeaderProps) {
+export default function DashboardHeader({ title, subtitle }: DashboardHeaderProps) {
   return (
     <div>
       <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{title}</h1>

@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { X, Clock, Users, Ticket, ShoppingBag, CheckCircle2, ChevronRight } from 'lucide-react';
+import { getPerUserLimit, useCartStore } from '@/lib/cartStore';
 import { resolveImageUrl } from '@/lib/imageUrl';
+import { CheckCircle2, ChevronRight, Clock, ShoppingBag, Ticket, Users, X } from 'lucide-react';
 import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
-import TicketCheckoutModal from './TicketCheckoutModal';
-import { useCartStore, getPerUserLimit } from '@/lib/cartStore';
 import CountdownTimer from './CountdownTimer';
+import TicketCheckoutModal from './TicketCheckoutModal';
 
 import { useAuthStore } from '@/lib/authStore';
 
@@ -30,11 +30,7 @@ interface ItemBottomSheetProps {
   isAuthenticated: boolean;
 }
 
-export default function ItemBottomSheet({
-  item,
-  onClose,
-  isAuthenticated,
-}: ItemBottomSheetProps) {
+export default function ItemBottomSheet({ item, onClose, isAuthenticated }: ItemBottomSheetProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [translateY, setTranslateY] = useState(0);
@@ -45,7 +41,7 @@ export default function ItemBottomSheet({
   const dragStartY = useRef<number>(0);
   const sheetRef = useRef<HTMLDivElement>(null);
 
-  const isAdmin = (user as any)?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN';
 
   useEffect(() => {
     if (item) {
@@ -83,7 +79,7 @@ export default function ItemBottomSheet({
         maxTicketsAvailable: maxTickets,
         perUserLimit,
       },
-      1
+      1,
     );
     setAddedToCart(true);
     toast.success(`Ticket added! (max ${perUserLimit} per person)`);
@@ -115,9 +111,7 @@ export default function ItemBottomSheet({
   if (!item) return null;
 
   const imageUrl = resolveImageUrl(item.image);
-  const progressPercent = Math.round(
-    (item.ticketsSold / item.ticketsTotal) * 100,
-  );
+  const progressPercent = Math.round((item.ticketsSold / item.ticketsTotal) * 100);
   const ticketsRemaining = item.ticketsTotal - item.ticketsSold;
 
   return (
@@ -139,12 +133,12 @@ export default function ItemBottomSheet({
       >
         <div
           className={`bg-white w-full max-w-xl rounded-t-3xl md:rounded-3xl max-h-[92vh] md:max-h-[85vh] overflow-hidden flex flex-col shadow-2xl pointer-events-auto transition-all duration-300 ease-out relative ${
-            isVisible ? 'translate-y-0 md:scale-100' : 'translate-y-full md:translate-y-0 md:scale-95'
+            isVisible
+              ? 'translate-y-0 md:scale-100'
+              : 'translate-y-full md:translate-y-0 md:scale-95'
           }`}
           style={{
-            transform: isVisible && translateY !== 0
-              ? `translateY(${translateY}px)`
-              : undefined,
+            transform: isVisible && translateY !== 0 ? `translateY(${translateY}px)` : undefined,
             transition: isDragging ? 'none' : undefined,
           }}
         >
@@ -172,11 +166,7 @@ export default function ItemBottomSheet({
             {/* Image Container with Yellow background accent */}
             <div className="relative w-full aspect-[4/3] bg-yellow-400 overflow-hidden flex items-center justify-center">
               {imageUrl ? (
-                <img
-                  src={imageUrl}
-                  alt={item.name}
-                  className="w-full h-full object-contain"
-                />
+                <img src={imageUrl} alt={item.name} className="w-full h-full object-contain" />
               ) : (
                 <div className="text-7xl">📦</div>
               )}
@@ -196,31 +186,23 @@ export default function ItemBottomSheet({
             {/* Details */}
             <div className="px-5 py-5 space-y-5">
               {/* Name */}
-              <h2 className="text-xl font-extrabold text-gray-900 leading-tight">
-                {item.name}
-              </h2>
+              <h2 className="text-xl font-extrabold text-gray-900 leading-tight">{item.name}</h2>
 
               {/* Description */}
               {item.description && (
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {item.description}
-                </p>
+                <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
               )}
 
               {/* Price & Stats */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-red-50 rounded-2xl p-3.5 border border-red-100">
-                  <p className="text-xs text-gray-500 font-semibold mb-1">
-                    Price Per Ticket
-                  </p>
+                  <p className="text-xs text-gray-500 font-semibold mb-1">Price Per Ticket</p>
                   <p className="text-lg font-black text-red-600">
                     {item.ticketPrice.toLocaleString()} NGN
                   </p>
                 </div>
                 <div className="bg-slate-50 rounded-2xl p-3.5 border border-slate-200">
-                  <p className="text-xs text-gray-500 font-semibold mb-1">
-                    Tickets Remaining
-                  </p>
+                  <p className="text-xs text-gray-500 font-semibold mb-1">Tickets Remaining</p>
                   <p className="text-lg font-black text-slate-900 flex items-center gap-1.5">
                     <Ticket size={18} className="text-yellow-500" />
                     {ticketsRemaining.toLocaleString()}
@@ -235,7 +217,9 @@ export default function ItemBottomSheet({
                     <Clock size={20} className="text-red-500 animate-pulse" />
                     <div>
                       <p className="text-xs font-bold text-slate-300">Raffle Countdown</p>
-                      <p className="text-[10px] text-slate-400 font-medium">Ends automatically when timer hits zero</p>
+                      <p className="text-[10px] text-slate-400 font-medium">
+                        Ends automatically when timer hits zero
+                      </p>
                     </div>
                   </div>
                   <CountdownTimer targetDate={item.raffleDate} />
@@ -249,9 +233,7 @@ export default function ItemBottomSheet({
                     <Users size={14} />
                     {item.ticketsSold}/{item.ticketsTotal} sold
                   </span>
-                  <span className="text-xs font-extrabold text-red-600">
-                    {progressPercent}%
-                  </span>
+                  <span className="text-xs font-extrabold text-red-600">{progressPercent}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                   <div
@@ -277,7 +259,7 @@ export default function ItemBottomSheet({
                       }
                       setCheckoutOpen(true);
                     }}
-                    className="w-full py-4 bg-[#C0000C] hover:bg-red-700 text-white font-black text-sm rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 active:scale-[0.99]"
+                    className="w-full py-4 bg-[#E10600] hover:bg-red-700 text-white font-black text-sm rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 active:scale-[0.99]"
                   >
                     Buy Ticket Now
                     <ChevronRight size={18} />
@@ -285,7 +267,7 @@ export default function ItemBottomSheet({
                 ) : (
                   <Link
                     href="/login"
-                    className="w-full py-4 bg-[#C0000C] hover:bg-red-700 text-white font-black text-sm rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
+                    className="w-full py-4 bg-[#E10600] hover:bg-red-700 text-white font-black text-sm rounded-2xl transition-colors flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
                   >
                     Login to Buy <ChevronRight size={18} />
                   </Link>
@@ -301,9 +283,13 @@ export default function ItemBottomSheet({
                   }`}
                 >
                   {addedToCart ? (
-                    <><CheckCircle2 size={17} /> Added to Cart</>
+                    <>
+                      <CheckCircle2 size={17} /> Added to Cart
+                    </>
                   ) : (
-                    <><ShoppingBag size={17} /> Add to Cart</>  
+                    <>
+                      <ShoppingBag size={17} /> Add to Cart
+                    </>
                   )}
                 </button>
               </>

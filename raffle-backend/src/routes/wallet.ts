@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import {
-    getBalance,
-    initiateDeposit,
-    requestWithdrawal,
-    getTransactions,
+  getBalance,
+  getTransactions,
+  initiateDeposit,
+  requestWithdrawal,
 } from '../controllers/walletController';
 import { requireAuth } from '../middleware/auth';
-import { validate, depositSchema, withdrawalSchema } from '../middleware/validation';
+import { depositSchema, validate, withdrawalSchema } from '../middleware/validation';
 
 const router = Router();
 

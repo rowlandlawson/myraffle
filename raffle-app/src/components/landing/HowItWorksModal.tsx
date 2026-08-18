@@ -1,7 +1,7 @@
 'use client';
 
+import { Award, Gift, HelpCircle, Ticket, UserPlus, X } from 'lucide-react';
 import React from 'react';
-import { X, HelpCircle, UserPlus, Gift, Ticket, Award } from 'lucide-react';
 
 interface HowItWorksModalProps {
   isOpen: boolean;
@@ -37,7 +37,8 @@ export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProp
       number: 4,
       icon: Award,
       title: 'Win & Receive',
-      description: 'When tickets sell out, the draw takes place immediately and prizes get delivered.',
+      description:
+        'When tickets sell out, the draw takes place immediately and prizes get delivered.',
       color: 'bg-emerald-50 text-emerald-600',
     },
   ];
@@ -74,7 +75,9 @@ export default function HowItWorksModal({ isOpen, onClose }: HowItWorksModalProp
               key={step.number}
               className="flex items-start gap-4 p-4 rounded-2xl border border-gray-100 bg-gray-50/50 hover:bg-white hover:border-red-100 transition-all"
             >
-              <div className={`w-11 h-11 rounded-2xl ${step.color} flex items-center justify-center shrink-0 font-bold shadow-sm`}>
+              <div
+                className={`w-11 h-11 rounded-2xl ${step.color} flex items-center justify-center shrink-0 font-bold shadow-sm`}
+              >
                 <step.icon size={22} />
               </div>
               <div className="space-y-1">

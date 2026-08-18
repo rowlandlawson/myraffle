@@ -1,34 +1,34 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import HowItWorksModal from '@/components/landing/HowItWorksModal';
+import TermsModal from '@/components/terms/TermsModal';
+import { useAuthStore } from '@/lib/authStore';
 import {
-  Home,
-  Ticket,
-  Menu,
-  X,
   Award,
-  Settings,
-  LogOut,
+  CreditCard,
   FileText,
   HelpCircle,
-  User,
-  LayoutDashboard,
-  Trophy,
-  Users as UsersIcon,
+  Home,
   Image as ImageIcon,
-  CreditCard,
+  LayoutDashboard,
+  LogOut,
+  Menu,
   Receipt,
+  Settings,
+  Ticket,
+  Trophy,
+  User,
+  Users as UsersIcon,
+  X,
   Zap,
 } from 'lucide-react';
-import { useAuthStore } from '@/lib/authStore';
-import TermsModal from '@/components/terms/TermsModal';
-import HowItWorksModal from '@/components/landing/HowItWorksModal';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function BottomNav() {
   const pathname = usePathname();
-  const router = useRouter();
+  const _router = useRouter();
   const { user, isAuthenticated, logout } = useAuthStore();
   const [moreDrawerOpen, setMoreDrawerOpen] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
@@ -49,7 +49,13 @@ export default function BottomNav() {
       <>
         <nav
           className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-2xl h-16"
-          style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 999 }}
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 999,
+          }}
         >
           <div className="flex justify-around items-center h-full max-w-xl mx-auto px-6 gap-4">
             {/* Home */}
@@ -60,7 +66,9 @@ export default function BottomNav() {
               }`}
             >
               <Home size={22} strokeWidth={isActive('/') ? 2.5 : 1.8} />
-              <span className={`text-[11px] font-bold ${isActive('/') ? 'text-red-600' : 'text-gray-600'}`}>
+              <span
+                className={`text-[11px] font-bold ${isActive('/') ? 'text-red-600' : 'text-gray-600'}`}
+              >
                 Home
               </span>
             </Link>
@@ -73,7 +81,9 @@ export default function BottomNav() {
               }`}
             >
               <User size={22} strokeWidth={isActive('/login') ? 2.5 : 1.8} />
-              <span className={`text-[11px] font-bold ${isActive('/login') ? 'text-red-600' : 'text-gray-600'}`}>
+              <span
+                className={`text-[11px] font-bold ${isActive('/login') ? 'text-red-600' : 'text-gray-600'}`}
+              >
                 Sign In
               </span>
             </Link>
@@ -90,7 +100,13 @@ export default function BottomNav() {
       <>
         <nav
           className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 shadow-2xl h-16"
-          style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 999 }}
+          style={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 999,
+          }}
         >
           <div className="flex justify-around items-center h-full max-w-xl mx-auto px-2">
             {/* Admin Overview */}
@@ -133,7 +149,11 @@ export default function BottomNav() {
                 moreDrawerOpen ? 'text-red-600' : 'text-slate-500 hover:text-slate-900'
               }`}
             >
-              {moreDrawerOpen ? <X size={20} strokeWidth={2.5} /> : <Menu size={20} strokeWidth={1.8} />}
+              {moreDrawerOpen ? (
+                <X size={20} strokeWidth={2.5} />
+              ) : (
+                <Menu size={20} strokeWidth={1.8} />
+              )}
               <span className="text-[10px] font-bold">More</span>
             </button>
           </div>
@@ -352,7 +372,11 @@ export default function BottomNav() {
               moreDrawerOpen ? 'text-red-600' : 'text-gray-500 hover:text-gray-900'
             }`}
           >
-            {moreDrawerOpen ? <X size={22} strokeWidth={2.5} /> : <Menu size={22} strokeWidth={1.8} />}
+            {moreDrawerOpen ? (
+              <X size={22} strokeWidth={2.5} />
+            ) : (
+              <Menu size={22} strokeWidth={1.8} />
+            )}
             <span
               className={`text-[11px] font-bold ${
                 moreDrawerOpen ? 'text-red-600' : 'text-gray-600'

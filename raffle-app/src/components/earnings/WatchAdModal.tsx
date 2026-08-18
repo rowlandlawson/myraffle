@@ -21,9 +21,7 @@ export default function WatchAdModal({ isOpen, adTimer, totalDuration }: WatchAd
             height={64}
           />
         </div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">
-          Watching Advertisement
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Watching Advertisement</h2>
         <p className="text-gray-600 mb-6">
           Please watch the full advertisement to earn your reward
         </p>
@@ -33,7 +31,9 @@ export default function WatchAdModal({ isOpen, adTimer, totalDuration }: WatchAd
         <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden mb-6">
           <div
             className="bg-red-600 h-full transition-all"
-            style={{ width: `${((totalDuration - adTimer) / totalDuration) * 100}%` }}
+            style={{
+              width: `${((totalDuration - adTimer) / totalDuration) * 100}%`,
+            }}
           />
         </div>
 

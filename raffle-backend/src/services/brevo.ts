@@ -17,7 +17,7 @@ const sendEmail = async (options: EmailOptions): Promise<boolean> => {
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
       headers: {
-        'accept': 'application/json',
+        accept: 'application/json',
         'api-key': env.BREVO_API_KEY,
         'content-type': 'application/json',
       },
@@ -33,8 +33,11 @@ const sendEmail = async (options: EmailOptions): Promise<boolean> => {
     });
 
     if (!response.ok) {
-      const errorData: any = await response.json().catch(() => ({}));
-      console.warn('[Email] Brevo API response error (mocking success for dev):', errorData?.message || errorData);
+      const errorData = (await response.json().catch(() => ({}))) as { message?: string };
+      console.warn(
+        '[Email] Brevo API response error (mocking success for dev):',
+        errorData?.message || errorData,
+      );
       console.log(`[Email Dev Fallback] Content intended for ${options.to}:`, options.subject);
       return true; // Fallback to true in dev so authentication flow completes
     }
@@ -50,7 +53,7 @@ const sendEmail = async (options: EmailOptions): Promise<boolean> => {
 export const sendVerificationEmail = async (
   email: string,
   name: string,
-  verificationToken: string
+  verificationToken: string,
 ): Promise<boolean> => {
   const verifyUrl = `${env.FRONTEND_URL}/verify-email?token=${verificationToken}`;
 
@@ -71,14 +74,10 @@ export const sendVerificationEmail = async (
   });
 };
 
-export const sendEmailOTP = async (
-  email: string,
-  name: string,
-  code: string,
-): Promise<boolean> => {
-  console.log(`\n========================================`);
+export const sendEmailOTP = async (email: string, name: string, code: string): Promise<boolean> => {
+  console.log('\n========================================');
   console.log(`🔑 DEV EMAIL OTP CODE FOR ${email}: ${code}`);
-  console.log(`========================================\n`);
+  console.log('========================================\n');
 
   return sendEmail({
     to: email,
@@ -95,10 +94,7 @@ export const sendEmailOTP = async (
   });
 };
 
-export const sendWelcomeEmail = async (
-  email: string,
-  name: string
-): Promise<boolean> => {
+export const sendWelcomeEmail = async (email: string, name: string): Promise<boolean> => {
   return sendEmail({
     to: email,
     subject: 'Welcome to myRaffle!',
@@ -113,8 +109,8 @@ export const sendWelcomeEmail = async (
 
 export const sendPasswordResetEmail = async (
   email: string,
-  name: string,
-  resetToken: string
+  _name: string,
+  resetToken: string,
 ): Promise<boolean> => {
   const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
@@ -135,7 +131,7 @@ export const sendRaffleWinnerEmail = async (
   email: string,
   name: string,
   itemName: string,
-  itemValue: number
+  itemValue: number,
 ): Promise<boolean> => {
   return sendEmail({
     to: email,

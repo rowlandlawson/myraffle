@@ -1,6 +1,6 @@
 import RafflePointsIcon from '@/components/ui/RafflePointsIcon';
-import { resolveImageUrl } from '@/lib/imageUrl';
 import { convertNairaToPoints } from '@/lib/constants';
+import { resolveImageUrl } from '@/lib/imageUrl';
 
 interface ItemProps {
   item: {
@@ -16,23 +16,17 @@ interface ItemProps {
 }
 
 export default function ItemCard({ item }: ItemProps) {
-  const progressPercent = Math.round(
-    (item.ticketsSold / item.ticketsTotal) * 100,
-  );
+  const progressPercent = Math.round((item.ticketsSold / item.ticketsTotal) * 100);
 
   const imageUrl = resolveImageUrl(item.image);
-  const pointsPrice = convertNairaToPoints(item.ticketPrice);
+  const _pointsPrice = convertNairaToPoints(item.ticketPrice);
 
   return (
     <div className="bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden">
       {/* Item Image */}
       <div className="bg-gradient-to-br from-gray-100 to-gray-200 h-40 overflow-hidden">
         {imageUrl ? (
-          <img
-            src={imageUrl}
-            alt={item.name}
-            className="w-full h-full object-cover"
-          />
+          <img src={imageUrl} alt={item.name} className="w-full h-full object-cover" />
         ) : (
           <div className="flex items-center justify-center h-full text-6xl">📦</div>
         )}
@@ -48,9 +42,7 @@ export default function ItemCard({ item }: ItemProps) {
             <span className="text-sm font-semibold text-gray-600">
               {item.ticketsSold} / {item.ticketsTotal}
             </span>
-            <span className="text-sm font-semibold text-red-600">
-              {progressPercent}%
-            </span>
+            <span className="text-sm font-semibold text-red-600">{progressPercent}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
             <div

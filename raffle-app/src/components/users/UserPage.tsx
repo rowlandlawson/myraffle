@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import UsersHeader from '@/components/users/UsersHeader';
-import UserStats from '@/components/users/UserStats';
-import UserFilters from '@/components/users/UserFilters';
-import UsersTable from '@/components/users/UsersTable';
-import UserActivity from '@/components/users/UserActivity';
 import TopSpenders from '@/components/users/TopSpenders';
-import { User, FilterState, StatsData } from '@/types/users';
+import UserActivity from '@/components/users/UserActivity';
+import UserFilters from '@/components/users/UserFilters';
+import UserStats from '@/components/users/UserStats';
+import UsersHeader from '@/components/users/UsersHeader';
+import UsersTable from '@/components/users/UsersTable';
+import type { FilterState, StatsData, User } from '@/types/users';
+import { useState } from 'react';
 
 // Initial data (could be fetched from API)
 export const initialUsers: User[] = [
@@ -100,8 +100,7 @@ export const filterUsers = (users: User[], filters: FilterState): User[] => {
       user.name.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
       user.email.toLowerCase().includes(filters.searchTerm.toLowerCase()) ||
       user.userNumber.includes(filters.searchTerm);
-    const statusMatch =
-      filters.status === 'all' || user.status === filters.status;
+    const statusMatch = filters.status === 'all' || user.status === filters.status;
     return searchMatch && statusMatch;
   });
 };
@@ -128,8 +127,7 @@ export function AdminUsersPage() {
           ? {
               ...user,
               status: user.status === 'active' ? 'suspended' : 'active',
-              lastActive:
-                user.status === 'active' ? 'Just now' : user.lastActive,
+              lastActive: user.status === 'active' ? 'Just now' : user.lastActive,
             }
           : user,
       ),

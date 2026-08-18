@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useCallback, useEffect, useState } from 'react';
 
 interface Slide {
   id: number;
@@ -84,9 +84,7 @@ export default function HeroBanner({ isAuthenticated }: HeroBannerProps) {
           <h2 className="text-white text-lg sm:text-2xl md:text-3xl font-extrabold leading-tight mb-2">
             {slide.headline}
           </h2>
-          <p className="text-white/90 text-xs sm:text-base font-medium mb-5">
-            {slide.subtext}
-          </p>
+          <p className="text-white/90 text-xs sm:text-base font-medium mb-5">{slide.subtext}</p>
 
           {!isAuthenticated && (
             <Link
@@ -100,9 +98,9 @@ export default function HeroBanner({ isAuthenticated }: HeroBannerProps) {
 
         {/* Carousel Dots */}
         <div className="absolute bottom-4 left-6 md:left-12 flex gap-2">
-          {slides.map((_, i) => (
+          {slides.map((s, i) => (
             <button
-              key={i}
+              key={s.id || `hero-dot-${i}`}
               onClick={() => setCurrentSlide(i)}
               className={`rounded-full transition-all duration-300 ${
                 i === currentSlide ? 'w-6 h-2 bg-yellow-400' : 'w-2 h-2 bg-white/50'

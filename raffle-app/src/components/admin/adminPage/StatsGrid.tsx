@@ -1,5 +1,5 @@
-import { TrendingUp, Users, Gift, DollarSign } from 'lucide-react';
 import StatCard from '@/components/ui/StatCard';
+import { DollarSign, Gift, TrendingUp, Users } from 'lucide-react';
 
 interface StatsData {
   totalRevenue: number;
@@ -16,12 +16,19 @@ interface StatsGridProps {
   stats: StatsData;
 }
 
+const formatRevenue = (amount: number) => {
+  if (amount >= 1_000_000) {
+    return `₦${(amount / 1_000_000).toFixed(2)}M`;
+  }
+  return `₦${amount.toLocaleString('en-NG')}`;
+};
+
 export default function StatsGrid({ stats }: StatsGridProps) {
   const statCards = [
     {
       title: 'Total Revenue',
-      value: `₦${(stats.totalRevenue / 1000000).toFixed(2)}M`,
-      subtitle: `This month: ₦${(stats.revenueThisMonth / 1000000).toFixed(2)}M`,
+      value: formatRevenue(stats.totalRevenue),
+      subtitle: `This month: ${formatRevenue(stats.revenueThisMonth)}`,
       icon: DollarSign,
       color: 'green',
     },

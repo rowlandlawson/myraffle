@@ -1,17 +1,17 @@
 import { Router } from 'express';
 import {
-    getAllRaffles,
-    getRaffleById,
-    createRaffle,
-    updateRaffle,
-    startRaffleDraw,
-    getRaffleWinner,
-    getMyWins,
-    createRaffleWithItem,
+  createRaffle,
+  createRaffleWithItem,
+  getAllRaffles,
+  getMyWins,
+  getRaffleById,
+  getRaffleWinner,
+  startRaffleDraw,
+  updateRaffle,
 } from '../controllers/raffleController';
-import { requireAuth, requireAdmin } from '../middleware/auth';
-import { validate, createRaffleSchema, updateRaffleSchema } from '../middleware/validation';
+import { requireAdmin, requireAuth } from '../middleware/auth';
 import { upload } from '../middleware/upload';
+import { createRaffleSchema, updateRaffleSchema, validate } from '../middleware/validation';
 
 const router = Router();
 

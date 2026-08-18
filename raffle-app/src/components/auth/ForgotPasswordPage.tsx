@@ -1,9 +1,9 @@
 'use client';
 
 import { useState } from 'react';
+import AuthFeedback from './AuthFeedback';
 import AuthLayout from './AuthLayout';
 import { ForgotPasswordForm } from './ForgotPasswordForm';
-import AuthFeedback from './AuthFeedback';
 
 export default function ForgotPasswordPage() {
   const [submitted, setSubmitted] = useState(false);
@@ -12,12 +12,9 @@ export default function ForgotPasswordPage() {
     <AuthLayout>
       {!submitted ? (
         <>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Forgot Password?
-          </h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Forgot Password?</h2>
           <p className="text-gray-600 mb-6">
-            Enter your email address and we&apos;ll send you a link to reset
-            your password.
+            Enter your email address and we&apos;ll send you a link to reset your password.
           </p>
           <ForgotPasswordForm onSuccess={() => setSubmitted(true)} />
         </>

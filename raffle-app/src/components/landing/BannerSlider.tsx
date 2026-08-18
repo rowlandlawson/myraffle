@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import { resolveImageUrl } from '@/lib/imageUrl';
-import Link from 'next/link';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
 
 interface Banner {
   id: string;
@@ -22,8 +22,8 @@ export default function BannerSlider() {
 
   useEffect(() => {
     api
-      .get('/api/banners')
-      .then((res: any) => {
+      .get<{ success?: boolean; data?: Banner[] }>('/api/banners')
+      .then((res) => {
         if (res.success && Array.isArray(res.data)) {
           setBanners(res.data);
         }
@@ -104,9 +104,9 @@ export default function BannerSlider() {
 
             {/* Dots Indicator */}
             <div className="absolute bottom-4 right-6 flex gap-2">
-              {banners.map((_, idx) => (
+              {banners.map((b, idx) => (
                 <button
-                  key={idx}
+                  key={b.id || `banner-dot-${idx}`}
                   onClick={() => setCurrentIndex(idx)}
                   className={`h-2.5 rounded-full transition-all duration-300 ${
                     idx === currentIndex ? 'w-8 bg-red-600' : 'w-2.5 bg-white/50 hover:bg-white/80'

@@ -1,36 +1,36 @@
 import { Router } from 'express';
 import {
-    register,
-    verifyEmail,
-    verifyEmailOTP,
-    verifyWhatsAppOTP,
-    resendVerification,
-    resendEmailOTP,
-    resendWhatsAppOTP,
-    resendSMSOTP,
-    login,
-    refreshAccessToken,
-    logout,
-    getCurrentUser,
-    forgotPassword,
-    resetPassword,
-    setup2FA,
-    confirm2FA,
-    verify2FA,
-    resend2FACode,
-    disable2FA,
+  confirm2FA,
+  disable2FA,
+  forgotPassword,
+  getCurrentUser,
+  login,
+  logout,
+  refreshAccessToken,
+  register,
+  resend2FACode,
+  resendEmailOTP,
+  resendSMSOTP,
+  resendVerification,
+  resendWhatsAppOTP,
+  resetPassword,
+  setup2FA,
+  verify2FA,
+  verifyEmail,
+  verifyEmailOTP,
+  verifyWhatsAppOTP,
 } from '../controllers/authController';
 import { requireAuth } from '../middleware/auth';
-import {
-    validate,
-    registerSchema,
-    loginSchema,
-    forgotPasswordSchema,
-    resetPasswordSchema,
-    verifyOTPSchema,
-    resendOTPSchema,
-} from '../middleware/validation';
 import { authLimiter, otpLimiter } from '../middleware/rateLimiter';
+import {
+  forgotPasswordSchema,
+  loginSchema,
+  registerSchema,
+  resendOTPSchema,
+  resetPasswordSchema,
+  validate,
+  verifyOTPSchema,
+} from '../middleware/validation';
 
 const router = Router();
 

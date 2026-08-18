@@ -1,25 +1,25 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
-import {
-  Search,
-  Plus,
-  Play,
-  Trophy,
-  Clock,
-  CheckCircle,
-  XCircle,
-  Filter,
-  X,
-  Upload as UploadIcon,
-  Image as ImageIcon,
-} from 'lucide-react';
-import { useRaffles } from '@/lib/hooks/useRaffles';
-import { api } from '@/lib/api';
-import toast from 'react-hot-toast';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
-import { convertNairaToPoints } from '@/lib/constants';
 import RafflePointsIcon from '@/components/ui/RafflePointsIcon';
+import { api } from '@/lib/api';
+import { convertNairaToPoints } from '@/lib/constants';
+import { useRaffles } from '@/lib/hooks/useRaffles';
+import {
+  CheckCircle,
+  Clock,
+  Filter,
+  Image as ImageIcon,
+  Play,
+  Plus,
+  Search,
+  Trophy,
+  Upload as UploadIcon,
+  X,
+  XCircle,
+} from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
+import toast from 'react-hot-toast';
 
 type RaffleStatus = 'SCHEDULED' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED' | 'EXPIRED';
 
@@ -28,7 +28,7 @@ async function compressImage(
   file: File,
   maxWidth = 1200,
   maxHeight = 1200,
-  targetSizeKB = 1024
+  targetSizeKB = 1024,
 ): Promise<File> {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
@@ -69,7 +69,7 @@ async function compressImage(
             }
           },
           'image/jpeg',
-          quality
+          quality,
         );
       };
       tryCompress();
@@ -83,16 +83,24 @@ export default function AdminRafflesPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<RaffleStatus | 'all'>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  
+
   // Extend timer modal state
-  const [extendRaffleItem, setExtendRaffleItem] = useState<{ id: string; name: string } | null>(null);
+  const [extendRaffleItem, setExtendRaffleItem] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [newExtendDate, setNewExtendDate] = useState('');
   const [isExtending, setIsExtending] = useState(false);
-  
+
   // Confirm draw dialog state
   const [drawRaffleId, setDrawRaffleId] = useState<string | null>(null);
 
-  const { data: rafflesData, isLoading: loading, error, refetch } = useRaffles({
+  const {
+    data: rafflesData,
+    isLoading: loading,
+    error,
+    refetch,
+  } = useRaffles({
     status: statusFilter !== 'all' ? statusFilter : undefined,
     limit: 50,
   });
@@ -101,7 +109,7 @@ export default function AdminRafflesPage() {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
   // Map to display format
-  const raffles = apiRaffles.map((r: any) => ({
+  const raffles = apiRaffles.map((r) => ({
     id: r.id,
     itemName: r.item.name,
     image: r.item.imageUrl?.startsWith('/uploads')
@@ -116,10 +124,8 @@ export default function AdminRafflesPage() {
     winner: r.winner?.name || null,
   }));
 
-  const filteredRaffles = raffles.filter((raffle: any) => {
-    const matchesSearch = raffle.itemName
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
+  const filteredRaffles = raffles.filter((raffle) => {
+    const matchesSearch = raffle.itemName.toLowerCase().includes(searchTerm.toLowerCase());
     return matchesSearch;
   });
 
@@ -129,8 +135,8 @@ export default function AdminRafflesPage() {
       const res = await api.post(`/api/raffles/${drawRaffleId}/start`);
       toast.success(res.message || 'Winner drawn successfully!');
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to start draw');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to start draw');
     } finally {
       setDrawRaffleId(null);
     }
@@ -148,8 +154,8 @@ export default function AdminRafflesPage() {
       setExtendRaffleItem(null);
       setNewExtendDate('');
       refetch();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to extend countdown timer.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to extend countdown timer.');
     } finally {
       setIsExtending(false);
     }
@@ -182,9 +188,9 @@ export default function AdminRafflesPage() {
 
   const stats = {
     total: raffles.length,
-    active: raffles.filter((r: any) => r.status === 'ACTIVE').length,
-    scheduled: raffles.filter((r: any) => r.status === 'SCHEDULED').length,
-    completed: raffles.filter((r: any) => r.status === 'COMPLETED').length,
+    active: raffles.filter((r) => r.status === 'ACTIVE').length,
+    scheduled: raffles.filter((r) => r.status === 'SCHEDULED').length,
+    completed: raffles.filter((r) => r.status === 'COMPLETED').length,
   };
 
   return (
@@ -192,12 +198,8 @@ export default function AdminRafflesPage() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
-            Raffle Management
-          </h1>
-          <p className="text-gray-600">
-            Create and manage all raffles on the platform
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">Raffle Management</h1>
+          <p className="text-gray-600">Create and manage all raffles on the platform</p>
         </div>
         <button
           onClick={() => setIsCreateModalOpen(true)}
@@ -245,9 +247,7 @@ export default function AdminRafflesPage() {
             <Filter size={20} className="text-gray-400" />
             <select
               value={statusFilter}
-              onChange={(e) =>
-                setStatusFilter(e.target.value as RaffleStatus | 'all')
-              }
+              onChange={(e) => setStatusFilter(e.target.value as RaffleStatus | 'all')}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
             >
               <option value="all">All Status</option>
@@ -268,25 +268,23 @@ export default function AdminRafflesPage() {
           </div>
         ) : error ? (
           <div className="text-center py-12">
-            <p className="text-red-600">{error instanceof Error ? error.message : 'Failed to load raffles'}</p>
+            <p className="text-red-600">
+              {error instanceof Error ? error.message : 'Failed to load raffles'}
+            </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-gray-50 border-b border-gray-200">
                 <tr>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                    Item
-                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Item</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                     Ticket Price
                   </th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                     Progress
                   </th>
-                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
-                    Dates
-                  </th>
+                  <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">Dates</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700">
                     Status
                   </th>
@@ -296,7 +294,7 @@ export default function AdminRafflesPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {filteredRaffles.map((raffle: any) => (
+                {filteredRaffles.map((raffle) => (
                   <tr key={raffle.id} className="hover:bg-gray-50">
                     <td className="px-4 py-4">
                       <div className="flex items-center gap-3">
@@ -310,9 +308,7 @@ export default function AdminRafflesPage() {
                           <span className="text-2xl">{raffle.image}</span>
                         )}
                         <div>
-                          <p className="font-semibold text-gray-900">
-                            {raffle.itemName}
-                          </p>
+                          <p className="font-semibold text-gray-900">{raffle.itemName}</p>
                           {raffle.winner && (
                             <p className="text-xs text-green-600 flex items-center gap-1">
                               <Trophy size={12} /> Winner: {raffle.winner}
@@ -332,9 +328,7 @@ export default function AdminRafflesPage() {
                           </span>
                           <span>
                             {raffle.totalTickets > 0
-                              ? Math.round(
-                                (raffle.soldTickets / raffle.totalTickets) * 100
-                              )
+                              ? Math.round((raffle.soldTickets / raffle.totalTickets) * 100)
                               : 0}
                             %
                           </span>
@@ -357,7 +351,12 @@ export default function AdminRafflesPage() {
                     <td className="px-4 py-4">
                       <div className="flex gap-2">
                         <button
-                          onClick={() => setExtendRaffleItem({ id: raffle.id, name: raffle.itemName })}
+                          onClick={() =>
+                            setExtendRaffleItem({
+                              id: raffle.id,
+                              name: raffle.itemName,
+                            })
+                          }
                           className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 font-medium rounded hover:bg-yellow-200 transition"
                         >
                           Extend Timer
@@ -416,7 +415,9 @@ export default function AdminRafflesPage() {
             </div>
 
             <p className="text-sm text-gray-600">
-              Extend the raffle expiration deadline for <span className="font-bold text-gray-900">{extendRaffleItem.name}</span>. This will re-activate the raffle on the platform.
+              Extend the raffle expiration deadline for{' '}
+              <span className="font-bold text-gray-900">{extendRaffleItem.name}</span>. This will
+              re-activate the raffle on the platform.
             </p>
 
             <form onSubmit={handleExtendTimerSubmit} className="space-y-4">
@@ -470,7 +471,13 @@ export default function AdminRafflesPage() {
 }
 
 // Sub-component for Create Raffle Modal
-function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSuccess: () => void }) {
+function CreateRaffleModal({
+  onClose,
+  onSuccess,
+}: {
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -489,7 +496,7 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -508,8 +515,7 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
     setIsCompressing(true);
     try {
       // Auto-compress: resize to max 1200px and target <= 1MB
-      const compressed =
-        file.size > 1024 * 1024 ? await compressImage(file) : file;
+      const compressed = file.size > 1024 * 1024 ? await compressImage(file) : file;
       setImageFile(compressed);
       const reader = new FileReader();
       reader.onload = (e) => setImagePreview(e.target?.result as string);
@@ -528,7 +534,7 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
       const file = e.dataTransfer.files[0];
       if (file) handleImageSelect(file);
     },
-    [handleImageSelect]
+    [handleImageSelect],
   );
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -556,15 +562,17 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
       }
       toast.success('Raffle and item created successfully!');
       onSuccess();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to create raffle.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create raffle.');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const pointsValue = formData.value ? convertNairaToPoints(parseFloat(formData.value)) : 0;
-  const ticketPointsValue = formData.ticketPrice ? convertNairaToPoints(parseFloat(formData.ticketPrice)) : 0;
+  const _pointsValue = formData.value ? convertNairaToPoints(Number.parseFloat(formData.value)) : 0;
+  const _ticketPointsValue = formData.ticketPrice
+    ? convertNairaToPoints(Number.parseFloat(formData.ticketPrice))
+    : 0;
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[1001] flex items-center justify-center p-4 overflow-y-auto">
@@ -591,9 +599,11 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
             {/* Left Column - Item File & Basic Info */}
             <div className="space-y-4">
               <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Item Info</h3>
-              
+
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-2">Item Image *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Item Image *
+                </label>
                 {imagePreview ? (
                   <div className="relative w-full h-48 rounded-xl overflow-hidden border-2 border-green-200 bg-gray-50">
                     <img
@@ -631,7 +641,10 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
                         : 'border-gray-300 bg-gray-50 hover:border-red-400 hover:bg-red-50/30'
                     }`}
                   >
-                    <ImageIcon size={32} className={isDragging ? 'text-red-500' : 'text-gray-400'} />
+                    <ImageIcon
+                      size={32}
+                      className={isDragging ? 'text-red-500' : 'text-gray-400'}
+                    />
                     <p className="text-sm text-gray-500 font-medium">
                       {isDragging ? 'Drop image here' : 'Drop or browse image'}
                     </p>
@@ -652,7 +665,9 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Item Name *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Item Name *
+                </label>
                 <input
                   type="text"
                   name="name"
@@ -667,7 +682,9 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Value (₦) *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Value (₦) *
+                  </label>
                   <input
                     type="number"
                     name="value"
@@ -680,7 +697,9 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Category *</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                    Category *
+                  </label>
                   <select
                     name="category"
                     value={formData.category}
@@ -704,7 +723,9 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
               <h3 className="text-lg font-bold text-gray-800 border-b pb-2">Raffle Config</h3>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Ticket Price (₦) *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Ticket Price (₦) *
+                </label>
                 <input
                   type="number"
                   name="ticketPrice"
@@ -718,7 +739,9 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Total Tickets *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Total Tickets *
+                </label>
                 <input
                   type="number"
                   name="totalTickets"
@@ -732,7 +755,9 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Countdown Expiration Date & Time *</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Countdown Expiration Date & Time *
+                </label>
                 <input
                   type="datetime-local"
                   name="raffleDate"
@@ -742,11 +767,15 @@ function CreateRaffleModal({ onClose, onSuccess }: { onClose: () => void; onSucc
                   required
                   disabled={isSubmitting}
                 />
-                <p className="text-xs text-gray-400 mt-1">Select date and time when raffle countdown ends</p>
+                <p className="text-xs text-gray-400 mt-1">
+                  Select date and time when raffle countdown ends
+                </p>
               </div>
 
               <div>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Description (Optional)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Description (Optional)
+                </label>
                 <textarea
                   name="description"
                   value={formData.description}

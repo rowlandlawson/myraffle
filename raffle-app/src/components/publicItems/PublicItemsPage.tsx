@@ -1,18 +1,18 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import ItemsHeader from '@/components/publicItems/ItemsHeader';
-import SearchBar from '@/components/publicItems/SearchBar';
 import CategoryFilter from '@/components/publicItems/CategoryFilter';
-import SortOptions from '@/components/publicItems/SortOptions';
-import ItemsGrid from '@/components/publicItems/ItemsGrid';
 import ItemDetailModal from '@/components/publicItems/ItemDetailModal';
+import ItemsGrid from '@/components/publicItems/ItemsGrid';
+import ItemsHeader from '@/components/publicItems/ItemsHeader';
 import ResultsCount from '@/components/publicItems/ResultsCount';
-import { Item, Category, FilterState } from '@/types/publicItems';
-import { useItems } from '@/lib/hooks/useItems';
+import SearchBar from '@/components/publicItems/SearchBar';
+import SortOptions from '@/components/publicItems/SortOptions';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/authStore';
+import { useItems } from '@/lib/hooks/useItems';
 import { resolveImageUrl } from '@/lib/imageUrl';
+import type { Category, FilterState, Item } from '@/types/publicItems';
+import { useMemo, useState } from 'react';
 import toast from 'react-hot-toast';
 
 // Categories data - exported for reuse
@@ -24,16 +24,10 @@ export const categories: Category[] = [
 ];
 
 // Helper function to filter and sort items
-export const filterAndSortItems = (
-  items: Item[],
-  filters: FilterState,
-): Item[] => {
+export const filterAndSortItems = (items: Item[], filters: FilterState): Item[] => {
   const result = items.filter((item) => {
-    const categoryMatch =
-      filters.category === 'all' || item.category === filters.category;
-    const searchMatch = item.name
-      .toLowerCase()
-      .includes(filters.searchTerm.toLowerCase());
+    const categoryMatch = filters.category === 'all' || item.category === filters.category;
+    const searchMatch = item.name.toLowerCase().includes(filters.searchTerm.toLowerCase());
     return categoryMatch && searchMatch;
   });
 
@@ -57,10 +51,7 @@ export const filterAndSortItems = (
 };
 
 // Helper function to calculate item progress
-export const calculateProgress = (
-  ticketsSold: number,
-  ticketsTotal: number,
-): number => {
+export const calculateProgress = (ticketsSold: number, ticketsTotal: number): number => {
   if (ticketsTotal === 0) return 0;
   return Math.round((ticketsSold / ticketsTotal) * 100);
 };
@@ -85,11 +76,15 @@ export function PublicItemsPage() {
   });
 
   const [selectedItem, setSelectedItem] = useState<Item | null>(null);
-  const [buyingItemId, setBuyingItemId] = useState<number | null>(null);
+  const [_buyingItemId, setBuyingItemId] = useState<number | null>(null);
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
 
   // Fetch items from API
-  const { data: itemsData, isLoading: loading, error } = useItems({
+  const {
+    data: itemsData,
+    isLoading: loading,
+    error,
+  } = useItems({
     category: filters.category !== 'all' ? filters.category : undefined,
     search: filters.searchTerm || undefined,
   });
@@ -142,7 +137,9 @@ export function PublicItemsPage() {
       return;
     }
 
-    const item = mappedItems.find((i) => i.id === itemId) as any;
+    const item = mappedItems.find((i) => i.id === itemId) as
+      | (Item & { _raffleId?: string | null })
+      | undefined;
     if (!item?._raffleId) {
       toast.error('No active raffle for this item');
       return;
@@ -155,8 +152,9 @@ export function PublicItemsPage() {
       });
       toast.success('Ticket purchased successfully!');
       setSelectedItem(null);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to buy ticket');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to buy ticket';
+      toast.error(msg);
     } finally {
       setBuyingItemId(null);
     }
@@ -179,9 +177,7 @@ export function PublicItemsPage() {
             <CategoryFilter
               categories={categories}
               selectedCategory={filters.category}
-              onSelectCategory={(category) =>
-                handleFilterChange('category', category)
-              }
+              onSelectCategory={(category) => handleFilterChange('category', category)}
             />
 
             <SortOptions
@@ -200,18 +196,13 @@ export function PublicItemsPage() {
             ) : error ? (
               <div className="text-center py-16">
                 <p className="text-red-600">
-                  {error instanceof Error
-                    ? error.message
-                    : 'Failed to load items'}
+                  {error instanceof Error ? error.message : 'Failed to load items'}
                 </p>
               </div>
             ) : (
               <>
                 <ResultsCount count={filteredAndSortedItems.length} />
-                <ItemsGrid
-                  items={filteredAndSortedItems}
-                  onViewDetails={handleViewDetails}
-                />
+                <ItemsGrid items={filteredAndSortedItems} onViewDetails={handleViewDetails} />
               </>
             )}
           </div>

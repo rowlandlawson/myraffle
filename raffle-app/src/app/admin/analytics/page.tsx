@@ -1,35 +1,35 @@
 'use client';
 
-import { useState } from 'react';
-import {
-  TrendingUp,
-  Users,
-  DollarSign,
-  ShoppingCart,
-  Calendar,
-  ArrowUp,
-  ArrowDown,
-  Eye,
-  Globe,
-  Trophy,
-  Ticket,
-  BarChart3,
-} from 'lucide-react';
 import { useAdminAnalytics, useAdminVisitors } from '@/lib/hooks/useAdmin';
 import {
-  AreaChart,
+  ArrowDown,
+  ArrowUp,
+  BarChart3,
+  Calendar,
+  DollarSign,
+  Eye,
+  Globe,
+  ShoppingCart,
+  Ticket,
+  TrendingUp,
+  Trophy,
+  Users,
+} from 'lucide-react';
+import { useState } from 'react';
+import {
   Area,
-  BarChart,
+  AreaChart,
   Bar,
-  PieChart,
-  Pie,
+  BarChart,
+  CartesianGrid,
   Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Legend,
 } from 'recharts';
 
 function getThirtyDaysAgo() {
@@ -42,7 +42,7 @@ function getToday() {
   return new Date().toISOString().split('T')[0];
 }
 
-const PIE_COLORS = ['#C0000C', '#2563eb', '#7c3aed', '#059669', '#d97706', '#dc2626'];
+const PIE_COLORS = ['#E10600', '#2563eb', '#7c3aed', '#059669', '#d97706', '#dc2626'];
 const TX_LABELS: Record<string, string> = {
   DEPOSIT: 'Deposits',
   TICKET_PURCHASE: 'Ticket Purchases',
@@ -53,14 +53,42 @@ const TX_LABELS: Record<string, string> = {
 };
 
 function formatCurrency(n: number) {
-  if (n >= 1_000_000) return `₦${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `₦${(n / 1_000).toFixed(1)}K`;
-  return `₦${n.toLocaleString()}`;
+  return `₦${n.toLocaleString('en-NG')}`;
 }
 
 function formatShortDate(dateStr: string) {
   const d = new Date(dateStr);
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+}
+
+interface TransactionBreakdownItem {
+  type: string;
+  count: number;
+  name?: string;
+}
+
+interface TopItem {
+  name: string;
+  tickets: number;
+  total: number;
+  revenue: number;
+}
+
+interface VisitByDay {
+  date: string;
+  visits: number;
+}
+
+interface VisitByPath {
+  path: string;
+  visits: number;
+}
+
+interface RecentActivityItem {
+  type: string;
+  message: string;
+  time: string;
+  amount: number;
 }
 
 export default function AdminAnalyticsPage() {
@@ -85,7 +113,9 @@ export default function AdminAnalyticsPage() {
   if (error || !data) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-red-600">{error instanceof Error ? error.message : 'Failed to load analytics'}</p>
+        <p className="text-red-600">
+          {error instanceof Error ? error.message : 'Failed to load analytics'}
+        </p>
       </div>
     );
   }
@@ -132,7 +162,7 @@ export default function AdminAnalyticsPage() {
   const revenueChartData = data.charts?.revenue || [];
   const ticketsChartData = data.charts?.tickets || [];
   const usersChartData = data.charts?.users || [];
-  const txBreakdown = (data.transactionBreakdown || []).map((t: any) => ({
+  const txBreakdown = (data.transactionBreakdown || []).map((t: TransactionBreakdownItem) => ({
     ...t,
     name: TX_LABELS[t.type] || t.type,
   }));
@@ -166,7 +196,10 @@ export default function AdminAnalyticsPage() {
       {/* ── Stats Cards ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         {stats.map((stat) => (
-          <div key={stat.label} className={`bg-white rounded-2xl border ${stat.borderColor} p-4 md:p-5 shadow-sm hover:shadow-md transition-shadow`}>
+          <div
+            key={stat.label}
+            className={`bg-white rounded-2xl border ${stat.borderColor} p-4 md:p-5 shadow-sm hover:shadow-md transition-shadow`}
+          >
             <div className="flex items-center justify-between mb-3">
               <div className={`p-2 rounded-xl ${stat.bgColor}`}>
                 <stat.icon size={18} className={stat.color} />
@@ -188,6 +221,48 @@ export default function AdminAnalyticsPage() {
         ))}
       </div>
 
+      {/* ── Revenue & Funding Sources Breakdown ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-2xl border border-emerald-100 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider bg-emerald-50 px-2.5 py-1 rounded-full">
+              Direct Gateway Deposits
+            </span>
+            <DollarSign size={18} className="text-emerald-600" />
+          </div>
+          <p className="text-2xl font-black text-gray-900 mt-2">
+            {formatCurrency(data.revenueBreakdown?.monnifyDeposits ?? 0)}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Real transfers via Monnify / Paystack</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-amber-100 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-amber-700 uppercase tracking-wider bg-amber-50 px-2.5 py-1 rounded-full">
+              Wallet Rewards & Bonuses
+            </span>
+            <Trophy size={18} className="text-amber-600" />
+          </div>
+          <p className="text-2xl font-black text-gray-900 mt-2">
+            {formatCurrency(data.revenueBreakdown?.walletBonuses ?? 0)}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Signup & task referral bonus funds</p>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-purple-100 p-5 shadow-sm">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-bold text-purple-700 uppercase tracking-wider bg-purple-50 px-2.5 py-1 rounded-full">
+              Ticket Sales Value
+            </span>
+            <Ticket size={18} className="text-purple-600" />
+          </div>
+          <p className="text-2xl font-black text-gray-900 mt-2">
+            {formatCurrency(data.revenueBreakdown?.ticketSales ?? 0)}
+          </p>
+          <p className="text-xs text-gray-400 mt-1">Total value of purchased tickets</p>
+        </div>
+      </div>
+
       {/* ── Revenue Chart ── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
         <h2 className="text-base font-bold text-gray-900 mb-1 flex items-center gap-2">
@@ -204,14 +279,39 @@ export default function AdminAnalyticsPage() {
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tickFormatter={formatShortDate} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-              <YAxis tickFormatter={(v: number) => formatCurrency(v)} tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} width={60} />
-              <Tooltip
-                formatter={(value: number) => [`₦${value.toLocaleString()}`, 'Revenue']}
-                labelFormatter={formatShortDate}
-                contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', fontSize: 12 }}
+              <XAxis
+                dataKey="date"
+                tickFormatter={formatShortDate}
+                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                axisLine={false}
+                tickLine={false}
               />
-              <Area type="monotone" dataKey="revenue" stroke="#059669" strokeWidth={2.5} fill="url(#revGrad)" />
+              <YAxis
+                tickFormatter={(v: number) => formatCurrency(v)}
+                tick={{ fontSize: 11, fill: '#9ca3af' }}
+                axisLine={false}
+                tickLine={false}
+                width={60}
+              />
+              <Tooltip
+                formatter={(value: unknown) => [
+                  `₦${Number(value || 0).toLocaleString()}`,
+                  'Revenue',
+                ]}
+                labelFormatter={(label: unknown) => formatShortDate(String(label || ''))}
+                contentStyle={{
+                  borderRadius: '12px',
+                  border: '1px solid #e5e7eb',
+                  fontSize: 12,
+                }}
+              />
+              <Area
+                type="monotone"
+                dataKey="revenue"
+                stroke="#059669"
+                strokeWidth={2.5}
+                fill="url(#revGrad)"
+              />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -229,12 +329,27 @@ export default function AdminAnalyticsPage() {
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={ticketsChartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="date" tickFormatter={formatShortDate} tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={formatShortDate}
+                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  axisLine={false}
+                  tickLine={false}
+                />
+                <YAxis
+                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  axisLine={false}
+                  tickLine={false}
+                  allowDecimals={false}
+                />
                 <Tooltip
-                  formatter={(value: number) => [value, 'Tickets']}
-                  labelFormatter={formatShortDate}
-                  contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', fontSize: 12 }}
+                  formatter={(value: unknown) => [Number(value || 0), 'Tickets']}
+                  labelFormatter={(label: unknown) => formatShortDate(String(label || ''))}
+                  contentStyle={{
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    fontSize: 12,
+                  }}
                 />
                 <Bar dataKey="tickets" fill="#7c3aed" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -258,14 +373,35 @@ export default function AdminAnalyticsPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis dataKey="date" tickFormatter={formatShortDate} tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip
-                  formatter={(value: number) => [value, 'Users']}
-                  labelFormatter={formatShortDate}
-                  contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', fontSize: 12 }}
+                <XAxis
+                  dataKey="date"
+                  tickFormatter={formatShortDate}
+                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  axisLine={false}
+                  tickLine={false}
                 />
-                <Area type="monotone" dataKey="users" stroke="#2563eb" strokeWidth={2} fill="url(#userGrad)" />
+                <YAxis
+                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  axisLine={false}
+                  tickLine={false}
+                  allowDecimals={false}
+                />
+                <Tooltip
+                  formatter={(value: unknown) => [Number(value || 0), 'Users']}
+                  labelFormatter={(label: unknown) => formatShortDate(String(label || ''))}
+                  contentStyle={{
+                    borderRadius: '12px',
+                    border: '1px solid #e5e7eb',
+                    fontSize: 12,
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="users"
+                  stroke="#2563eb"
+                  strokeWidth={2}
+                  fill="url(#userGrad)"
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -291,13 +427,23 @@ export default function AdminAnalyticsPage() {
                     dataKey="count"
                     nameKey="name"
                   >
-                    {txBreakdown.map((_: any, i: number) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                    {txBreakdown.map((item: TransactionBreakdownItem, i: number) => (
+                      <Cell
+                        key={item.type || item.name || `pie-cell-${i}`}
+                        fill={PIE_COLORS[i % PIE_COLORS.length]}
+                      />
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number, name: string) => [value, name]}
-                    contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', fontSize: 12 }}
+                    formatter={(value: unknown, name: unknown) => [
+                      Number(value || 0),
+                      String(name || ''),
+                    ]}
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: '1px solid #e5e7eb',
+                      fontSize: 12,
+                    }}
                   />
                   <Legend
                     iconType="circle"
@@ -319,7 +465,7 @@ export default function AdminAnalyticsPage() {
           </h2>
           <div className="space-y-3">
             {data.topItems && data.topItems.length > 0 ? (
-              data.topItems.map((item: any, index: number) => {
+              data.topItems.map((item: TopItem, index: number) => {
                 const pct = item.total > 0 ? Math.round((item.tickets / item.total) * 100) : 0;
                 return (
                   <div key={item.name} className="flex items-center gap-3">
@@ -330,12 +476,19 @@ export default function AdminAnalyticsPage() {
                       <p className="font-bold text-gray-900 text-sm truncate">{item.name}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                          <div className="h-full bg-red-500 rounded-full" style={{ width: `${pct}%` }} />
+                          <div
+                            className="h-full bg-red-500 rounded-full"
+                            style={{ width: `${pct}%` }}
+                          />
                         </div>
-                        <span className="text-[10px] text-gray-500 font-semibold shrink-0">{item.tickets}/{item.total}</span>
+                        <span className="text-[10px] text-gray-500 font-semibold shrink-0">
+                          {item.tickets}/{item.total}
+                        </span>
                       </div>
                     </div>
-                    <p className="font-bold text-gray-900 text-xs shrink-0">{formatCurrency(item.revenue)}</p>
+                    <p className="font-bold text-gray-900 text-xs shrink-0">
+                      {formatCurrency(item.revenue)}
+                    </p>
                   </div>
                 );
               })
@@ -359,18 +512,24 @@ export default function AdminAnalyticsPage() {
               Public Audience & Ad Readiness
             </h2>
             <p className="text-xs text-indigo-200 mt-1 max-w-xl">
-              Strictly tracking real public site visitors and registered users (excluding admin activity). Use this metric to determine when your traffic is high enough to integrate Google AdSense or sponsored ads.
+              Strictly tracking real public site visitors and registered users (excluding admin
+              activity). Use this metric to determine when your traffic is high enough to integrate
+              Google AdSense or sponsored ads.
             </p>
           </div>
           <div className="flex items-center gap-4 bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10 shrink-0">
             <div>
               <p className="text-[11px] text-indigo-200 font-medium">Public Visitors</p>
-              <p className="text-2xl font-black text-white">{visitorData?.uniqueVisitors?.toLocaleString() ?? 0}</p>
+              <p className="text-2xl font-black text-white">
+                {visitorData?.uniqueVisitors?.toLocaleString() ?? 0}
+              </p>
             </div>
             <div className="h-8 w-px bg-white/20" />
             <div>
               <p className="text-[11px] text-indigo-200 font-medium">Registered Users</p>
-              <p className="text-2xl font-black text-emerald-400">{data.platformSummary?.totalUsers?.toLocaleString() ?? 0}</p>
+              <p className="text-2xl font-black text-emerald-400">
+                {data.platformSummary?.totalUsers?.toLocaleString() ?? 0}
+              </p>
             </div>
           </div>
         </div>
@@ -385,19 +544,29 @@ export default function AdminAnalyticsPage() {
             </div>
             <div>
               <h2 className="text-base font-bold text-gray-900">Public Site Traffic (Non-Admin)</h2>
-              <p className="text-xs text-gray-400">Page views & unique visitors strictly on public pages</p>
+              <p className="text-xs text-gray-400">
+                Page views & unique visitors strictly on public pages
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-1.5">
               <label className="text-xs font-medium text-gray-500">From</label>
-              <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)}
-                className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-red-500 bg-white" />
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-red-500 bg-white"
+              />
             </div>
             <div className="flex items-center gap-1.5">
               <label className="text-xs font-medium text-gray-500">To</label>
-              <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)}
-                className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-red-500 bg-white" />
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="px-2.5 py-1.5 border border-gray-200 rounded-lg text-xs focus:outline-none focus:border-red-500 bg-white"
+              />
             </div>
           </div>
         </div>
@@ -413,7 +582,9 @@ export default function AdminAnalyticsPage() {
                 <div className="flex items-center gap-2">
                   <Globe size={20} className="text-indigo-600" />
                   <div>
-                    <p className="text-xl font-black text-indigo-900">{visitorData.totalVisits.toLocaleString()}</p>
+                    <p className="text-xl font-black text-indigo-900">
+                      {visitorData.totalVisits.toLocaleString()}
+                    </p>
                     <p className="text-[11px] text-indigo-600 font-medium">Total Page Views</p>
                   </div>
                 </div>
@@ -422,7 +593,9 @@ export default function AdminAnalyticsPage() {
                 <div className="flex items-center gap-2">
                   <Users size={20} className="text-emerald-600" />
                   <div>
-                    <p className="text-xl font-black text-emerald-900">{visitorData.uniqueVisitors.toLocaleString()}</p>
+                    <p className="text-xl font-black text-emerald-900">
+                      {visitorData.uniqueVisitors.toLocaleString()}
+                    </p>
                     <p className="text-[11px] text-emerald-600 font-medium">Unique Visitors</p>
                   </div>
                 </div>
@@ -435,17 +608,37 @@ export default function AdminAnalyticsPage() {
                 <h3 className="text-sm font-bold text-gray-700 mb-3">Daily Visits</h3>
                 <div className="h-40">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={visitorData.visitsByDay.map((d: any) => ({
-                      ...d,
-                      date: typeof d.date === 'string' ? d.date.split('T')[0] : new Date(d.date).toISOString().split('T')[0],
-                    }))}>
+                    <BarChart
+                      data={visitorData.visitsByDay.map((d: VisitByDay) => ({
+                        ...d,
+                        date:
+                          typeof d.date === 'string'
+                            ? d.date.split('T')[0]
+                            : new Date(d.date).toISOString().split('T')[0],
+                      }))}
+                    >
                       <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="date" tickFormatter={formatShortDate} tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                      <XAxis
+                        dataKey="date"
+                        tickFormatter={formatShortDate}
+                        tick={{ fontSize: 10, fill: '#9ca3af' }}
+                        axisLine={false}
+                        tickLine={false}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 10, fill: '#9ca3af' }}
+                        axisLine={false}
+                        tickLine={false}
+                        allowDecimals={false}
+                      />
                       <Tooltip
-                        formatter={(value: number) => [value, 'Visits']}
-                        labelFormatter={formatShortDate}
-                        contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb', fontSize: 12 }}
+                        formatter={(value: unknown) => [Number(value || 0), 'Visits']}
+                        labelFormatter={(label: unknown) => formatShortDate(String(label || ''))}
+                        contentStyle={{
+                          borderRadius: '12px',
+                          border: '1px solid #e5e7eb',
+                          fontSize: 12,
+                        }}
                       />
                       <Bar dataKey="visits" fill="#6366f1" radius={[4, 4, 0, 0]} />
                     </BarChart>
@@ -459,12 +652,16 @@ export default function AdminAnalyticsPage() {
               <div>
                 <h3 className="text-sm font-bold text-gray-700 mb-3">Visits by Page</h3>
                 <div className="space-y-2">
-                  {visitorData.visitsByPath.map((entry: any) => {
-                    const maxVisits = Math.max(...visitorData.visitsByPath.map((p: any) => p.visits));
+                  {visitorData.visitsByPath.map((entry: VisitByPath) => {
+                    const maxVisits = Math.max(
+                      ...visitorData.visitsByPath.map((p: VisitByPath) => p.visits),
+                    );
                     const widthPercent = maxVisits > 0 ? (entry.visits / maxVisits) * 100 : 0;
                     return (
                       <div key={entry.path} className="flex items-center gap-3">
-                        <span className="text-xs font-mono text-gray-600 w-28 shrink-0 truncate">{entry.path}</span>
+                        <span className="text-xs font-mono text-gray-600 w-28 shrink-0 truncate">
+                          {entry.path}
+                        </span>
                         <div className="flex-1 bg-gray-100 rounded-full h-5 overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-full flex items-center justify-end px-2 transition-all duration-500"
@@ -481,33 +678,47 @@ export default function AdminAnalyticsPage() {
             )}
           </div>
         ) : (
-          <p className="text-gray-400 text-center py-8 text-sm">No visitor data for the selected period</p>
+          <p className="text-gray-400 text-center py-8 text-sm">
+            No visitor data for the selected period
+          </p>
         )}
       </div>
 
       {/* ── Platform Summary Banner ── */}
       <div className="bg-gradient-to-r from-gray-900 to-gray-800 rounded-2xl p-5 text-white">
-        <h2 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">Platform Totals (All Time)</h2>
+        <h2 className="text-sm font-bold text-gray-300 uppercase tracking-wider mb-4">
+          Platform Totals (All Time)
+        </h2>
         <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
           <div>
             <p className="text-gray-400 text-[11px] font-medium">Users</p>
-            <p className="text-2xl font-black">{data.platformSummary?.totalUsers?.toLocaleString() ?? 0}</p>
+            <p className="text-2xl font-black">
+              {data.platformSummary?.totalUsers?.toLocaleString() ?? 0}
+            </p>
           </div>
           <div>
             <p className="text-gray-400 text-[11px] font-medium">Raffles</p>
-            <p className="text-2xl font-black">{data.platformSummary?.totalRaffles?.toLocaleString() ?? 0}</p>
+            <p className="text-2xl font-black">
+              {data.platformSummary?.totalRaffles?.toLocaleString() ?? 0}
+            </p>
           </div>
           <div>
             <p className="text-gray-400 text-[11px] font-medium">Tickets Sold</p>
-            <p className="text-2xl font-black">{data.platformSummary?.totalTickets?.toLocaleString() ?? 0}</p>
+            <p className="text-2xl font-black">
+              {data.platformSummary?.totalTickets?.toLocaleString() ?? 0}
+            </p>
           </div>
           <div>
             <p className="text-gray-400 text-[11px] font-medium">Active Draws</p>
-            <p className="text-2xl font-black text-emerald-400">{data.platformSummary?.activeRaffles ?? 0}</p>
+            <p className="text-2xl font-black text-emerald-400">
+              {data.platformSummary?.activeRaffles ?? 0}
+            </p>
           </div>
           <div>
             <p className="text-gray-400 text-[11px] font-medium">Completed</p>
-            <p className="text-2xl font-black text-amber-400">{data.platformSummary?.completedRaffles ?? 0}</p>
+            <p className="text-2xl font-black text-amber-400">
+              {data.platformSummary?.completedRaffles ?? 0}
+            </p>
           </div>
         </div>
       </div>
@@ -517,21 +728,31 @@ export default function AdminAnalyticsPage() {
         <h2 className="text-base font-bold text-gray-900 mb-4">Recent Activity</h2>
         <div className="space-y-3">
           {data.recentActivity && data.recentActivity.length > 0 ? (
-            data.recentActivity.map((activity: any, index: number) => {
+            data.recentActivity.map((activity: RecentActivityItem, index: number) => {
               const dotColor =
-                activity.type === 'deposit' ? 'bg-emerald-500'
-                  : activity.type === 'ticket_purchase' ? 'bg-purple-500'
-                    : activity.type === 'task_reward' ? 'bg-amber-500'
+                activity.type === 'deposit'
+                  ? 'bg-emerald-500'
+                  : activity.type === 'ticket_purchase'
+                    ? 'bg-purple-500'
+                    : activity.type === 'task_reward'
+                      ? 'bg-amber-500'
                       : 'bg-gray-400';
               return (
-                <div key={index} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
+                <div
+                  key={`${activity.time}-${activity.type}-${index}`}
+                  className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0"
+                >
                   <div className={`w-2 h-2 mt-2 rounded-full shrink-0 ${dotColor}`} />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-800 font-medium">{activity.message}</p>
-                    <p className="text-[11px] text-gray-400">{new Date(activity.time).toLocaleString()}</p>
+                    <p className="text-[11px] text-gray-400">
+                      {new Date(activity.time).toLocaleString()}
+                    </p>
                   </div>
                   {activity.amount > 0 && (
-                    <span className={`text-xs font-bold shrink-0 ${activity.type === 'deposit' ? 'text-emerald-600' : 'text-gray-600'}`}>
+                    <span
+                      className={`text-xs font-bold shrink-0 ${activity.type === 'deposit' ? 'text-emerald-600' : 'text-gray-600'}`}
+                    >
                       {formatCurrency(activity.amount)}
                     </span>
                   )}

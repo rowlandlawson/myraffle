@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
 import TicketCard from '@/components/tickets/TicketCard';
 import { useTicketHistory } from '@/lib/hooks/useTickets';
+import { useState } from 'react';
 
 type TicketStatus = 'active' | 'won' | 'lost';
 
@@ -17,7 +17,10 @@ export default function TicketsPage() {
   const allTickets = apiTickets.map((t) => {
     const now = new Date();
     const raffleEnd = new Date(t.raffle.raffleDate);
-    const daysLeft = Math.max(0, Math.ceil((raffleEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)));
+    const daysLeft = Math.max(
+      0,
+      Math.ceil((raffleEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+    );
     const imageUrl = t.raffle.item?.imageUrl?.startsWith('/uploads')
       ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${t.raffle.item.imageUrl}`
       : t.raffle.item?.imageUrl || '';
@@ -36,8 +39,7 @@ export default function TicketsPage() {
   });
 
   const filteredTickets = allTickets.filter((ticket) => {
-    const statusMatch =
-      filterStatus === 'all' || ticket.status === filterStatus;
+    const statusMatch = filterStatus === 'all' || ticket.status === filterStatus;
     const searchMatch =
       ticket.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
       ticket.ticketNumber.toLowerCase().includes(searchTerm.toLowerCase());
@@ -48,12 +50,8 @@ export default function TicketsPage() {
     <div className="space-y-6 pb-20 md:pb-0 max-w-4xl mx-auto">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
-          My Tickets
-        </h1>
-        <p className="text-gray-500 text-sm mt-0.5">
-          View all your tickets and draw statuses
-        </p>
+        <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">My Tickets</h1>
+        <p className="text-gray-500 text-sm mt-0.5">View all your tickets and draw statuses</p>
       </div>
 
       {/* Filter and Search Bar */}

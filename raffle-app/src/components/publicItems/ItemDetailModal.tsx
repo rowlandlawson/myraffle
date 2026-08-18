@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { X, Clock, Users, Ticket } from 'lucide-react';
-import { Item } from '@/types/publicItems';
-import { resolveImageUrl } from '@/lib/imageUrl';
-import { convertNairaToPoints } from '@/lib/constants';
 import RafflePointsIcon from '@/components/ui/RafflePointsIcon';
+import { convertNairaToPoints } from '@/lib/constants';
+import { resolveImageUrl } from '@/lib/imageUrl';
+import type { Item } from '@/types/publicItems';
+import { Clock, Ticket, Users, X } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 interface ItemDetailModalProps {
   item: Item | null;
@@ -16,7 +16,7 @@ interface ItemDetailModalProps {
 export default function ItemDetailModal({
   item,
   onClose,
-  onBuyTicket,
+  onBuyTicket: _onBuyTicket,
 }: ItemDetailModalProps) {
   const [isVisible, setIsVisible] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
@@ -67,7 +67,7 @@ export default function ItemDetailModal({
 
   const ticketsLeft = item.ticketsTotal - item.ticketsSold;
   const imageUrl = resolveImageUrl(item.image);
-  const pointsPrice = convertNairaToPoints(item.price);
+  const _pointsPrice = convertNairaToPoints(item.price);
 
   return (
     <>
@@ -87,12 +87,12 @@ export default function ItemDetailModal({
       >
         <div
           className={`bg-white w-full max-w-xl rounded-t-3xl md:rounded-3xl max-h-[92vh] md:max-h-[85vh] overflow-hidden flex flex-col shadow-2xl pointer-events-auto transition-all duration-300 ease-out relative ${
-            isVisible ? 'translate-y-0 md:scale-100' : 'translate-y-full md:translate-y-0 md:scale-95'
+            isVisible
+              ? 'translate-y-0 md:scale-100'
+              : 'translate-y-full md:translate-y-0 md:scale-95'
           }`}
           style={{
-            transform: isVisible && translateY !== 0
-              ? `translateY(${translateY}px)`
-              : undefined,
+            transform: isVisible && translateY !== 0 ? `translateY(${translateY}px)` : undefined,
             transition: isDragging ? 'none' : undefined,
           }}
         >
@@ -126,9 +126,7 @@ export default function ItemDetailModal({
                   className="w-full h-full object-contain bg-white"
                 />
               ) : (
-                <div className="flex items-center justify-center h-full text-8xl">
-                  📦
-                </div>
+                <div className="flex items-center justify-center h-full text-8xl">📦</div>
               )}
 
               {/* Status Badge */}
@@ -147,31 +145,23 @@ export default function ItemDetailModal({
             {/* Details */}
             <div className="px-5 py-5 space-y-5">
               {/* Name */}
-              <h2 className="text-xl font-bold text-gray-900 leading-tight">
-                {item.name}
-              </h2>
+              <h2 className="text-xl font-bold text-gray-900 leading-tight">{item.name}</h2>
 
               {/* Description */}
               {item.description && (
-                <p className="text-sm text-gray-600 leading-relaxed">
-                  {item.description}
-                </p>
+                <p className="text-sm text-gray-600 leading-relaxed">{item.description}</p>
               )}
 
               {/* Price & Stats */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="bg-red-50 rounded-xl p-3.5">
-                  <p className="text-xs text-gray-500 font-medium mb-1">
-                    Ticket Price
-                  </p>
+                  <p className="text-xs text-gray-500 font-medium mb-1">Ticket Price</p>
                   <p className="text-lg font-bold text-gray-900 flex items-center gap-1.5">
                     ₦{item.price.toLocaleString()}
                   </p>
                 </div>
                 <div className="bg-blue-50 rounded-xl p-3.5">
-                  <p className="text-xs text-gray-500 font-medium mb-1">
-                    Tickets left
-                  </p>
+                  <p className="text-xs text-gray-500 font-medium mb-1">Tickets left</p>
                   <p className="text-lg font-bold text-gray-900 flex items-center gap-1.5">
                     <Ticket size={18} className="text-blue-500" />
                     {ticketsLeft.toLocaleString()}
@@ -184,16 +174,12 @@ export default function ItemDetailModal({
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <span className="text-sm text-gray-500">Raffle date</span>
                   <span className="text-sm font-bold text-gray-900">
-                    {item.raffleDate
-                      ? new Date(item.raffleDate).toLocaleDateString()
-                      : 'TBD'}
+                    {item.raffleDate ? new Date(item.raffleDate).toLocaleDateString() : 'TBD'}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-gray-100">
                   <span className="text-sm text-gray-500">Ends in</span>
-                  <span className="text-sm font-bold text-gray-900">
-                    {item.endsIn}
-                  </span>
+                  <span className="text-sm font-bold text-gray-900">{item.endsIn}</span>
                 </div>
               </div>
 
@@ -204,9 +190,7 @@ export default function ItemDetailModal({
                     <Users size={14} />
                     {item.ticketsSold}/{item.ticketsTotal} sold
                   </span>
-                  <span className="text-sm font-bold text-red-600">
-                    {item.progress}%
-                  </span>
+                  <span className="text-sm font-bold text-red-600">{item.progress}%</span>
                 </div>
                 <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
                   <div

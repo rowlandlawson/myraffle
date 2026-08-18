@@ -4,8 +4,8 @@ export interface AuthFormData {
   confirmPassword?: string;
 }
 
-export interface AuthResponse {
+export interface AuthResponse<T = unknown> {
   success: boolean;
   message?: string;
-  data?: any;
+  data?: T;
 }

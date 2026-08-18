@@ -3,7 +3,7 @@
 import FeaturedRaffleCard from '@/components/landing/FeaturedRaffleCard';
 import ListItemCard from '@/components/landing/ListItemCard';
 import WinnersCarousel from '@/components/landing/WinnersCarousel';
-import { ApiRaffle } from '@/lib/hooks/useRaffles';
+import type { ApiRaffle } from '@/lib/hooks/useRaffles';
 
 interface Item {
   id: string | number;
@@ -12,8 +12,8 @@ interface Item {
   ticketPrice: number;
   ticketsSold: number;
   ticketsTotal: number;
-  status: 'active' | 'completed';
-  endsIn: string;
+  status: string;
+  endsIn?: string;
 }
 
 interface ItemsSectionProps {
@@ -47,7 +47,10 @@ export default function ItemsSection({
           <div className="h-6 bg-gray-200 rounded w-1/4 mb-2" />
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[1, 2].map((i) => (
-              <div key={i} className="flex gap-4 items-center p-3 border border-gray-100 rounded-2xl">
+              <div
+                key={i}
+                className="flex gap-4 items-center p-3 border border-gray-100 rounded-2xl"
+              >
                 <div className="w-20 h-20 bg-gray-200 rounded-xl shrink-0" />
                 <div className="space-y-2 grow">
                   <div className="h-4 bg-gray-200 rounded w-3/4" />

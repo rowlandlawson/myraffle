@@ -1,19 +1,19 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import RaffleCard from '@/components/landing/RaffleCard';
-import FeaturesSection from '@/components/landing/FeaturesSection';
-import WinnersSection from '@/components/landing/WinnersSection';
-import HowItWorksSection from '@/components/landing/HowItWorksSection';
+import BannerSlider from '@/components/landing/BannerSlider';
 import CTASection from '@/components/landing/CTASection';
+import FeaturesSection from '@/components/landing/FeaturesSection';
 import Footer from '@/components/landing/Footer';
+import HowItWorksSection from '@/components/landing/HowItWorksSection';
 import ItemsSection from '@/components/landing/ItemsSection';
+import RaffleCard from '@/components/landing/RaffleCard';
+import WinnersSection from '@/components/landing/WinnersSection';
 import ItemBottomSheet from '@/components/shared/ItemBottomSheet';
 import { useAuthStore } from '@/lib/authStore';
-import { useRaffles, ApiRaffle } from '@/lib/hooks/useRaffles';
+import { type ApiRaffle, useRaffles } from '@/lib/hooks/useRaffles';
 import { resolveImageUrl } from '@/lib/imageUrl';
-import { Loader2, ChevronDown } from 'lucide-react';
-import BannerSlider from '@/components/landing/BannerSlider';
+import { ChevronDown, Loader2 } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 // How many items to show per "page" on the desktop grid
 const DESKTOP_PAGE_SIZE = 8;
@@ -37,7 +37,7 @@ function mapRaffleToItem(r: ApiRaffle): RaffleItem {
   const raffleEnd = new Date(r.raffleDate);
   const daysLeft = Math.max(
     0,
-    Math.ceil((raffleEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
+    Math.ceil((raffleEnd.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
   );
   return {
     id: String(r.id),
@@ -65,10 +65,7 @@ export default function LandingPage() {
   const { data: activeData, isPending, isFetching } = useRaffles({ status: 'ACTIVE' });
   const { data: completedData } = useRaffles({ status: 'COMPLETED' });
 
-  const allItems = useMemo(
-    () => (activeData?.raffles || []).map(mapRaffleToItem),
-    [activeData]
-  );
+  const allItems = useMemo(() => (activeData?.raffles || []).map(mapRaffleToItem), [activeData]);
 
   const completedRaffles = completedData?.raffles || [];
 
@@ -88,18 +85,19 @@ export default function LandingPage() {
 
   if (isPending) {
     return (
-      <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center space-y-4">
-        <h1 className="text-2xl font-black tracking-tight text-gray-900">
-          my<span className="text-red-600">Raffle</span>
-        </h1>
-        <Loader2 className="w-6 h-6 text-red-600 animate-spin" />
+      <div className="fixed inset-0 z-50 bg-white flex flex-col items-center justify-center space-y-6">
+        <img
+          src="/images/logo.png"
+          alt="myRaffle Loading"
+          className="h-28 md:h-36 w-auto object-contain animate-pulse"
+        />
+        <Loader2 className="w-8 h-8 text-[#E10600] animate-spin" />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900 font-sans">
-
       {/* ── DESKTOP ─────────────────────────────────────────────── */}
       <div className="hidden md:block">
         <BannerSlider />
@@ -108,9 +106,15 @@ export default function LandingPage() {
           {/* Section header */}
           <div className="flex items-end justify-between mb-8">
             <div>
-              <p className="text-xs font-bold text-[#C0000C] uppercase tracking-widest mb-2">Active now</p>
-              <h2 className="text-3xl font-black text-gray-900 tracking-tight">Live Raffle Draws</h2>
-              <p className="text-gray-500 text-sm mt-1">Pick an item, grab your ticket, and enter the draw.</p>
+              <p className="text-xs font-bold text-[#E10600] uppercase tracking-widest mb-2">
+                Active now
+              </p>
+              <h2 className="text-3xl font-black text-gray-900 tracking-tight">
+                Live Raffle Draws
+              </h2>
+              <p className="text-gray-500 text-sm mt-1">
+                Pick an item, grab your ticket, and enter the draw.
+              </p>
             </div>
             {allItems.length > 0 && (
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-full text-xs font-bold text-emerald-700">
@@ -142,7 +146,7 @@ export default function LandingPage() {
                   <button
                     onClick={() => setDesktopVisible((v) => v + DESKTOP_PAGE_SIZE)}
                     disabled={isFetching}
-                    className="inline-flex items-center gap-2 px-8 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:border-[#C0000C] hover:text-[#C0000C] transition-colors bg-white disabled:opacity-50"
+                    className="inline-flex items-center gap-2 px-8 py-3 border-2 border-gray-200 rounded-xl text-sm font-bold text-gray-700 hover:border-[#E10600] hover:text-[#E10600] transition-colors bg-white disabled:opacity-50"
                   >
                     {isFetching ? (
                       <Loader2 size={16} className="animate-spin" />
@@ -173,7 +177,6 @@ export default function LandingPage() {
         <FeaturesSection />
         {recentWinners.length > 0 && <WinnersSection winners={recentWinners} />}
         <HowItWorksSection />
-        <CTASection />
         <Footer />
       </div>
 
@@ -195,7 +198,7 @@ export default function LandingPage() {
               </p>
               <button
                 onClick={() => setMobileVisible((v) => v + MOBILE_PAGE_SIZE)}
-                className="w-full max-w-xs py-3.5 border-2 border-gray-200 rounded-2xl text-sm font-bold text-gray-700 hover:border-[#C0000C] hover:text-[#C0000C] transition-colors bg-white flex items-center justify-center gap-2"
+                className="w-full max-w-xs py-3.5 border-2 border-gray-200 rounded-2xl text-sm font-bold text-gray-700 hover:border-[#E10600] hover:text-[#E10600] transition-colors bg-white flex items-center justify-center gap-2"
               >
                 <ChevronDown size={16} />
                 Show More Draws

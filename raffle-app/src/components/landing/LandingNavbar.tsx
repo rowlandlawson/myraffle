@@ -1,9 +1,9 @@
 'use client';
 
+import { useAuthStore } from '@/lib/authStore';
+import { LogOut, Menu, User, Wallet, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Menu, X, User, LogOut, Wallet } from 'lucide-react';
-import { useAuthStore } from '@/lib/authStore';
 
 export default function LandingNavbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -13,13 +13,17 @@ export default function LandingNavbar() {
     <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-sm border-b border-gray-100">
       <div className="max-w-7xl mx-auto px-5 py-3.5 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-[#C0000C] rounded-lg flex items-center justify-center shadow-sm">
-            <span className="text-white font-black text-sm leading-none">M</span>
-          </div>
-          <span className="font-black text-xl text-gray-900 tracking-tight">
-            my<span className="text-[#C0000C]">Raffle</span>
-          </span>
+        <Link href="/" className="flex items-center">
+          <img
+            src="/images/icon-192.png"
+            alt="myRaffle"
+            className="xs:hidden h-8 w-8 object-contain rounded-lg shadow-xs"
+          />
+          <img
+            src="/images/logo.png"
+            alt="myRaffle"
+            className="hidden xs:block h-10 md:h-14 lg:h-16 w-auto object-contain transition-all"
+          />
         </Link>
 
         {/* Desktop Nav Links */}
@@ -47,8 +51,7 @@ export default function LandingNavbar() {
                 href="/dashboard/earnings"
                 className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 font-bold rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors text-sm"
               >
-                <Wallet size={14} />
-                ₦{(user?.walletBalance ?? 1000).toLocaleString()}
+                <Wallet size={14} />₦{(user?.walletBalance ?? 1000).toLocaleString()}
               </Link>
               <Link
                 href="/dashboard"
@@ -75,7 +78,7 @@ export default function LandingNavbar() {
               </Link>
               <Link
                 href="/register"
-                className="px-4 py-2 text-sm font-bold bg-[#C0000C] text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+                className="px-4 py-2 text-sm font-bold bg-[#E10600] text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm"
               >
                 Get Started
               </Link>
@@ -115,13 +118,16 @@ export default function LandingNavbar() {
                 <>
                   <Link
                     href="/dashboard"
-                    className="block w-full py-2.5 text-center text-sm font-bold bg-[#C0000C] text-white rounded-lg hover:bg-red-700 transition-colors"
+                    className="block w-full py-2.5 text-center text-sm font-bold bg-[#E10600] text-white rounded-lg hover:bg-red-700 transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Go to Dashboard
                   </Link>
                   <button
-                    onClick={() => { logout(); setMobileMenuOpen(false); }}
+                    onClick={() => {
+                      logout();
+                      setMobileMenuOpen(false);
+                    }}
                     className="block w-full py-2.5 text-center text-sm font-semibold text-red-600 border border-red-100 rounded-lg hover:bg-red-50 transition-colors"
                   >
                     Sign Out
@@ -138,7 +144,7 @@ export default function LandingNavbar() {
                   </Link>
                   <Link
                     href="/register"
-                    className="block w-full py-2.5 text-center text-sm font-bold bg-[#C0000C] text-white rounded-lg hover:bg-red-700 transition-colors"
+                    className="block w-full py-2.5 text-center text-sm font-bold bg-[#E10600] text-white rounded-lg hover:bg-red-700 transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
                     Create Account

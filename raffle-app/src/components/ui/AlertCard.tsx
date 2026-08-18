@@ -39,13 +39,7 @@ const typeStyles = {
   },
 };
 
-export default function AlertCard({
-  type,
-  title,
-  message,
-  actionText,
-  onAction,
-}: AlertCardProps) {
+export default function AlertCard({ type, title, message, actionText, onAction }: AlertCardProps) {
   const styles = typeStyles[type];
 
   return (
@@ -58,14 +52,8 @@ export default function AlertCard({
           className={`${styles.icon} flex-shrink-0 mt-0.5 md:mt-1 md:w-6 md:h-6`}
         />
         <div className="flex-1 min-w-0">
-          <h3 className={`font-bold text-sm md:text-base ${styles.text.title}`}>
-            {title}
-          </h3>
-          <p
-            className={`text-sm md:text-base ${styles.text.message} break-words`}
-          >
-            {message}
-          </p>
+          <h3 className={`font-bold text-sm md:text-base ${styles.text.title}`}>{title}</h3>
+          <p className={`text-sm md:text-base ${styles.text.message} break-words`}>{message}</p>
         </div>
       </div>
       <button

@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Clock, RefreshCw } from 'lucide-react';
 import Card from '@/components/ui/Card';
+import { Clock, RefreshCw } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -21,10 +21,12 @@ export default function SystemHealth() {
   ]);
   const [loading, setLoading] = useState(false);
 
-  const fetchHealth = async () => {
+  const fetchHealth = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/health`, { cache: 'no-store' });
+      const res = await fetch(`${API_BASE_URL}/api/health`, {
+        cache: 'no-store',
+      });
       if (res.ok) {
         const data = await res.json();
         if (data.services && Array.isArray(data.services)) {
@@ -48,13 +50,13 @@ export default function SystemHealth() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchHealth();
     const interval = setInterval(fetchHealth, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchHealth]);
 
   return (
     <Card>
@@ -81,8 +83,8 @@ export default function SystemHealth() {
                 item.status === 'healthy'
                   ? 'text-emerald-600'
                   : item.status === 'warning'
-                  ? 'text-amber-600'
-                  : 'text-red-600'
+                    ? 'text-amber-600'
+                    : 'text-red-600'
               }`}
             >
               {item.value}

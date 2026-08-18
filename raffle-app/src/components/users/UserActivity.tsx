@@ -1,7 +1,7 @@
 'use client';
 
+import type { User } from '@/types/users';
 import { Activity } from 'lucide-react';
-import { User } from '@/types/users';
 
 interface UserActivityProps {
   users: User[];
@@ -33,14 +33,10 @@ export default function UserActivity({
           >
             <div className="flex-1">
               <p className="font-semibold text-gray-900">{user.name}</p>
-              <p className="text-xs text-gray-600">
-                Last active: {user.lastActive}
-              </p>
+              <p className="text-xs text-gray-600">Last active: {user.lastActive}</p>
             </div>
             <div className="text-right">
-              <span className="block font-bold text-gray-900">
-                {user.ticketsPurchased} tickets
-              </span>
+              <span className="block font-bold text-gray-900">{user.ticketsPurchased} tickets</span>
               <span className="text-xs text-gray-600">
                 {user.totalSpent.toLocaleString()} spent
               </span>

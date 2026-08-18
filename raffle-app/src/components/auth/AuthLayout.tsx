@@ -1,10 +1,10 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ArrowLeft } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import type { ReactNode } from 'react';
 
 interface AuthLayoutProps {
   children: ReactNode;
@@ -12,17 +12,13 @@ interface AuthLayoutProps {
   logoLink?: string;
 }
 
-export default function AuthLayout({
-  children,
-  showLogo = true,
-  logoLink = '/',
-}: AuthLayoutProps) {
+export default function AuthLayout({ children, showLogo = true, logoLink = '/' }: AuthLayoutProps) {
   const router = useRouter();
 
   return (
     <div className="min-h-screen bg-white flex">
       {/* ── Left Brand Panel (hidden on mobile) ── */}
-      <div className="hidden lg:flex lg:w-[42%] xl:w-[45%] flex-col justify-between bg-[#C0000C] px-10 py-10 relative overflow-hidden">
+      <div className="hidden lg:flex lg:w-[42%] xl:w-[45%] flex-col justify-between bg-[#E10600] px-10 py-10 relative overflow-hidden">
         {/* Decorative circles */}
         <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-white/5" />
         <div className="absolute bottom-0 right-0 w-72 h-72 rounded-full bg-black/10 translate-x-1/3 translate-y-1/3" />
@@ -31,11 +27,11 @@ export default function AuthLayout({
         {/* Logo */}
         <Link href={logoLink} className="relative z-10 flex items-center w-fit">
           <Image
-            src="/images/logo.png"
+            src="/images/logo-dark-bg.png"
             alt="myRaffle"
-            width={140}
-            height={40}
-            className="h-10 w-auto object-contain brightness-0 invert"
+            width={220}
+            height={64}
+            className="h-14 xl:h-16 w-auto object-contain"
             priority
           />
         </Link>
@@ -45,34 +41,23 @@ export default function AuthLayout({
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 bg-white/15 border border-white/20 rounded-full px-3 py-1">
               <span className="w-2 h-2 rounded-full bg-yellow-300 animate-pulse" />
-              <span className="text-white/90 text-xs font-semibold tracking-wide uppercase">Live Draws · Real Winners</span>
+              <span className="text-white/90 text-xs font-semibold tracking-wide uppercase">
+                Live Draws · Real Winners
+              </span>
             </div>
             <h1 className="text-4xl xl:text-5xl font-black text-white leading-[1.1] tracking-tight">
-              Win premium<br />prizes every<br />week.
+              Win premium
+              <br />
+              prizes
             </h1>
-            <p className="text-white/70 text-sm leading-relaxed max-w-xs">
-              Join thousands of participants on Nigeria&apos;s most trusted raffle platform. Fair draws, instant payouts.
-            </p>
-          </div>
-
-          {/* Stats row */}
-          <div className="grid grid-cols-3 gap-3 pt-2">
-            {[
-              { value: '50k+', label: 'Members' },
-              { value: '₦2M+', label: 'Paid Out' },
-              { value: '100%', label: 'Fair Draws' },
-            ].map((s) => (
-              <div key={s.label} className="bg-white/10 border border-white/15 rounded-xl p-3 text-center">
-                <div className="text-white font-black text-lg">{s.value}</div>
-                <div className="text-white/60 text-[11px] font-medium">{s.label}</div>
-              </div>
-            ))}
           </div>
         </div>
 
         {/* Bottom */}
         <div className="relative z-10">
-          <p className="text-white/40 text-xs">© {new Date().getFullYear()} myRaffle · All rights reserved</p>
+          <p className="text-white/40 text-xs">
+            © {new Date().getFullYear()} myRaffle · All rights reserved
+          </p>
         </div>
       </div>
 
@@ -105,9 +90,7 @@ export default function AuthLayout({
 
         {/* Form area */}
         <div className="flex-1 flex items-center justify-center px-5 sm:px-10 py-8">
-          <div className="w-full max-w-[400px]">
-            {children}
-          </div>
+          <div className="w-full max-w-[400px]">{children}</div>
         </div>
 
         {/* Bottom note */}

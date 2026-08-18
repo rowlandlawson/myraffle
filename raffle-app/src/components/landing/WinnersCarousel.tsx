@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import type { ApiRaffle } from '@/lib/hooks/useRaffles';
 import { resolveImageUrl } from '@/lib/imageUrl';
-import { ApiRaffle } from '@/lib/hooks/useRaffles';
+import { useState } from 'react';
 
 interface WinnersCarouselProps {
   completedRaffles?: ApiRaffle[];
@@ -97,9 +97,9 @@ export default function WinnersCarousel({ completedRaffles = [] }: WinnersCarous
         {/* Pagination Dots */}
         {displayWinners.length > 1 && (
           <div className="flex justify-center gap-1.5 mt-6">
-            {displayWinners.map((_, idx) => (
+            {displayWinners.map((w, idx) => (
               <button
-                key={idx}
+                key={w.id || `winner-dot-${idx}`}
                 onClick={() => setCurrentIndex(idx)}
                 className={`w-2.5 h-2.5 rounded-full transition-all ${
                   idx === currentIndex ? 'bg-red-600 w-4' : 'bg-gray-200'

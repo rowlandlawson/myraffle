@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
-import { FileText, HelpCircle, ShoppingBag, ArrowLeft } from 'lucide-react';
-import { useCartStore } from '@/lib/cartStore';
-import TermsModal from '@/components/terms/TermsModal';
 import HowItWorksModal from '@/components/landing/HowItWorksModal';
+import TermsModal from '@/components/terms/TermsModal';
+import { useCartStore } from '@/lib/cartStore';
+import { ArrowLeft, FileText, HelpCircle, ShoppingBag } from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export default function TopNav() {
   const pathname = usePathname();
@@ -36,15 +36,17 @@ export default function TopNav() {
               </button>
             )}
 
-            {/* Brand Logo - Bigger on mobile */}
+            {/* Brand Logo */}
             <Link href="/" className="flex items-center">
-              <Image
+              <img
+                src="/images/icon-192.png"
+                alt="myRaffle"
+                className="xs:hidden h-8 w-8 object-contain rounded-lg shadow-xs"
+              />
+              <img
                 src="/images/logo.png"
-                alt="Raffle Logo"
-                width={220}
-                height={70}
-                className="h-9 w-auto object-contain"
-                priority
+                alt="myRaffle"
+                className="hidden xs:block h-10 md:h-14 lg:h-16 w-auto object-contain transition-all"
               />
             </Link>
           </div>
@@ -85,7 +87,6 @@ export default function TopNav() {
             >
               <FileText size={20} />
             </button>
-
           </div>
         </div>
       </header>

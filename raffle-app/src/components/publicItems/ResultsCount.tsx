@@ -7,8 +7,7 @@ export default function ResultsCount({ count, total }: ResultsCountProps) {
   return (
     <div className="mb-6">
       <p className="text-gray-600">
-        Showing <span className="font-bold text-gray-900">{count}</span> active
-        items
+        Showing <span className="font-bold text-gray-900">{count}</span> active items
         {total && count !== total && (
           <span>
             {' '}

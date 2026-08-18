@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { prisma } from '../config/database';
 
 // Default initial Terms & Conditions content if none exists yet
@@ -21,127 +21,130 @@ const DEFAULT_TERMS = `
 
 // GET /api/settings/:key — Public, fetch setting by key
 export const getSetting = async (req: Request, res: Response) => {
-    try {
-        const key = req.params.key as string;
+  try {
+    const key = req.params.key as string;
 
-        const setting = await (prisma as any).setting.findUnique({
-            where: { key },
-        });
+    const setting = await prisma.setting.findUnique({
+      where: { key },
+    });
 
-        if (!setting) {
-            // Return default content if requesting terms_and_conditions
-            if (key === 'terms_and_conditions') {
-                res.status(200).json({
-                    success: true,
-                    data: { key, value: DEFAULT_TERMS.trim() },
-                });
-                return;
-            }
-
-            res.status(404).json({ success: false, message: `Setting '${key}' not found.` });
-            return;
-        }
-
+    if (!setting) {
+      // Return default content if requesting terms_and_conditions
+      if (key === 'terms_and_conditions') {
         res.status(200).json({
-            success: true,
-            data: setting,
+          success: true,
+          data: { key, value: DEFAULT_TERMS.trim() },
         });
-    } catch (error) {
-        console.error('[Settings] Get setting error:', error);
-        res.status(500).json({ success: false, message: 'Failed to fetch setting.' });
+        return;
+      }
+
+      res.status(404).json({ success: false, message: `Setting '${key}' not found.` });
+      return;
     }
+
+    res.status(200).json({
+      success: true,
+      data: setting,
+    });
+  } catch (error) {
+    console.error('[Settings] Get setting error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch setting.' });
+  }
 };
 
 // PUT /api/admin/settings/:key — Admin only, update setting by key
 export const updateSetting = async (req: Request, res: Response) => {
-    try {
-        const key = req.params.key as string;
-        const { value } = req.body;
+  try {
+    const key = req.params.key as string;
+    const { value } = req.body;
 
-        if (typeof value !== 'string') {
-            res.status(400).json({ success: false, message: 'Setting value must be a string.' });
-            return;
-        }
-
-        const setting = await (prisma as any).setting.upsert({
-            where: { key },
-            update: { value },
-            create: { key, value },
-        });
-
-        res.status(200).json({
-            success: true,
-            message: 'Setting updated successfully.',
-            data: setting,
-        });
-    } catch (error) {
-        console.error('[Settings] Update setting error:', error);
-        res.status(500).json({ success: false, message: 'Failed to update setting.' });
+    if (typeof value !== 'string') {
+      res.status(400).json({ success: false, message: 'Setting value must be a string.' });
+      return;
     }
+
+    const setting = await prisma.setting.upsert({
+      where: { key },
+      update: { value },
+      create: { key, value },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Setting updated successfully.',
+      data: setting,
+    });
+  } catch (error) {
+    console.error('[Settings] Update setting error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update setting.' });
+  }
 };
 
 // GET /api/admin/bonus-settings — Fetch registration & referral bonus settings
-export const getBonusSettings = async (req: Request, res: Response) => {
-    try {
-        const [signupSetting, referralSetting] = await Promise.all([
-            (prisma as any).setting.findUnique({ where: { key: 'signup_bonus' } }),
-            (prisma as any).setting.findUnique({ where: { key: 'referral_bonus' } }),
-        ]);
+export const getBonusSettings = async (_req: Request, res: Response) => {
+  try {
+    const [signupSetting, referralSetting] = await Promise.all([
+      prisma.setting.findUnique({ where: { key: 'signup_bonus' } }),
+      prisma.setting.findUnique({ where: { key: 'referral_bonus' } }),
+    ]);
 
-        const signupBonus = signupSetting ? parseFloat(signupSetting.value) || 1000 : 1000;
-        const referralBonus = referralSetting ? parseFloat(referralSetting.value) || 500 : 500;
+    const signupBonus = signupSetting ? Number.parseFloat(signupSetting.value) || 1000 : 1000;
+    const referralBonus = referralSetting ? Number.parseFloat(referralSetting.value) || 500 : 500;
 
-        res.status(200).json({
-            success: true,
-            data: {
-                signupBonus,
-                referralBonus,
-            },
-        });
-    } catch (error) {
-        console.error('[Settings] Get bonus settings error:', error);
-        res.status(500).json({ success: false, message: 'Failed to fetch bonus settings.' });
-    }
+    res.status(200).json({
+      success: true,
+      data: {
+        signupBonus,
+        referralBonus,
+      },
+    });
+  } catch (error) {
+    console.error('[Settings] Get bonus settings error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch bonus settings.' });
+  }
 };
 
 // PUT /api/admin/bonus-settings — Update registration & referral bonus settings
 export const updateBonusSettings = async (req: Request, res: Response) => {
-    try {
-        const { signupBonus, referralBonus } = req.body;
+  try {
+    const { signupBonus, referralBonus } = req.body;
 
-        if (signupBonus !== undefined) {
-            const signupVal = Number(signupBonus);
-            if (isNaN(signupVal) || signupVal < 0) {
-                res.status(400).json({ success: false, message: 'Signup bonus must be a non-negative number.' });
-                return;
-            }
-            await (prisma as any).setting.upsert({
-                where: { key: 'signup_bonus' },
-                update: { value: signupVal.toString() },
-                create: { key: 'signup_bonus', value: signupVal.toString() },
-            });
-        }
-
-        if (referralBonus !== undefined) {
-            const refVal = Number(referralBonus);
-            if (isNaN(refVal) || refVal < 0) {
-                res.status(400).json({ success: false, message: 'Referral bonus must be a non-negative number.' });
-                return;
-            }
-            await (prisma as any).setting.upsert({
-                where: { key: 'referral_bonus' },
-                update: { value: refVal.toString() },
-                create: { key: 'referral_bonus', value: refVal.toString() },
-            });
-        }
-
-        res.status(200).json({
-            success: true,
-            message: 'Registration and Referral bonuses updated successfully!',
-        });
-    } catch (error) {
-        console.error('[Settings] Update bonus settings error:', error);
-        res.status(500).json({ success: false, message: 'Failed to update bonus settings.' });
+    if (signupBonus !== undefined) {
+      const signupVal = Number(signupBonus);
+      if (Number.isNaN(signupVal) || signupVal < 0) {
+        res
+          .status(400)
+          .json({ success: false, message: 'Signup bonus must be a non-negative number.' });
+        return;
+      }
+      await prisma.setting.upsert({
+        where: { key: 'signup_bonus' },
+        update: { value: signupVal.toString() },
+        create: { key: 'signup_bonus', value: signupVal.toString() },
+      });
     }
-};
 
+    if (referralBonus !== undefined) {
+      const refVal = Number(referralBonus);
+      if (Number.isNaN(refVal) || refVal < 0) {
+        res
+          .status(400)
+          .json({ success: false, message: 'Referral bonus must be a non-negative number.' });
+        return;
+      }
+      await prisma.setting.upsert({
+        where: { key: 'referral_bonus' },
+        update: { value: refVal.toString() },
+        create: { key: 'referral_bonus', value: refVal.toString() },
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Registration and Referral bonuses updated successfully!',
+    });
+  } catch (error) {
+    console.error('[Settings] Update bonus settings error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update bonus settings.' });
+  }
+};

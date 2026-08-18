@@ -3,10 +3,7 @@ import { z } from 'zod';
 
 // Login Schema
 export const loginSchema = z.object({
-  email: z
-    .string()
-    .min(1, 'Email is required')
-    .email('Please enter a valid email address'),
+  email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
   password: z
     .string()
     .min(1, 'Password is required')
@@ -23,10 +20,7 @@ export const registerSchema = z
       .min(1, 'Full name is required')
       .min(2, 'Full name must be at least 2 characters')
       .max(100, 'Full name must not exceed 100 characters'),
-    email: z
-      .string()
-      .min(1, 'Email is required')
-      .email('Please enter a valid email address'),
+    email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
     whatsapp: z
       .string()
       .min(1, 'WhatsApp number is required')
@@ -54,10 +48,7 @@ export type RegisterInput = z.infer<typeof registerSchema>;
 
 // Forgot Password Schema
 export const forgotPasswordSchema = z.object({
-  email: z
-    .string()
-    .min(1, 'Email is required')
-    .email('Please enter a valid email address'),
+  email: z.string().min(1, 'Email is required').email('Please enter a valid email address'),
 });
 
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>;
@@ -101,24 +92,13 @@ export type WithdrawInput = z.infer<typeof withdrawSchema>;
 // Item Upload Schema (for Phase 4 Admin)
 export const itemUploadSchema = z.object({
   name: z.string().min(1, 'Item name is required').max(200),
-  description: z
-    .string()
-    .min(10, 'Description must be at least 10 characters')
-    .max(1000),
+  description: z.string().min(10, 'Description must be at least 10 characters').max(1000),
   image: z
     .instanceof(File)
-    .refine(
-      (file) => file.size <= 5 * 1024 * 1024,
-      'Image must be less than 5MB',
-    ),
+    .refine((file) => file.size <= 5 * 1024 * 1024, 'Image must be less than 5MB'),
   ticketPrice: z.number().positive('Ticket price must be greater than 0'),
-  totalTickets: z
-    .number()
-    .positive('Total tickets must be greater than 0')
-    .int(),
-  raffleDate: z
-    .string()
-    .optional(),
+  totalTickets: z.number().positive('Total tickets must be greater than 0').int(),
+  raffleDate: z.string().optional(),
   autoStart: z.boolean().optional(),
 });
 

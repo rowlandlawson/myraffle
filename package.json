@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "prepare": "husky install",
-    "lint": "biome check .",
-    "format": "biome format --write .",
+    "lint": "bunx biome check .",
+    "lint:fix": "bunx biome check --fix --unsafe .",
+    "format": "bunx biome format --write .",
     "ci:check": "bun --cwd raffle-backend prisma generate && bun --cwd raffle-app build"
   },
   "devDependencies": {

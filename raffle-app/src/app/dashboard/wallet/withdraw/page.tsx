@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Check, AlertCircle } from 'lucide-react';
-import { useWalletBalance } from '@/lib/hooks/useWallet';
 import { api } from '@/lib/api';
+import { useWalletBalance } from '@/lib/hooks/useWallet';
+import { AlertCircle, Check } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 interface Bank {
   name: string;
@@ -66,7 +66,7 @@ export default function WithdrawPage() {
       return;
     }
 
-    const numAmount = parseFloat(amount);
+    const numAmount = Number.parseFloat(amount);
 
     if (numAmount < 500) {
       setError('Minimum withdrawal is ₦500');
@@ -74,9 +74,7 @@ export default function WithdrawPage() {
     }
 
     if (numAmount > walletBalance) {
-      setError(
-        `You only have ₦${walletBalance.toLocaleString()} available for withdrawal`,
-      );
+      setError(`You only have ₦${walletBalance.toLocaleString()} available for withdrawal`);
       return;
     }
 
@@ -109,14 +107,14 @@ export default function WithdrawPage() {
     }
   };
 
-  const chargePercentage = Math.round(parseFloat(amount) * 0.01) || 0;
-  const amountAfterCharge = (parseFloat(amount) || 0) - chargePercentage;
+  const chargePercentage = Math.round(Number.parseFloat(amount) * 0.01) || 0;
+  const amountAfterCharge = (Number.parseFloat(amount) || 0) - chargePercentage;
 
   if (balanceLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
-          <span className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin"></span>
+          <span className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-600">Loading...</p>
         </div>
       </div>
@@ -127,12 +125,8 @@ export default function WithdrawPage() {
     <div className="max-w-4xl mx-auto space-y-8 pb-20 md:pb-0">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Withdraw Your Funds
-        </h1>
-        <p className="text-gray-600">
-          Transfer money from your wallet to your bank account
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Withdraw Your Funds</h1>
+        <p className="text-gray-600">Transfer money from your wallet to your bank account</p>
       </div>
 
       <div className="grid md:grid-cols-2 gap-8">
@@ -152,9 +146,7 @@ export default function WithdrawPage() {
 
           {/* Withdrawal Form */}
           <div className="bg-white rounded-xl shadow p-6">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">
-              Withdrawal Details
-            </h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Withdrawal Details</h2>
 
             <div className="space-y-4">
               {/* Amount */}
@@ -176,8 +168,7 @@ export default function WithdrawPage() {
                   className="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-600 text-lg font-semibold"
                 />
                 <p className="text-xs text-gray-600 mt-1">
-                  Minimum: ₦500 | Maximum: ₦
-                  {walletBalance.toLocaleString()}
+                  Minimum: ₦500 | Maximum: ₦{walletBalance.toLocaleString()}
                 </p>
               </div>
 
@@ -194,12 +185,13 @@ export default function WithdrawPage() {
                           key={amt}
                           type="button"
                           onClick={() => setAmount(amt.toString())}
-                          className={`py-2 rounded-lg font-bold transition ${amount === amt.toString()
-                            ? 'bg-red-600 text-white'
-                            : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
-                            }`}
+                          className={`py-2 rounded-lg font-bold transition ${
+                            amount === amt.toString()
+                              ? 'bg-red-600 text-white'
+                              : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                          }`}
                         >
-                          ₦{(amt / 1000).toFixed(0)}k
+                          ₦{amt.toLocaleString('en-NG')}
                         </button>
                       ),
                   )}
@@ -235,9 +227,7 @@ export default function WithdrawPage() {
                     type="text"
                     value={accountNumber}
                     onChange={(e) =>
-                      setAccountNumber(
-                        e.target.value.replace(/\D/g, '').slice(0, 10),
-                      )
+                      setAccountNumber(e.target.value.replace(/\D/g, '').slice(0, 10))
                     }
                     placeholder="Enter 10-digit User Number"
                     className="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
@@ -261,9 +251,7 @@ export default function WithdrawPage() {
                   <div className="w-full px-4 py-3 border-2 border-green-300 rounded-lg bg-green-50">
                     <div className="flex items-center gap-2">
                       <Check size={20} className="text-green-600" />
-                      <span className="font-semibold text-gray-900">
-                        {accountName}
-                      </span>
+                      <span className="font-semibold text-gray-900">{accountName}</span>
                     </div>
                   </div>
                 </div>
@@ -271,7 +259,7 @@ export default function WithdrawPage() {
 
               {showValidation && (
                 <div className="flex items-center gap-2 text-yellow-700 text-sm">
-                  <span className="w-4 h-4 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin"></span>
+                  <span className="w-4 h-4 border-2 border-yellow-600 border-t-transparent rounded-full animate-spin" />
                   Verifying account...
                 </div>
               )}
@@ -291,7 +279,7 @@ export default function WithdrawPage() {
               >
                 {isProcessing ? (
                   <span className="flex items-center justify-center gap-2">
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Processing...
                   </span>
                 ) : (
@@ -306,16 +294,12 @@ export default function WithdrawPage() {
         <div className="space-y-6">
           {/* Summary Card */}
           <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-6 border border-gray-200">
-            <h2 className="text-lg font-bold text-gray-900 mb-4">
-              Withdrawal Summary
-            </h2>
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Withdrawal Summary</h2>
 
             <div className="space-y-3 mb-6 pb-6 border-b border-gray-300">
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Withdrawal Amount:</span>
-                <span className="font-bold text-gray-900">
-                  ₦{(amount || 0).toLocaleString()}
-                </span>
+                <span className="font-bold text-gray-900">₦{(amount || 0).toLocaleString()}</span>
               </div>
               <div className="flex justify-between items-center">
                 <span className="text-gray-600">Processing Fee (1%):</span>
@@ -324,9 +308,7 @@ export default function WithdrawPage() {
                 </span>
               </div>
               <div className="flex justify-between items-center pt-3 border-t border-gray-300">
-                <span className="font-semibold text-gray-900">
-                  You&apos;ll Receive:
-                </span>
+                <span className="font-semibold text-gray-900">You&apos;ll Receive:</span>
                 <span className="font-bold text-2xl text-green-600">
                   ₦{amountAfterCharge.toLocaleString()}
                 </span>
@@ -335,8 +317,7 @@ export default function WithdrawPage() {
 
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
               <p>
-                Processing takes 24-48 hours. You&apos;ll receive an SMS
-                notification when complete.
+                Processing takes 24-48 hours. You&apos;ll receive an SMS notification when complete.
               </p>
             </div>
           </div>
@@ -351,12 +332,9 @@ export default function WithdrawPage() {
               <li className="flex items-start gap-3">
                 <span className="text-lg">📋</span>
                 <div>
-                  <p className="font-semibold text-gray-900">
-                    Correct Account Details
-                  </p>
+                  <p className="font-semibold text-gray-900">Correct Account Details</p>
                   <p className="text-gray-600">
-                    Ensure your account details are correct to avoid failed
-                    transfers
+                    Ensure your account details are correct to avoid failed transfers
                   </p>
                 </div>
               </li>
@@ -372,23 +350,15 @@ export default function WithdrawPage() {
               <li className="flex items-start gap-3">
                 <span className="text-lg">💰</span>
                 <div>
-                  <p className="font-semibold text-gray-900">
-                    Minimum Withdrawal
-                  </p>
-                  <p className="text-gray-600">
-                    Minimum withdrawal amount is ₦500
-                  </p>
+                  <p className="font-semibold text-gray-900">Minimum Withdrawal</p>
+                  <p className="text-gray-600">Minimum withdrawal amount is ₦500</p>
                 </div>
               </li>
               <li className="flex items-start gap-3">
                 <span className="text-lg">🔒</span>
                 <div>
-                  <p className="font-semibold text-gray-900">
-                    Secure Transfers
-                  </p>
-                  <p className="text-gray-600">
-                    All withdrawals are encrypted and secure
-                  </p>
+                  <p className="font-semibold text-gray-900">Secure Transfers</p>
+                  <p className="text-gray-600">All withdrawals are encrypted and secure</p>
                 </div>
               </li>
             </ul>
@@ -399,8 +369,7 @@ export default function WithdrawPage() {
       {/* Success Message */}
       {showSuccess && (
         <div className="fixed top-4 right-4 bg-green-100 border-2 border-green-600 text-green-700 px-6 py-4 rounded-lg font-semibold flex items-center gap-2 shadow-lg z-50">
-          <Check size={24} /> Withdrawal request submitted! Pending admin
-          approval.
+          <Check size={24} /> Withdrawal request submitted! Pending admin approval.
         </div>
       )}
     </div>

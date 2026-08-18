@@ -13,7 +13,9 @@ async function main() {
 
   console.log('Found tickets count:', tickets.length);
   for (const t of tickets) {
-    console.log(`Ticket ID: ${t.id}, Number: ${t.ticketNumber}, User: ${t.user?.email}, RaffleId: ${t.raffleId}`);
+    console.log(
+      `Ticket ID: ${t.id}, Number: ${t.ticketNumber}, User: ${t.user?.email}, RaffleId: ${t.raffleId}`,
+    );
   }
 
   // Delete all existing test tickets to start clean

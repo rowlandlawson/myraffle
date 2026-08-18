@@ -1,13 +1,13 @@
 import { Router } from 'express';
-import {
-    initializePayment,
-    verifyPayment,
-    handleWebhook,
-    getPaymentHistory,
-} from '../controllers/paymentController';
 import { handleMonnifyWebhook } from '../controllers/monnifyController';
+import {
+  getPaymentHistory,
+  handleWebhook,
+  initializePayment,
+  verifyPayment,
+} from '../controllers/paymentController';
 import { requireAuth } from '../middleware/auth';
-import { validate, depositSchema, verifyPaymentSchema } from '../middleware/validation';
+import { depositSchema, validate, verifyPaymentSchema } from '../middleware/validation';
 
 const router = Router();
 

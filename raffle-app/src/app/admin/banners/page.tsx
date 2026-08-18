@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
+import { Edit2, ExternalLink, Eye, EyeOff, Image as ImageIcon, Plus, Trash2 } from 'lucide-react';
+import type React from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { toast } from 'react-hot-toast';
-import { Image as ImageIcon, Plus, Trash2, Edit2, Eye, EyeOff, ExternalLink } from 'lucide-react';
 
 interface Banner {
   id: string;
@@ -31,12 +32,12 @@ export default function AdminBannersPage() {
   const [imageUrlInput, setImageUrlInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const fetchBanners = async () => {
+  const fetchBanners = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await api.get('/api/admin/banners');
-      if (res.success) {
-        setBanners((res as any).data || []);
+      const res = await api.get<Banner[]>('/api/admin/banners');
+      if (res.success && res.data) {
+        setBanners(res.data);
       }
     } catch (err) {
       console.error('Fetch banners error:', err);
@@ -44,11 +45,11 @@ export default function AdminBannersPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchBanners();
-  }, []);
+  }, [fetchBanners]);
 
   const openModal = (banner?: Banner) => {
     if (banner) {
@@ -98,7 +99,7 @@ export default function AdminBannersPage() {
         fd.append('imageUrl', imageUrlInput);
       }
 
-      let res;
+      let res: { success: boolean; message?: string };
       if (editingBanner) {
         res = await api.put(`/api/admin/banners/${editingBanner.id}`, fd);
       } else {
@@ -112,8 +113,8 @@ export default function AdminBannersPage() {
       } else {
         toast.error(res.message || 'Action failed.');
       }
-    } catch (err: any) {
-      toast.error(err.message || 'An error occurred.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'An error occurred.');
     } finally {
       setIsSubmitting(false);
     }
@@ -135,7 +136,7 @@ export default function AdminBannersPage() {
   const toggleStatus = async (banner: Banner) => {
     try {
       const fd = new FormData();
-      fd.append('isActive', (!banner.isActive) ? 'true' : 'false');
+      fd.append('isActive', !banner.isActive ? 'true' : 'false');
       const res = await api.put(`/api/admin/banners/${banner.id}`, fd);
       if (res.success) {
         toast.success(`Banner ${!banner.isActive ? 'activated' : 'deactivated'}.`);
@@ -155,7 +156,9 @@ export default function AdminBannersPage() {
             <ImageIcon className="text-red-500" size={24} />
             Homepage Banners
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Upload promo banners with custom button links and button titles</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Upload promo banners with custom button links and button titles
+          </p>
         </div>
 
         <button
@@ -184,7 +187,9 @@ export default function AdminBannersPage() {
         <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 shadow-sm">
           <ImageIcon className="mx-auto text-gray-300 mb-3" size={48} />
           <h3 className="text-lg font-semibold text-gray-700">No Banners Uploaded</h3>
-          <p className="text-sm text-gray-500 mt-1">Upload banners to display on the homepage slider</p>
+          <p className="text-sm text-gray-500 mt-1">
+            Upload banners to display on the homepage slider
+          </p>
           <button
             onClick={() => openModal()}
             className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-red-600 text-white text-xs font-bold rounded-xl"
@@ -194,13 +199,16 @@ export default function AdminBannersPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {banners.map((banner: any) => {
+          {banners.map((banner: Banner) => {
             const imageUrl = banner.imageUrl?.startsWith('/uploads')
               ? `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}${banner.imageUrl}`
               : banner.imageUrl;
 
             return (
-              <div key={banner.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between">
+              <div
+                key={banner.id}
+                className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden flex flex-col justify-between"
+              >
                 <div>
                   <div className="relative h-48 bg-gray-100 overflow-hidden">
                     <img src={imageUrl} alt="Banner" className="w-full h-full object-cover" />
@@ -215,7 +223,10 @@ export default function AdminBannersPage() {
 
                   <div className="p-4 space-y-1">
                     <p className="text-xs text-gray-500">
-                      Button Label: <span className="font-semibold text-gray-800">{banner.buttonText || 'Get Started'}</span>
+                      Button Label:{' '}
+                      <span className="font-semibold text-gray-800">
+                        {banner.buttonText || 'Get Started'}
+                      </span>
                     </p>
                     <p className="text-xs text-blue-600 flex items-center gap-1 font-medium truncate">
                       <ExternalLink size={12} /> {banner.linkUrl || '/login'}
@@ -228,7 +239,9 @@ export default function AdminBannersPage() {
                   <button
                     onClick={() => toggleStatus(banner)}
                     className={`flex items-center gap-1 text-xs font-semibold px-2.5 py-1.5 rounded-lg transition ${
-                      banner.isActive ? 'text-amber-600 hover:bg-amber-50' : 'text-green-600 hover:bg-green-50'
+                      banner.isActive
+                        ? 'text-amber-600 hover:bg-amber-50'
+                        : 'text-green-600 hover:bg-green-50'
                     }`}
                   >
                     {banner.isActive ? <EyeOff size={14} /> : <Eye size={14} />}
@@ -271,7 +284,9 @@ export default function AdminBannersPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4 text-sm">
               <div>
-                <label className="block font-semibold text-gray-700 mb-1">Banner Image File *</label>
+                <label className="block font-semibold text-gray-700 mb-1">
+                  Banner Image File *
+                </label>
                 <input
                   type="file"
                   accept="image/*"
@@ -289,7 +304,9 @@ export default function AdminBannersPage() {
               </div>
 
               <div>
-                <label className="block font-semibold text-gray-700 mb-1">Button Name (Optional)</label>
+                <label className="block font-semibold text-gray-700 mb-1">
+                  Button Name (Optional)
+                </label>
                 <input
                   type="text"
                   value={buttonText}
@@ -300,7 +317,9 @@ export default function AdminBannersPage() {
               </div>
 
               <div>
-                <label className="block font-semibold text-gray-700 mb-1">Button Target Link (Optional)</label>
+                <label className="block font-semibold text-gray-700 mb-1">
+                  Button Target Link (Optional)
+                </label>
                 <input
                   type="text"
                   value={linkUrl}
@@ -318,7 +337,10 @@ export default function AdminBannersPage() {
                   onChange={(e) => setIsActive(e.target.checked)}
                   className="w-4 h-4 text-red-600 rounded focus:ring-red-500 cursor-pointer"
                 />
-                <label htmlFor="isActiveToggle" className="font-semibold text-gray-700 cursor-pointer text-xs">
+                <label
+                  htmlFor="isActiveToggle"
+                  className="font-semibold text-gray-700 cursor-pointer text-xs"
+                >
                   Active (Display on Homepage)
                 </label>
               </div>

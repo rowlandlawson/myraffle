@@ -24,9 +24,7 @@ export default function WalletBalanceCard({
             🔒 Locked
           </span>
         </div>
-        <h1 className="text-3xl md:text-5xl font-bold">
-          ₦{balance.toLocaleString()}
-        </h1>
+        <h1 className="text-3xl md:text-5xl font-bold">₦{balance.toLocaleString()}</h1>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-8 border-t border-red-500">

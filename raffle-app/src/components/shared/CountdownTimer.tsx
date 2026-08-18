@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
 import { Clock } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 
 interface CountdownTimerProps {
   targetDate: string | Date;
@@ -9,7 +9,11 @@ interface CountdownTimerProps {
   className?: string;
 }
 
-export default function CountdownTimer({ targetDate, compact = false, className = '' }: CountdownTimerProps) {
+export default function CountdownTimer({
+  targetDate,
+  compact = false,
+  className = '',
+}: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState<{
     days: number;
     hours: number;
@@ -25,7 +29,13 @@ export default function CountdownTimer({ targetDate, compact = false, className 
       const diff = target - now;
 
       if (diff <= 0) {
-        setTimeLeft({ days: 0, hours: 0, minutes: 0, seconds: 0, isExpired: true });
+        setTimeLeft({
+          days: 0,
+          hours: 0,
+          minutes: 0,
+          seconds: 0,
+          isExpired: true,
+        });
         return;
       }
 
@@ -45,7 +55,9 @@ export default function CountdownTimer({ targetDate, compact = false, className 
 
   if (timeLeft.isExpired) {
     return (
-      <div className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 font-bold text-xs ${className}`}>
+      <div
+        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 font-bold text-xs ${className}`}
+      >
         <Clock size={14} className="animate-spin text-amber-600" />
         <span>Drawing Winner / Expired</span>
       </div>
@@ -56,11 +68,14 @@ export default function CountdownTimer({ targetDate, compact = false, className 
 
   if (compact) {
     return (
-      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-900/80 backdrop-blur-md text-white font-mono text-[11px] font-bold ${className}`}>
+      <div
+        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-900/80 backdrop-blur-md text-white font-mono text-[11px] font-bold ${className}`}
+      >
         <Clock size={12} className="text-red-400" />
         <span>
           {timeLeft.days > 0 && `${timeLeft.days}d `}
-          {format2Digits(timeLeft.hours)}:{format2Digits(timeLeft.minutes)}:{format2Digits(timeLeft.seconds)}
+          {format2Digits(timeLeft.hours)}:{format2Digits(timeLeft.minutes)}:
+          {format2Digits(timeLeft.seconds)}
         </span>
       </div>
     );

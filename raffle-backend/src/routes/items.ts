@@ -1,12 +1,12 @@
 import { Router } from 'express';
 import {
-    getAllItems,
-    getItemById,
-    createItem,
-    updateItem,
-    deleteItem,
+  createItem,
+  deleteItem,
+  getAllItems,
+  getItemById,
+  updateItem,
 } from '../controllers/itemController';
-import { requireAuth, requireAdmin } from '../middleware/auth';
+import { requireAdmin, requireAuth } from '../middleware/auth';
 import { upload } from '../middleware/upload';
 
 const router = Router();

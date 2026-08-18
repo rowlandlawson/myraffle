@@ -1,10 +1,10 @@
 'use client';
 
-import { ChevronRight } from 'lucide-react';
-import { Item } from '@/types/publicItems';
-import { resolveImageUrl } from '@/lib/imageUrl';
-import { convertNairaToPoints } from '@/lib/constants';
 import RafflePointsIcon from '@/components/ui/RafflePointsIcon';
+import { convertNairaToPoints } from '@/lib/constants';
+import { resolveImageUrl } from '@/lib/imageUrl';
+import type { Item } from '@/types/publicItems';
+import { ChevronRight } from 'lucide-react';
 
 interface ItemCardProps {
   item: Item;
@@ -13,7 +13,7 @@ interface ItemCardProps {
 
 export default function ItemCard({ item, onViewDetails }: ItemCardProps) {
   const imageUrl = resolveImageUrl(item.image);
-  const pointsPrice = convertNairaToPoints(item.price);
+  const _pointsPrice = convertNairaToPoints(item.price);
 
   return (
     <div className="bg-white rounded-xl shadow hover:shadow-lg transition overflow-hidden group">
@@ -32,12 +32,8 @@ export default function ItemCard({ item, onViewDetails }: ItemCardProps) {
 
       {/* Content */}
       <div className="p-6">
-        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">
-          {item.name}
-        </h3>
-        <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-          {item.description}
-        </p>
+        <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{item.name}</h3>
+        <p className="text-sm text-gray-600 mb-4 line-clamp-2">{item.description}</p>
 
         {/* Progress */}
         <div className="mb-4">
@@ -45,9 +41,7 @@ export default function ItemCard({ item, onViewDetails }: ItemCardProps) {
             <span className="text-sm font-semibold text-gray-600">
               {item.ticketsSold} / {item.ticketsTotal}
             </span>
-            <span className="text-sm font-semibold text-red-600">
-              {item.progress}%
-            </span>
+            <span className="text-sm font-semibold text-red-600">{item.progress}%</span>
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
             <div

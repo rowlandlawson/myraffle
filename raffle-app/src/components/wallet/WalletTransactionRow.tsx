@@ -1,9 +1,4 @@
-type TransactionType =
-  | 'deposit'
-  | 'withdrawal'
-  | 'purchase'
-  | 'reward'
-  | 'refund';
+type TransactionType = 'deposit' | 'withdrawal' | 'purchase' | 'reward' | 'refund';
 
 interface WalletTransactionRowProps {
   transaction: {
@@ -19,9 +14,7 @@ interface WalletTransactionRowProps {
   };
 }
 
-export default function WalletTransactionRow({
-  transaction,
-}: WalletTransactionRowProps) {
+export default function WalletTransactionRow({ transaction }: WalletTransactionRowProps) {
   const getTransactionIcon = (type: TransactionType): string => {
     switch (type) {
       case 'deposit':
@@ -66,30 +59,25 @@ export default function WalletTransactionRow({
         </span>
       </td>
       <td className="px-4 py-4">
-        <div className="font-semibold text-gray-900">
-          {transaction.description}
-        </div>
+        <div className="font-semibold text-gray-900">{transaction.description}</div>
       </td>
       <td className="px-4 py-4 text-gray-600 text-sm">
         <div>{transaction.date}</div>
         <div className="text-xs text-gray-500">{transaction.time}</div>
       </td>
-      <td className="px-4 py-4 text-gray-600 text-sm font-mono">
-        {transaction.reference}
-      </td>
+      <td className="px-4 py-4 text-gray-600 text-sm font-mono">{transaction.reference}</td>
       <td className="px-4 py-4 text-right">
-        <div
-          className={`font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-gray-900'}`}
-        >
+        <div className={`font-bold ${transaction.amount > 0 ? 'text-green-600' : 'text-gray-900'}`}>
           {transaction.amount > 0 ? '+' : ''}₦{Math.abs(transaction.amount).toLocaleString()}
         </div>
       </td>
       <td className="px-4 py-4 text-center">
         <span
-          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${transaction.status === 'completed'
-            ? 'bg-green-100 text-green-700'
-            : 'bg-yellow-100 text-yellow-700'
-            }`}
+          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+            transaction.status === 'completed'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-yellow-100 text-yellow-700'
+          }`}
         >
           {transaction.status === 'completed' ? '✓ Done' : '⏳ Pending'}
         </span>

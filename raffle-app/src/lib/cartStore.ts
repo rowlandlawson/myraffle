@@ -49,12 +49,10 @@ export const useCartStore = create<CartStore>()(
           // Hard cap: the lower of (tickets remaining) and (per-user policy limit)
           const maxCap = Math.min(
             newItem.maxTicketsAvailable || newItem.perUserLimit,
-            newItem.perUserLimit
+            newItem.perUserLimit,
           );
 
-          const existingIndex = state.items.findIndex(
-            (i) => i.raffleId === newItem.raffleId
-          );
+          const existingIndex = state.items.findIndex((i) => i.raffleId === newItem.raffleId);
 
           if (existingIndex > -1) {
             const updatedItems = [...state.items];
@@ -62,14 +60,10 @@ export const useCartStore = create<CartStore>()(
             const newQty = Math.min(existing.quantity + quantity, maxCap);
             updatedItems[existingIndex] = { ...existing, quantity: newQty };
             return { items: updatedItems };
-          } else {
-            return {
-              items: [
-                ...state.items,
-                { ...newItem, quantity: Math.min(quantity, maxCap) },
-              ],
-            };
           }
+          return {
+            items: [...state.items, { ...newItem, quantity: Math.min(quantity, maxCap) }],
+          };
         });
       },
 
@@ -87,10 +81,7 @@ export const useCartStore = create<CartStore>()(
         set((state) => ({
           items: state.items.map((i) => {
             if (i.raffleId === raffleId) {
-              const maxAllowed = Math.min(
-                i.maxTicketsAvailable || i.perUserLimit,
-                i.perUserLimit
-              );
+              const maxAllowed = Math.min(i.maxTicketsAvailable || i.perUserLimit, i.perUserLimit);
               return { ...i, quantity: Math.min(quantity, maxAllowed) };
             }
             return i;
@@ -103,9 +94,8 @@ export const useCartStore = create<CartStore>()(
       getCartTotal: () =>
         get().items.reduce((total, item) => total + item.ticketPrice * item.quantity, 0),
 
-      getCartCount: () =>
-        get().items.reduce((count, item) => count + item.quantity, 0),
+      getCartCount: () => get().items.reduce((count, item) => count + item.quantity, 0),
     }),
-    { name: 'raffle-ticket-cart' }
-  )
+    { name: 'raffle-ticket-cart' },
+  ),
 );

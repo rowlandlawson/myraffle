@@ -1,6 +1,6 @@
 'use client';
 
-import { SortOption } from '@/types/publicItems';
+import type { SortOption } from '@/types/publicItems';
 
 interface SortOptionsProps {
   value: SortOption;

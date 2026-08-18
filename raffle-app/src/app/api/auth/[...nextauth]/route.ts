@@ -1,4 +1,4 @@
-import NextAuth, { NextAuthOptions } from 'next-auth';
+import NextAuth, { type NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
 export const authOptions: NextAuthOptions = {
@@ -13,10 +13,7 @@ export const authOptions: NextAuthOptions = {
         // This is a mock authorization for development
         // Replace this with your actual database logic (e.g., Prisma)
 
-        if (
-          credentials?.email === 'test@example.com' &&
-          credentials?.password === 'password'
-        ) {
+        if (credentials?.email === 'test@example.com' && credentials?.password === 'password') {
           return {
             id: '1',
             name: 'Test User',
@@ -43,10 +40,7 @@ export const authOptions: NextAuthOptions = {
       }
       return token;
     },
-    async session({ session, token }) {
-      if (session.user) {
-        // session.user.id = token.id as string;
-      }
+    async session({ session, token: _token }) {
       return session;
     },
   },

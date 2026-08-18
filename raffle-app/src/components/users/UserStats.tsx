@@ -1,5 +1,5 @@
-import { Users, CheckCircle, Ban, Wallet } from 'lucide-react';
-import { StatsData } from '@/types/users';
+import type { StatsData } from '@/types/users';
+import { Ban, CheckCircle, Users, Wallet } from 'lucide-react';
 
 interface UserStatsProps {
   stats: StatsData;
@@ -54,9 +54,7 @@ export default function UserStats({ stats }: UserStatsProps) {
               <Icon size={24} className={`text-${stat.color}-600`} />
               <p className="text-gray-600 font-semibold">{stat.title}</p>
             </div>
-            <p className={`text-3xl font-bold ${stat.textColor}`}>
-              {stat.value}
-            </p>
+            <p className={`text-3xl font-bold ${stat.textColor}`}>{stat.value}</p>
           </div>
         );
       })}

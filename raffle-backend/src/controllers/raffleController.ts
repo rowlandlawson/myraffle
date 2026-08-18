@@ -1,428 +1,448 @@
-import { Request, Response } from 'express';
+import type { Request, Response } from 'express';
 import { prisma } from '../config/database';
-import { runRaffleDraw } from '../services/raffle';
 import { uploadToCloudinary } from '../services/cloudinary';
+import { runRaffleDraw } from '../services/raffle';
 
 // GET /api/raffles — Public, paginated, filterable by status
 export const getAllRaffles = async (req: Request, res: Response) => {
-    try {
-        const page = parseInt(req.query.page as string) || 1;
-        const limit = parseInt(req.query.limit as string) || 20;
-        const skip = (page - 1) * limit;
-        const status = req.query.status as string | undefined;
+  try {
+    const page = Number.parseInt(req.query.page as string) || 1;
+    const limit = Number.parseInt(req.query.limit as string) || 20;
+    const skip = (page - 1) * limit;
+    const status = req.query.status as string | undefined;
 
-        const where: any = {};
-        if (status) {
-            const upperStatus = status.toUpperCase();
-            if (upperStatus === 'ACTIVE') {
-                where.status = { in: ['ACTIVE', 'SCHEDULED'] };
-            } else {
-                where.status = upperStatus;
-            }
-        }
-
-        const [raffles, total] = await Promise.all([
-            prisma.raffle.findMany({
-                where,
-                include: {
-                    item: {
-                        select: {
-                            id: true,
-                            name: true,
-                            imageUrl: true,
-                            value: true,
-                            category: true,
-                        },
-                    },
-                    winner: {
-                        select: {
-                            id: true,
-                            name: true,
-                            userNumber: true,
-                        },
-                    },
-                    _count: {
-                        select: { tickets: true },
-                    },
-                },
-                orderBy: { createdAt: 'desc' },
-                skip,
-                take: limit,
-            }),
-            prisma.raffle.count({ where }),
-        ]);
-
-        res.status(200).json({
-            success: true,
-            data: {
-                raffles,
-                pagination: {
-                    page,
-                    limit,
-                    total,
-                    totalPages: Math.ceil(total / limit),
-                },
-            },
-        });
-    } catch (error) {
-        console.error('[Raffles] Get all raffles error:', error);
-        res.status(500).json({ success: false, message: 'Failed to get raffles.' });
+    const where: Record<string, unknown> = {};
+    if (status) {
+      const upperStatus = status.toUpperCase();
+      if (upperStatus === 'ACTIVE') {
+        where.status = { in: ['ACTIVE', 'SCHEDULED'] };
+      } else {
+        where.status = upperStatus;
+      }
     }
+
+    const [raffles, total] = await Promise.all([
+      prisma.raffle.findMany({
+        where,
+        include: {
+          item: {
+            select: {
+              id: true,
+              name: true,
+              imageUrl: true,
+              value: true,
+              category: true,
+            },
+          },
+          winner: {
+            select: {
+              id: true,
+              name: true,
+              userNumber: true,
+            },
+          },
+          _count: {
+            select: { tickets: true },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+        skip,
+        take: limit,
+      }),
+      prisma.raffle.count({ where }),
+    ]);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        raffles,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+    });
+  } catch (error) {
+    console.error('[Raffles] Get all raffles error:', error);
+    res.status(500).json({ success: false, message: 'Failed to get raffles.' });
+  }
 };
 
 // GET /api/raffles/:id — Public
 export const getRaffleById = async (req: Request, res: Response) => {
-    try {
-        const id: string = String(req.params.id);
+  try {
+    const id: string = String(req.params.id);
 
-        const raffle = await prisma.raffle.findUnique({
-            where: { id },
-            include: {
-                item: {
-                    select: {
-                        id: true,
-                        name: true,
-                        description: true,
-                        imageUrl: true,
-                        value: true,
-                        category: true,
-                    },
-                },
-                winner: {
-                    select: {
-                        id: true,
-                        name: true,
-                        userNumber: true,
-                    },
-                },
-                _count: {
-                    select: { tickets: true },
-                },
-            },
-        });
+    const raffle = await prisma.raffle.findUnique({
+      where: { id },
+      include: {
+        item: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            imageUrl: true,
+            value: true,
+            category: true,
+          },
+        },
+        winner: {
+          select: {
+            id: true,
+            name: true,
+            userNumber: true,
+          },
+        },
+        _count: {
+          select: { tickets: true },
+        },
+      },
+    });
 
-        if (!raffle) {
-            res.status(404).json({ success: false, message: 'Raffle not found.' });
-            return;
-        }
-
-        res.status(200).json({ success: true, data: raffle });
-    } catch (error) {
-        console.error('[Raffles] Get raffle error:', error);
-        res.status(500).json({ success: false, message: 'Failed to get raffle.' });
+    if (!raffle) {
+      res.status(404).json({ success: false, message: 'Raffle not found.' });
+      return;
     }
+
+    res.status(200).json({ success: true, data: raffle });
+  } catch (error) {
+    console.error('[Raffles] Get raffle error:', error);
+    res.status(500).json({ success: false, message: 'Failed to get raffle.' });
+  }
 };
 
 // POST /api/raffles — Admin only
 export const createRaffle = async (req: Request, res: Response) => {
-    try {
-        const { itemId, ticketPrice, ticketsTotal, raffleDate } = req.body;
+  try {
+    const { itemId, ticketPrice, ticketsTotal, raffleDate } = req.body;
 
-        // Check item exists and is active
-        const item = await prisma.item.findUnique({ where: { id: itemId } });
-        if (!item) {
-            res.status(404).json({ success: false, message: 'Item not found.' });
-            return;
-        }
-
-        if (item.status !== 'ACTIVE') {
-            res.status(400).json({
-                success: false,
-                message: 'Item must be active to create a raffle.',
-            });
-            return;
-        }
-
-        // Check no existing active/scheduled raffle for this item
-        const existingRaffle = await prisma.raffle.findFirst({
-            where: {
-                itemId,
-                status: { in: ['SCHEDULED', 'ACTIVE'] },
-            },
-        });
-
-        if (existingRaffle) {
-            res.status(400).json({
-                success: false,
-                message: 'An active or scheduled raffle already exists for this item.',
-            });
-            return;
-        }
-
-        const raffle = await prisma.raffle.create({
-            data: {
-                itemId,
-                ticketPrice,
-                ticketsTotal,
-                raffleDate: raffleDate ? new Date(raffleDate) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-                status: 'SCHEDULED',
-            },
-            include: {
-                item: {
-                    select: {
-                        id: true,
-                        name: true,
-                        imageUrl: true,
-                        value: true,
-                    },
-                },
-            },
-        });
-
-        res.status(201).json({
-            success: true,
-            message: 'Raffle created successfully.',
-            data: raffle,
-        });
-    } catch (error) {
-        console.error('[Raffles] Create raffle error:', error);
-        res.status(500).json({ success: false, message: 'Failed to create raffle.' });
+    // Check item exists and is active
+    const item = await prisma.item.findUnique({ where: { id: itemId } });
+    if (!item) {
+      res.status(404).json({ success: false, message: 'Item not found.' });
+      return;
     }
+
+    if (item.status !== 'ACTIVE') {
+      res.status(400).json({
+        success: false,
+        message: 'Item must be active to create a raffle.',
+      });
+      return;
+    }
+
+    // Check no existing active/scheduled raffle for this item
+    const existingRaffle = await prisma.raffle.findFirst({
+      where: {
+        itemId,
+        status: { in: ['SCHEDULED', 'ACTIVE'] },
+      },
+    });
+
+    if (existingRaffle) {
+      res.status(400).json({
+        success: false,
+        message: 'An active or scheduled raffle already exists for this item.',
+      });
+      return;
+    }
+
+    const raffle = await prisma.raffle.create({
+      data: {
+        itemId,
+        ticketPrice,
+        ticketsTotal,
+        raffleDate: raffleDate
+          ? new Date(raffleDate)
+          : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+        status: 'SCHEDULED',
+      },
+      include: {
+        item: {
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true,
+            value: true,
+          },
+        },
+      },
+    });
+
+    // Broadcast new raffle push notification
+    const { sendPushToAll } = await import('../lib/push');
+    sendPushToAll({
+      title: '🎰 New Raffle Live!',
+      body: `A new raffle for ${raffle.item.name} is now live. Get your tickets now!`,
+      url: '/dashboard',
+    }).catch((err) => console.error('[Raffle] Failed to send new raffle push notification:', err));
+
+    res.status(201).json({
+      success: true,
+      message: 'Raffle created successfully.',
+      data: raffle,
+    });
+  } catch (error) {
+    console.error('[Raffles] Create raffle error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create raffle.' });
+  }
 };
 
 // PUT /api/raffles/:id — Admin only
 export const updateRaffle = async (req: Request, res: Response) => {
-    try {
-        const id: string = String(req.params.id);
-        const { ticketPrice, ticketsTotal, raffleDate, status } = req.body;
+  try {
+    const id: string = String(req.params.id);
+    const { ticketPrice, ticketsTotal, raffleDate, status } = req.body;
 
-        const existing = await prisma.raffle.findUnique({ where: { id } });
-        if (!existing) {
-            res.status(404).json({ success: false, message: 'Raffle not found.' });
-            return;
-        }
-
-        if (existing.status === 'COMPLETED') {
-            res.status(400).json({
-                success: false,
-                message: 'Cannot update a completed raffle.',
-            });
-            return;
-        }
-
-        const updateData: any = {};
-        if (ticketPrice !== undefined) updateData.ticketPrice = ticketPrice;
-        if (ticketsTotal !== undefined) updateData.ticketsTotal = ticketsTotal;
-        if (raffleDate) updateData.raffleDate = new Date(raffleDate);
-        if (status) updateData.status = status;
-
-        const raffle = await prisma.raffle.update({
-            where: { id },
-            data: updateData,
-            include: {
-                item: {
-                    select: {
-                        id: true,
-                        name: true,
-                        imageUrl: true,
-                        value: true,
-                    },
-                },
-            },
-        });
-
-        res.status(200).json({
-            success: true,
-            message: 'Raffle updated successfully.',
-            data: raffle,
-        });
-    } catch (error) {
-        console.error('[Raffles] Update raffle error:', error);
-        res.status(500).json({ success: false, message: 'Failed to update raffle.' });
+    const existing = await prisma.raffle.findUnique({ where: { id } });
+    if (!existing) {
+      res.status(404).json({ success: false, message: 'Raffle not found.' });
+      return;
     }
+
+    if (existing.status === 'COMPLETED') {
+      res.status(400).json({
+        success: false,
+        message: 'Cannot update a completed raffle.',
+      });
+      return;
+    }
+
+    const updateData: Record<string, unknown> = {};
+    if (ticketPrice !== undefined) updateData.ticketPrice = ticketPrice;
+    if (ticketsTotal !== undefined) updateData.ticketsTotal = ticketsTotal;
+    if (raffleDate) updateData.raffleDate = new Date(raffleDate);
+    if (status) updateData.status = status;
+
+    const raffle = await prisma.raffle.update({
+      where: { id },
+      data: updateData,
+      include: {
+        item: {
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true,
+            value: true,
+          },
+        },
+      },
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Raffle updated successfully.',
+      data: raffle,
+    });
+  } catch (error) {
+    console.error('[Raffles] Update raffle error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update raffle.' });
+  }
 };
 
 // POST /api/raffles/:id/start — Admin only, trigger raffle draw
 export const startRaffleDraw = async (req: Request, res: Response) => {
-    try {
-        const id: string = String(req.params.id);
+  try {
+    const id: string = String(req.params.id);
 
-        const result = await runRaffleDraw(id);
+    const result = await runRaffleDraw(id);
 
-        res.status(200).json({
-            success: true,
-            message: `Raffle draw complete! Winner: ${result.winnerName} (${result.winnerUserNumber})`,
-            data: result,
-        });
-    } catch (error: any) {
-        console.error('[Raffles] Start draw error:', error);
-        res.status(400).json({
-            success: false,
-            message: error.message || 'Failed to start raffle draw.',
-        });
-    }
+    res.status(200).json({
+      success: true,
+      message: `Raffle draw complete! Winner: ${result.winnerName} (${result.winnerUserNumber})`,
+      data: result,
+    });
+  } catch (error) {
+    console.error('[Raffles] Start draw error:', error);
+    res.status(400).json({
+      success: false,
+      message: error instanceof Error ? error.message : 'Failed to start raffle draw.',
+    });
+  }
 };
 
 // GET /api/raffles/:id/winners — Public
 export const getRaffleWinner = async (req: Request, res: Response) => {
-    try {
-        const id: string = String(req.params.id);
+  try {
+    const id: string = String(req.params.id);
 
-        const raffle = await prisma.raffle.findUnique({
-            where: { id },
-            include: {
-                item: {
-                    select: {
-                        id: true,
-                        name: true,
-                        imageUrl: true,
-                        value: true,
-                    },
-                },
-                winner: {
-                    select: {
-                        id: true,
-                        name: true,
-                        userNumber: true,
-                    },
-                },
-            },
-        });
+    const raffle = await prisma.raffle.findUnique({
+      where: { id },
+      include: {
+        item: {
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true,
+            value: true,
+          },
+        },
+        winner: {
+          select: {
+            id: true,
+            name: true,
+            userNumber: true,
+          },
+        },
+      },
+    });
 
-        if (!raffle) {
-            res.status(404).json({ success: false, message: 'Raffle not found.' });
-            return;
-        }
-
-        if (raffle.status !== 'COMPLETED' || !raffle.winner) {
-            res.status(400).json({
-                success: false,
-                message: 'Raffle has not been completed yet.',
-            });
-            return;
-        }
-
-        res.status(200).json({
-            success: true,
-            data: {
-                raffleId: raffle.id,
-                item: raffle.item,
-                winner: raffle.winner,
-            },
-        });
-    } catch (error) {
-        console.error('[Raffles] Get winner error:', error);
-        res.status(500).json({ success: false, message: 'Failed to get raffle winner.' });
+    if (!raffle) {
+      res.status(404).json({ success: false, message: 'Raffle not found.' });
+      return;
     }
+
+    if (raffle.status !== 'COMPLETED' || !raffle.winner) {
+      res.status(400).json({
+        success: false,
+        message: 'Raffle has not been completed yet.',
+      });
+      return;
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        raffleId: raffle.id,
+        item: raffle.item,
+        winner: raffle.winner,
+      },
+    });
+  } catch (error) {
+    console.error('[Raffles] Get winner error:', error);
+    res.status(500).json({ success: false, message: 'Failed to get raffle winner.' });
+  }
 };
 
 // GET /api/raffles/my-wins — Authenticated user's won raffles with delivery tracking
 export const getMyWins = async (req: Request, res: Response) => {
-    try {
-        const userId = (req as any).user?.id;
-        if (!userId) {
-            res.status(401).json({ success: false, message: 'Not authenticated.' });
-            return;
-        }
-
-        const wins = await prisma.raffle.findMany({
-            where: {
-                winnerUserId: userId,
-                status: 'COMPLETED',
-            },
-            include: {
-                item: {
-                    select: {
-                        id: true,
-                        name: true,
-                        imageUrl: true,
-                        value: true,
-                        category: true,
-                    },
-                },
-            },
-            orderBy: { updatedAt: 'desc' },
-        });
-
-        res.status(200).json({
-            success: true,
-            data: wins,
-        });
-    } catch (error) {
-        console.error('[Raffles] Get my wins error:', error);
-        res.status(500).json({ success: false, message: 'Failed to get your wins.' });
+  try {
+    const userId = req.user?.userId;
+    if (!userId) {
+      res.status(401).json({ success: false, message: 'Not authenticated.' });
+      return;
     }
+
+    const wins = await prisma.raffle.findMany({
+      where: {
+        winnerUserId: userId,
+        status: 'COMPLETED',
+      },
+      include: {
+        item: {
+          select: {
+            id: true,
+            name: true,
+            imageUrl: true,
+            value: true,
+            category: true,
+          },
+        },
+      },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    res.status(200).json({
+      success: true,
+      data: wins,
+    });
+  } catch (error) {
+    console.error('[Raffles] Get my wins error:', error);
+    res.status(500).json({ success: false, message: 'Failed to get your wins.' });
+  }
 };
 
 // POST /api/raffles/create — Admin only, combined Item & Raffle creation
 export const createRaffleWithItem = async (req: Request, res: Response) => {
-    try {
-        const { name, description, value, category, ticketPrice, totalTickets, raffleDate } = req.body;
+  try {
+    const { name, description, value, category, ticketPrice, totalTickets, raffleDate } = req.body;
 
-        if (!req.file) {
-            res.status(400).json({ success: false, message: 'Item image is required.' });
-            return;
-        }
-
-        let imageUrl: string;
-
-        // Try Cloudinary first; fall back to local /uploads if not configured
-        const hasCloudinary = process.env.CLOUDINARY_CLOUD_NAME &&
-            process.env.CLOUDINARY_API_KEY &&
-            process.env.CLOUDINARY_API_SECRET;
-
-        if (hasCloudinary) {
-            try {
-                imageUrl = await uploadToCloudinary(req.file.buffer, 'raffle-items');
-            } catch (uploadErr) {
-                console.error('[Raffles] Cloudinary upload error:', uploadErr);
-                res.status(500).json({ success: false, message: 'Image upload failed.' });
-                return;
-            }
-        } else {
-            // Local fallback — save to /uploads/items/
-            const fs = await import('fs/promises');
-            const path = await import('path');
-            const crypto = await import('crypto');
-
-            const uploadsDir = path.join(process.cwd(), 'uploads', 'items');
-            await fs.mkdir(uploadsDir, { recursive: true });
-
-            const ext = req.file.originalname.split('.').pop() || 'jpg';
-            const filename = `${crypto.randomUUID()}.${ext}`;
-            const filepath = path.join(uploadsDir, filename);
-
-            await fs.writeFile(filepath, req.file.buffer);
-            imageUrl = `/uploads/items/${filename}`;
-            console.log('[Raffles] Saved item image locally:', imageUrl);
-        }
-
-        const result = await prisma.$transaction(async (tx) => {
-            const item = await tx.item.create({
-                data: {
-                    name,
-                    description: description || name,
-                    imageUrl,
-                    value: parseFloat(value),
-                    category,
-                    status: 'ACTIVE',
-                },
-            });
-
-            const raffle = await tx.raffle.create({
-                data: {
-                    itemId: item.id,
-                    ticketPrice: parseFloat(ticketPrice),
-                    ticketsTotal: parseInt(totalTickets, 10),
-                    raffleDate: raffleDate ? new Date(raffleDate) : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
-                    status: 'ACTIVE',
-                },
-                include: {
-                    item: true
-                }
-            });
-
-            return raffle;
-        });
-
-        res.status(201).json({
-            success: true,
-            message: 'Raffle and Item created successfully.',
-            data: result,
-        });
-
-    } catch (error) {
-        console.error('[Raffles] Create raffle with item error:', error);
-        res.status(500).json({ success: false, message: 'Failed to create raffle.' });
+    if (!req.file) {
+      res.status(400).json({ success: false, message: 'Item image is required.' });
+      return;
     }
+
+    let imageUrl: string;
+
+    // Try Cloudinary first; fall back to local /uploads if not configured
+    const hasCloudinary =
+      process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET;
+
+    if (hasCloudinary) {
+      try {
+        imageUrl = await uploadToCloudinary(req.file.buffer, 'raffle-items');
+      } catch (uploadErr) {
+        console.error('[Raffles] Cloudinary upload error:', uploadErr);
+        res.status(500).json({ success: false, message: 'Image upload failed.' });
+        return;
+      }
+    } else {
+      // Local fallback — save to /uploads/items/
+      const fs = await import('node:fs/promises');
+      const path = await import('node:path');
+      const crypto = await import('node:crypto');
+
+      const uploadsDir = path.join(process.cwd(), 'uploads', 'items');
+      await fs.mkdir(uploadsDir, { recursive: true });
+
+      const ext = req.file.originalname.split('.').pop() || 'jpg';
+      const filename = `${crypto.randomUUID()}.${ext}`;
+      const filepath = path.join(uploadsDir, filename);
+
+      await fs.writeFile(filepath, req.file.buffer);
+      imageUrl = `/uploads/items/${filename}`;
+      console.log('[Raffles] Saved item image locally:', imageUrl);
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const item = await tx.item.create({
+        data: {
+          name,
+          description: description || name,
+          imageUrl,
+          value: Number.parseFloat(value),
+          category,
+          status: 'ACTIVE',
+        },
+      });
+
+      const raffle = await tx.raffle.create({
+        data: {
+          itemId: item.id,
+          ticketPrice: Number.parseFloat(ticketPrice),
+          ticketsTotal: Number.parseInt(totalTickets, 10),
+          raffleDate: raffleDate
+            ? new Date(raffleDate)
+            : new Date(Date.now() + 365 * 24 * 60 * 60 * 1000),
+          status: 'ACTIVE',
+        },
+        include: {
+          item: true,
+        },
+      });
+
+      return raffle;
+    });
+
+    // Broadcast new raffle push notification
+    const { sendPushToAll } = await import('../lib/push');
+    sendPushToAll({
+      title: '🎰 New Raffle Live!',
+      body: `A new raffle for ${name} is now live. Get your tickets now!`,
+      url: '/dashboard',
+    }).catch((err) => console.error('[Raffle] Failed to send new raffle push notification:', err));
+
+    res.status(201).json({
+      success: true,
+      message: 'Raffle and Item created successfully.',
+      data: result,
+    });
+  } catch (error) {
+    console.error('[Raffles] Create raffle with item error:', error);
+    res.status(500).json({ success: false, message: 'Failed to create raffle.' });
+  }
 };

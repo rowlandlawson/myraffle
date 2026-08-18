@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { Zap } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function AddFundsPage() {
   const router = useRouter();
@@ -12,11 +12,10 @@ export default function AddFundsPage() {
         <div className="w-16 h-16 bg-amber-50 text-amber-600 rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
           💰
         </div>
-        <h1 className="text-2xl font-black text-gray-900">
-          Earn Cash to Your Wallet
-        </h1>
+        <h1 className="text-2xl font-black text-gray-900">Earn Cash to Your Wallet</h1>
         <p className="text-gray-600 text-sm max-w-md mx-auto leading-relaxed">
-          Direct cash deposits are temporarily disabled. You can complete simple daily tasks in your dashboard to earn cash rewards directly credited to your wallet balance!
+          Direct cash deposits are temporarily disabled. You can complete simple daily tasks in your
+          dashboard to earn cash rewards directly credited to your wallet balance!
         </p>
 
         <div className="pt-4 flex flex-col sm:flex-row gap-3 justify-center">

@@ -1,11 +1,11 @@
-import { resolveImageUrl } from '@/lib/imageUrl';
-import { useCartStore, getPerUserLimit } from '@/lib/cartStore';
-import { useAuthStore } from '@/lib/authStore';
 import BlockProgressBar from '@/components/landing/BlockProgressBar';
 import CountdownTimer from '@/components/shared/CountdownTimer';
-import { ShoppingBag, CheckCircle2 } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { useAuthStore } from '@/lib/authStore';
+import { getPerUserLimit, useCartStore } from '@/lib/cartStore';
+import { resolveImageUrl } from '@/lib/imageUrl';
+import { CheckCircle2, ShoppingBag } from 'lucide-react';
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 
 export interface ListItem {
   id: string | number;
@@ -21,7 +21,7 @@ export interface ListItem {
 
 interface ListItemCardProps {
   item: ListItem;
-  onViewDetails?: (item: any) => void;
+  onViewDetails?: (item: ListItem) => void;
 }
 
 export default function ListItemCard({ item, onViewDetails }: ListItemCardProps) {
@@ -31,7 +31,7 @@ export default function ListItemCard({ item, onViewDetails }: ListItemCardProps)
   const { user } = useAuthStore();
   const [added, setAdded] = useState(false);
 
-  const isAdmin = (user as any)?.role === 'ADMIN';
+  const isAdmin = user?.role === 'ADMIN';
 
   const handleQuickAdd = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -89,16 +89,11 @@ export default function ListItemCard({ item, onViewDetails }: ListItemCardProps)
         </div>
 
         {/* 10-Block Progress Bar */}
-        <BlockProgressBar
-          ticketsSold={item.ticketsSold}
-          ticketsTotal={item.ticketsTotal}
-        />
+        <BlockProgressBar ticketsSold={item.ticketsSold} ticketsTotal={item.ticketsTotal} />
 
         {/* Item Title & Countdown Timer */}
         <div className="flex items-center justify-between gap-2 mb-1">
-          <h4 className="text-xs sm:text-sm font-extrabold text-gray-900 truncate">
-            {item.name}
-          </h4>
+          <h4 className="text-xs sm:text-sm font-extrabold text-gray-900 truncate">{item.name}</h4>
           {item.raffleDate && <CountdownTimer targetDate={item.raffleDate} compact />}
         </div>
 

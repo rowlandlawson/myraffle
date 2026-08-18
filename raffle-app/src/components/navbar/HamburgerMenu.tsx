@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
-import Link from 'next/link';
+import { useAuthStore } from '@/lib/authStore';
 import { X } from 'lucide-react';
 import Image from 'next/image';
-import { useAuthStore } from '@/lib/authStore';
+import Link from 'next/link';
+import { useEffect } from 'react';
 
 export default function HamburgerMenu({ onClose }: { onClose: () => void }) {
   const { isAuthenticated, logout } = useAuthStore();
@@ -18,10 +18,7 @@ export default function HamburgerMenu({ onClose }: { onClose: () => void }) {
   }, []);
 
   return (
-    <div
-      className="fixed inset-0 bg-black bg-opacity-50 z-[60]"
-      onClick={onClose}
-    >
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]" onClick={onClose}>
       <div
         className="absolute right-0 top-0 bg-white w-72 h-full shadow-2xl p-4 space-y-4 flex flex-col"
         onClick={(e) => e.stopPropagation()}

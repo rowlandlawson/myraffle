@@ -1,5 +1,5 @@
-import { InputHTMLAttributes, forwardRef } from 'react';
-import { FieldError } from 'react-hook-form';
+import { type InputHTMLAttributes, forwardRef } from 'react';
+import type { FieldError } from 'react-hook-form';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -13,11 +13,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
 
     return (
       <div className={`${fullWidth ? 'w-full' : ''}`}>
-        {label && (
-          <label className="block text-sm font-medium text-slate-300 mb-2">
-            {label}
-          </label>
-        )}
+        {label && <label className="block text-sm font-medium text-slate-300 mb-2">{label}</label>}
         <input
           ref={ref}
           className={`
@@ -28,9 +24,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
         `}
           {...props}
         />
-        {errorMessage && (
-          <p className="mt-1 text-sm text-red-400">{errorMessage}</p>
-        )}
+        {errorMessage && <p className="mt-1 text-sm text-red-400">{errorMessage}</p>}
       </div>
     );
   },

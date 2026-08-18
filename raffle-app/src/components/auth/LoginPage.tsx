@@ -11,9 +11,7 @@ export default function LoginPage() {
         {/* Header */}
         <div className="space-y-1.5">
           <h2 className="text-2xl font-black text-gray-900 tracking-tight">Welcome back</h2>
-          <p className="text-sm text-gray-500">
-            Sign in to your account to continue
-          </p>
+          <p className="text-sm text-gray-500">Sign in to your account to continue</p>
         </div>
 
         <LoginForm />
@@ -23,7 +21,7 @@ export default function LoginPage() {
             Don&apos;t have an account?{' '}
             <Link
               href="/register"
-              className="text-[#C0000C] font-bold hover:text-red-700 transition-colors"
+              className="text-[#E10600] font-bold hover:text-red-700 transition-colors"
             >
               Create one
             </Link>

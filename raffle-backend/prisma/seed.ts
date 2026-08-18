@@ -12,10 +12,7 @@ async function main() {
   // Check if admin@myraffle.com or any admin user exists
   const existingAdmin = await prisma.user.findFirst({
     where: {
-      OR: [
-        { email: adminEmail },
-        { role: Role.ADMIN },
-      ],
+      OR: [{ email: adminEmail }, { role: Role.ADMIN }],
     },
   });
 

@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
-import { Wallet, Zap } from 'lucide-react';
 import RafflePointsIcon from '@/components/ui/RafflePointsIcon';
+import { Wallet, Zap } from 'lucide-react';
+import Link from 'next/link';
 
 interface BalanceCardProps {
   isAuthenticated: boolean;
@@ -13,7 +13,7 @@ interface BalanceCardProps {
 export default function BalanceCard({
   isAuthenticated,
   walletBalance = 0,
-  rafflePoints = 0,
+  rafflePoints: _rafflePoints = 0,
 }: BalanceCardProps) {
   if (!isAuthenticated) {
     return (
@@ -24,12 +24,8 @@ export default function BalanceCard({
               <Wallet size={22} className="text-red-600" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 font-medium">
-                CURRENT BALANCE
-              </p>
-              <p className="text-lg font-bold text-gray-900">
-                Login to view
-              </p>
+              <p className="text-xs text-gray-500 font-medium">CURRENT BALANCE</p>
+              <p className="text-lg font-bold text-gray-900">Login to view</p>
             </div>
           </div>
           <Link
@@ -52,9 +48,7 @@ export default function BalanceCard({
               <Wallet size={22} className="text-red-600" />
             </div>
             <div>
-              <p className="text-xs text-gray-500 font-medium">
-                CURRENT BALANCE
-              </p>
+              <p className="text-xs text-gray-500 font-medium">CURRENT BALANCE</p>
               <p className="text-xl font-bold text-gray-900">
                 ₦{walletBalance.toLocaleString()} NGN
               </p>

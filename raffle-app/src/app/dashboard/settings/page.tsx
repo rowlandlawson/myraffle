@@ -1,29 +1,33 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { api } from '@/lib/api';
+import { useAuthStore } from '@/lib/authStore';
 import {
-  User,
+  getPushSubscriptionStatus,
+  subscribeUserToPush,
+  unsubscribeUserFromPush,
+} from '@/lib/pushClient';
+import {
   Bell,
-  Lock,
-  Trash2,
-  Save,
   Eye,
   EyeOff,
-  Shield,
+  Lock,
   Mail,
+  MapPin,
+  Save,
+  Shield,
   Smartphone,
+  Trash2,
+  User,
 } from 'lucide-react';
-import { useAuthStore } from '@/lib/authStore';
-import { api } from '@/lib/api';
-import toast from 'react-hot-toast';
 import { useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import toast from 'react-hot-toast';
 
 export default function SettingsPage() {
   const { user, isLoading, hydrate } = useAuthStore();
   const searchParams = useSearchParams();
-  const [activeTab, setActiveTab] = useState<
-    'profile' | 'notifications' | 'security'
-  >('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'notifications' | 'security'>('profile');
   const [showPassword, setShowPassword] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -40,6 +44,9 @@ export default function SettingsPage() {
     fullName: user?.name || '',
     email: user?.email || '',
     phone: user?.phone || '',
+    address: user?.address || '',
+    city: user?.city || '',
+    state: user?.state || '',
   });
 
   const [notifications, setNotifications] = useState({
@@ -57,7 +64,9 @@ export default function SettingsPage() {
   });
 
   const [is2FAEnabled, setIs2FAEnabled] = useState(user?.twoFactorEnabled || false);
-  const [twoFAStep, setTwoFAStep] = useState<'idle' | 'choose' | 'setup' | 'confirm' | 'disable'>('idle');
+  const [twoFAStep, setTwoFAStep] = useState<'idle' | 'choose' | 'setup' | 'confirm' | 'disable'>(
+    'idle',
+  );
   const [twoFAMethod, setTwoFAMethod] = useState<'EMAIL' | 'TOTP'>('EMAIL');
   const [twoFAQRCode, setTwoFAQRCode] = useState<string | null>(null);
   const [twoFASecret, setTwoFASecret] = useState<string | null>(null);
@@ -69,7 +78,11 @@ export default function SettingsPage() {
     setTwoFALoading(true);
     setTwoFAMethod(method);
     try {
-      const result = await api.post<{ method: string; qrCode?: string; secret?: string }>('/api/auth/2fa/setup', { method });
+      const result = await api.post<{
+        method: string;
+        qrCode?: string;
+        secret?: string;
+      }>('/api/auth/2fa/setup', { method });
       if (!result.success) throw new Error(result.message);
       if (method === 'TOTP' && result.data) {
         setTwoFAQRCode(result.data.qrCode || null);
@@ -77,8 +90,9 @@ export default function SettingsPage() {
       }
       setTwoFAStep('confirm');
       toast.success(result.message);
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to start 2FA setup.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to start 2FA setup.';
+      toast.error(msg);
     } finally {
       setTwoFALoading(false);
     }
@@ -91,7 +105,9 @@ export default function SettingsPage() {
     }
     setTwoFALoading(true);
     try {
-      const result = await api.post('/api/auth/2fa/confirm', { code: twoFACode });
+      const result = await api.post('/api/auth/2fa/confirm', {
+        code: twoFACode,
+      });
       if (!result.success) throw new Error(result.message);
       setIs2FAEnabled(true);
       setTwoFAStep('idle');
@@ -100,8 +116,9 @@ export default function SettingsPage() {
       setTwoFASecret(null);
       hydrate();
       toast.success('2FA enabled successfully!');
-    } catch (err: any) {
-      toast.error(err.message || 'Invalid code.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Invalid code.';
+      toast.error(msg);
     } finally {
       setTwoFALoading(false);
     }
@@ -114,15 +131,18 @@ export default function SettingsPage() {
     }
     setTwoFALoading(true);
     try {
-      const result = await api.post('/api/auth/2fa/disable', { password: disablePassword });
+      const result = await api.post('/api/auth/2fa/disable', {
+        password: disablePassword,
+      });
       if (!result.success) throw new Error(result.message);
       setIs2FAEnabled(false);
       setTwoFAStep('idle');
       setDisablePassword('');
       hydrate();
       toast.success('2FA has been disabled.');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to disable 2FA.');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to disable 2FA.';
+      toast.error(msg);
     } finally {
       setTwoFALoading(false);
     }
@@ -130,13 +150,16 @@ export default function SettingsPage() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    let successCount = 0;
+    const _successCount = 0;
 
     try {
       if (activeTab === 'profile') {
         const result = await api.put('/api/users/profile', {
           name: profile.fullName,
           phone: profile.phone || null,
+          address: profile.address || null,
+          city: profile.city || null,
+          state: profile.state || null,
         });
         if (!result.success) throw new Error(result.message);
         hydrate();
@@ -148,7 +171,7 @@ export default function SettingsPage() {
           }
 
           if (securityData.newPassword.length < 6) {
-             throw new Error('Password must be at least 6 characters');
+            throw new Error('Password must be at least 6 characters');
           }
 
           const result = await api.put('/api/users/change-password', {
@@ -157,7 +180,7 @@ export default function SettingsPage() {
           });
 
           if (!result.success) throw new Error(result.message);
-          
+
           setSecurityData({
             currentPassword: '',
             newPassword: '',
@@ -165,22 +188,20 @@ export default function SettingsPage() {
           });
           toast.success('Password changed successfully!');
         } else if (securityData.currentPassword || securityData.newPassword) {
-           throw new Error('Please fill in both current and new passwords to change it.');
+          throw new Error('Please fill in both current and new passwords to change it.');
         } else {
-           toast.success('Security settings saved!');
+          toast.success('Security settings saved!');
         }
       } else {
         toast.success('Settings saved successfully!');
       }
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to save settings');
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to save settings';
+      toast.error(msg);
     } finally {
       setIsSaving(false);
     }
   };
-
-
-
 
   const tabs = [
     { id: 'profile', label: 'Profile', icon: User },
@@ -192,7 +213,7 @@ export default function SettingsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
-          <span className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin"></span>
+          <span className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-600">Loading settings...</p>
         </div>
       </div>
@@ -204,9 +225,7 @@ export default function SettingsPage() {
       {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Settings</h1>
-        <p className="text-gray-600">
-          Manage your account preferences and settings
-        </p>
+        <p className="text-gray-600">Manage your account preferences and settings</p>
       </div>
 
       <div className="flex flex-col lg:flex-row gap-8">
@@ -240,9 +259,7 @@ export default function SettingsPage() {
             {/* Profile Tab */}
             {activeTab === 'profile' && (
               <div className="space-y-6">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Profile Information
-                </h2>
+                <h2 className="text-xl font-bold text-gray-900">Profile Information</h2>
 
                 <div className="grid gap-6">
                   <div>
@@ -252,9 +269,7 @@ export default function SettingsPage() {
                     <input
                       type="text"
                       value={profile.fullName}
-                      onChange={(e) =>
-                        setProfile({ ...profile, fullName: e.target.value })
-                      }
+                      onChange={(e) => setProfile({ ...profile, fullName: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
                     />
                   </div>
@@ -266,9 +281,7 @@ export default function SettingsPage() {
                     <input
                       type="email"
                       value={profile.email}
-                      onChange={(e) =>
-                        setProfile({ ...profile, email: e.target.value })
-                      }
+                      onChange={(e) => setProfile({ ...profile, email: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
                     />
                   </div>
@@ -280,11 +293,57 @@ export default function SettingsPage() {
                     <input
                       type="tel"
                       value={profile.phone}
-                      onChange={(e) =>
-                        setProfile({ ...profile, phone: e.target.value })
-                      }
+                      onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
                     />
+                  </div>
+
+                  {/* Delivery Address */}
+                  <div className="pt-4 border-t border-gray-100">
+                    <h3 className="text-base font-bold text-gray-800 mb-4 flex items-center gap-2">
+                      <MapPin size={16} className="text-red-600" />
+                      Delivery Address
+                    </h3>
+                    <div className="grid gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-gray-700 mb-2">
+                          Street Address
+                        </label>
+                        <input
+                          type="text"
+                          value={profile.address}
+                          onChange={(e) => setProfile({ ...profile, address: e.target.value })}
+                          placeholder="e.g. 12 Adeola Odeku Street"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
+                        />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            City
+                          </label>
+                          <input
+                            type="text"
+                            value={profile.city}
+                            onChange={(e) => setProfile({ ...profile, city: e.target.value })}
+                            placeholder="e.g. Lagos"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-semibold text-gray-700 mb-2">
+                            State
+                          </label>
+                          <input
+                            type="text"
+                            value={profile.state}
+                            onChange={(e) => setProfile({ ...profile, state: e.target.value })}
+                            placeholder="e.g. Lagos State"
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
+                          />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -293,9 +352,59 @@ export default function SettingsPage() {
             {/* Notifications Tab */}
             {activeTab === 'notifications' && (
               <div className="space-y-6">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Notification Preferences
-                </h2>
+                <h2 className="text-xl font-bold text-gray-900">Notification Preferences</h2>
+
+                {/* Web Push PWA Section */}
+                <div className="p-5 bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 rounded-xl space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2.5 bg-red-600 text-white rounded-xl">
+                        <Bell size={20} />
+                      </div>
+                      <div>
+                        <h3 className="font-bold text-gray-900">Push Notifications</h3>
+                        <p className="text-xs text-gray-600">
+                          Receive instant alerts on Desktop, Android & iOS when you win or new
+                          raffles drop.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-red-100">
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        const status = await getPushSubscriptionStatus();
+                        if (status.isSubscribed) {
+                          await unsubscribeUserFromPush();
+                          toast.success('Unsubscribed from push notifications');
+                        } else {
+                          const res = await subscribeUserToPush();
+                          if (res) toast.success('Subscribed to push notifications!');
+                        }
+                      }}
+                      className="px-4 py-2.5 bg-red-600 text-white font-bold text-xs rounded-lg hover:bg-red-700 transition"
+                    >
+                      Manage Push Permissions
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        try {
+                          await api.post('/api/push/test');
+                          toast.success('Test notification sent!');
+                        } catch (_err) {
+                          toast.error('Failed to send test notification');
+                        }
+                      }}
+                      className="px-4 py-2.5 bg-white text-gray-800 border border-gray-300 font-semibold text-xs rounded-lg hover:bg-gray-50 transition"
+                    >
+                      Send Test Notification
+                    </button>
+                  </div>
+                </div>
 
                 <div className="space-y-4">
                   {[
@@ -330,33 +439,28 @@ export default function SettingsPage() {
                       className="flex items-center justify-between p-4 bg-gray-50 rounded-lg"
                     >
                       <div>
-                        <p className="font-semibold text-gray-900">
-                          {item.label}
-                        </p>
+                        <p className="font-semibold text-gray-900">{item.label}</p>
                         <p className="text-sm text-gray-600">{item.desc}</p>
                       </div>
                       <button
                         onClick={() =>
                           setNotifications({
                             ...notifications,
-                            [item.key]:
-                              !notifications[
-                              item.key as keyof typeof notifications
-                              ],
+                            [item.key]: !notifications[item.key as keyof typeof notifications],
                           })
                         }
-                        className={`w-12 h-6 rounded-full transition ${notifications[item.key as keyof typeof notifications]
-                          ? 'bg-red-600'
-                          : 'bg-gray-300'
-                          }`}
+                        className={`w-12 h-6 rounded-full transition ${
+                          notifications[item.key as keyof typeof notifications]
+                            ? 'bg-red-600'
+                            : 'bg-gray-300'
+                        }`}
                       >
                         <div
-                          className={`w-5 h-5 bg-white rounded-full shadow transform transition ${notifications[
-                            item.key as keyof typeof notifications
-                          ]
-                            ? 'translate-x-6'
-                            : 'translate-x-0.5'
-                            }`}
+                          className={`w-5 h-5 bg-white rounded-full shadow transform transition ${
+                            notifications[item.key as keyof typeof notifications]
+                              ? 'translate-x-6'
+                              : 'translate-x-0.5'
+                          }`}
                         />
                       </button>
                     </div>
@@ -368,9 +472,7 @@ export default function SettingsPage() {
             {/* Security Tab */}
             {activeTab === 'security' && (
               <div className="space-y-6">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Security Settings
-                </h2>
+                <h2 className="text-xl font-bold text-gray-900">Security Settings</h2>
 
                 <div className="space-y-6">
                   <div>
@@ -382,7 +484,12 @@ export default function SettingsPage() {
                         type={showPassword ? 'text' : 'password'}
                         placeholder="Enter current password"
                         value={securityData.currentPassword}
-                        onChange={(e) => setSecurityData({ ...securityData, currentPassword: e.target.value })}
+                        onChange={(e) =>
+                          setSecurityData({
+                            ...securityData,
+                            currentPassword: e.target.value,
+                          })
+                        }
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
                       />
                       <button
@@ -390,11 +497,7 @@ export default function SettingsPage() {
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
                       >
-                        {showPassword ? (
-                          <EyeOff size={20} />
-                        ) : (
-                          <Eye size={20} />
-                        )}
+                        {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                       </button>
                     </div>
                   </div>
@@ -407,7 +510,12 @@ export default function SettingsPage() {
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Enter new password"
                       value={securityData.newPassword}
-                      onChange={(e) => setSecurityData({ ...securityData, newPassword: e.target.value })}
+                      onChange={(e) =>
+                        setSecurityData({
+                          ...securityData,
+                          newPassword: e.target.value,
+                        })
+                      }
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
                     />
                   </div>
@@ -420,7 +528,12 @@ export default function SettingsPage() {
                       type={showPassword ? 'text' : 'password'}
                       placeholder="Confirm new password"
                       value={securityData.confirmPassword}
-                      onChange={(e) => setSecurityData({ ...securityData, confirmPassword: e.target.value })}
+                      onChange={(e) =>
+                        setSecurityData({
+                          ...securityData,
+                          confirmPassword: e.target.value,
+                        })
+                      }
                       className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-red-600"
                     />
                   </div>
@@ -474,7 +587,9 @@ export default function SettingsPage() {
                           <Mail size={24} className="text-red-600" />
                           <div className="text-left">
                             <p className="font-semibold text-gray-900">Email OTP</p>
-                            <p className="text-xs text-gray-500">Code sent to your email on each login</p>
+                            <p className="text-xs text-gray-500">
+                              Code sent to your email on each login
+                            </p>
                           </div>
                         </button>
                         <button
@@ -485,7 +600,9 @@ export default function SettingsPage() {
                           <Smartphone size={24} className="text-red-600" />
                           <div className="text-left">
                             <p className="font-semibold text-gray-900">Authenticator App</p>
-                            <p className="text-xs text-gray-500">Google Authenticator, Authy, etc.</p>
+                            <p className="text-xs text-gray-500">
+                              Google Authenticator, Authy, etc.
+                            </p>
                           </div>
                         </button>
                       </div>
@@ -520,7 +637,8 @@ export default function SettingsPage() {
                       )}
                       {twoFAMethod === 'EMAIL' && (
                         <p className="text-sm text-gray-600">
-                          A 6-digit verification code has been sent to <strong>{user?.email}</strong>.
+                          A 6-digit verification code has been sent to{' '}
+                          <strong>{user?.email}</strong>.
                         </p>
                       )}
                       <div>
@@ -532,7 +650,9 @@ export default function SettingsPage() {
                           inputMode="numeric"
                           maxLength={6}
                           value={twoFACode}
-                          onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          onChange={(e) =>
+                            setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))
+                          }
                           placeholder="000000"
                           className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-xl font-mono tracking-widest focus:outline-none focus:border-red-600"
                         />
@@ -546,7 +666,10 @@ export default function SettingsPage() {
                           {twoFALoading ? 'Verifying...' : 'Confirm & Enable'}
                         </button>
                         <button
-                          onClick={() => { setTwoFAStep('idle'); setTwoFACode(''); }}
+                          onClick={() => {
+                            setTwoFAStep('idle');
+                            setTwoFACode('');
+                          }}
                           className="px-6 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
                         >
                           Cancel
@@ -577,7 +700,10 @@ export default function SettingsPage() {
                           {twoFALoading ? 'Disabling...' : 'Disable 2FA'}
                         </button>
                         <button
-                          onClick={() => { setTwoFAStep('idle'); setDisablePassword(''); }}
+                          onClick={() => {
+                            setTwoFAStep('idle');
+                            setDisablePassword('');
+                          }}
                           className="px-6 py-2.5 border border-gray-300 text-gray-700 font-semibold rounded-lg hover:bg-gray-50 transition"
                         >
                           Cancel
@@ -603,7 +729,7 @@ export default function SettingsPage() {
               >
                 {isSaving ? (
                   <>
-                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                    <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Saving...
                   </>
                 ) : (

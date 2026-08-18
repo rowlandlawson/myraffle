@@ -1,20 +1,20 @@
 // src/components/auth/LoginForm.tsx
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Eye, EyeOff, Shield, ArrowLeft, Mail, Smartphone } from 'lucide-react';
-import { loginSchema } from '@/lib/validation';
 import { useAuthStore } from '@/lib/authStore';
+import { loginSchema } from '@/lib/validation';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowLeft, Eye, EyeOff, Mail, Shield, Smartphone } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
+import type { z } from 'zod';
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 const inputBase =
-  'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:border-[#C0000C] focus:ring-2 focus:ring-[#C0000C]/10 transition-all';
+  'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/10 transition-all';
 
 export function LoginForm() {
   const router = useRouter();
@@ -80,8 +80,11 @@ export function LoginForm() {
               {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: data.email, password: data.password }),
-              }
+                body: JSON.stringify({
+                  email: data.email,
+                  password: data.password,
+                }),
+              },
             );
             const rawData = await rawRes.json();
             if (rawData.needsVerification && rawData.userId) {
@@ -175,9 +178,9 @@ export function LoginForm() {
         <div className="flex justify-center py-3">
           <div className="w-14 h-14 bg-red-50 border border-red-100 rounded-2xl flex items-center justify-center">
             {is2FAEmail ? (
-              <Mail size={26} className="text-[#C0000C]" />
+              <Mail size={26} className="text-[#E10600]" />
             ) : (
-              <Smartphone size={26} className="text-[#C0000C]" />
+              <Smartphone size={26} className="text-[#E10600]" />
             )}
           </div>
         </div>
@@ -197,7 +200,7 @@ export function LoginForm() {
               if (e.key === 'Enter') handleVerify2FA();
             }}
             placeholder="000000"
-            className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-center text-2xl font-mono tracking-[0.5em] text-gray-900 placeholder-gray-300 focus:outline-none focus:border-[#C0000C] focus:ring-2 focus:ring-[#C0000C]/10 transition-colors"
+            className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl text-center text-2xl font-mono tracking-[0.5em] text-gray-900 placeholder-gray-300 focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/10 transition-colors"
           />
         </div>
 
@@ -210,7 +213,7 @@ export function LoginForm() {
         <button
           onClick={handleVerify2FA}
           disabled={isLoading || otpCode.length < 6}
-          className="w-full py-3 bg-[#C0000C] hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full py-3 bg-[#E10600] hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {isLoading ? (
             <span className="flex items-center justify-center gap-2">
@@ -230,7 +233,7 @@ export function LoginForm() {
             <button
               onClick={handleResend}
               disabled={resendCooldown > 0}
-              className="text-sm text-[#C0000C] hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
+              className="text-sm text-[#E10600] hover:text-red-700 disabled:text-gray-400 disabled:cursor-not-allowed transition-colors"
             >
               {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
             </button>
@@ -245,7 +248,10 @@ export function LoginForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Email */}
       <div>
-        <label htmlFor="email" className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+        <label
+          htmlFor="email"
+          className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide"
+        >
           Email Address
         </label>
         <input
@@ -255,14 +261,15 @@ export function LoginForm() {
           placeholder="you@example.com"
           className={inputBase}
         />
-        {errors.email && (
-          <p className="mt-1.5 text-xs text-red-500">{errors.email.message}</p>
-        )}
+        {errors.email && <p className="mt-1.5 text-xs text-red-500">{errors.email.message}</p>}
       </div>
 
       {/* Password */}
       <div>
-        <label htmlFor="password" className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide">
+        <label
+          htmlFor="password"
+          className="block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide"
+        >
           Password
         </label>
         <div className="relative">
@@ -298,7 +305,7 @@ export function LoginForm() {
         <input
           type="checkbox"
           id="remember"
-          className="w-4 h-4 border-gray-300 rounded accent-[#C0000C] cursor-pointer"
+          className="w-4 h-4 border-gray-300 rounded accent-[#E10600] cursor-pointer"
         />
         <label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer select-none">
           Keep me signed in
@@ -309,7 +316,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isLoading}
-        className="w-full py-3 bg-[#C0000C] hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-1"
+        className="w-full py-3 bg-[#E10600] hover:bg-red-700 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed mt-1"
       >
         {isLoading ? (
           <span className="flex items-center justify-center gap-2">

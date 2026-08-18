@@ -1,27 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
-import {
-  ShoppingBag,
-  HelpCircle,
-  FileText,
-  ArrowLeft,
-  Wallet,
-  LogOut,
-  Menu,
-  X,
-  LayoutDashboard,
-} from 'lucide-react';
+import HowItWorksModal from '@/components/landing/HowItWorksModal';
+import TermsModal from '@/components/terms/TermsModal';
 import { useAuthStore } from '@/lib/authStore';
 import { useCartStore } from '@/lib/cartStore';
-import TermsModal from '@/components/terms/TermsModal';
-import HowItWorksModal from '@/components/landing/HowItWorksModal';
+import {
+  ArrowLeft,
+  FileText,
+  HelpCircle,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  ShoppingBag,
+  Wallet,
+  X,
+} from 'lucide-react';
+import Image from 'next/image';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
-// Pages where the header should be hidden entirely
-const HIDDEN_PATHS = ['/login', '/register', '/forgot-password'];
+// Pages where the header should be hidden entirely (auth pages & admin dashboard layout)
+const HIDDEN_PATHS = ['/login', '/register', '/forgot-password', '/admin'];
 // Pages where only the logo is shown (auth sub-pages)
 const AUTH_PATHS = ['/login', '/register'];
 
@@ -46,7 +46,7 @@ export default function AppHeader() {
   useEffect(() => setMounted(true), []);
 
   const cartCount = mounted ? getCartCount() : 0;
-  const isAuthPage = AUTH_PATHS.some((p) => pathname?.startsWith(p));
+  const _isAuthPage = AUTH_PATHS.some((p) => pathname?.startsWith(p));
   const isHidden = HIDDEN_PATHS.some((p) => pathname?.startsWith(p));
   const isAdminPage = pathname?.startsWith('/admin');
   const isDashboardPage = pathname?.startsWith('/dashboard');
@@ -55,7 +55,7 @@ export default function AppHeader() {
   // Don't render on auth pages at all
   if (isHidden) return null;
 
-  const isAdmin = isAuthenticated && (user as any)?.role === 'ADMIN';
+  const isAdmin = isAuthenticated && user?.role === 'ADMIN';
 
   // Which nav links to show on desktop (only show landing nav links when unauthenticated)
   const desktopNavLinks = isAuthenticated ? [] : LANDING_NAV_LINKS;
@@ -65,16 +65,20 @@ export default function AppHeader() {
     router.push('/');
   };
 
-  // ─── LOGO ─────────────────────────────────────────────────────────
   const Logo = (
-    <Link href={isAuthenticated ? '/dashboard' : '/'} className="flex items-center">
-      <Image
+    <Link
+      href={isAdmin ? '/admin' : isAuthenticated ? '/dashboard' : '/'}
+      className="flex items-center"
+    >
+      <img
+        src="/images/icon-192.png"
+        alt="myRaffle"
+        className="xs:hidden h-8 w-8 object-contain rounded-lg shadow-xs"
+      />
+      <img
         src="/images/logo.png"
         alt="myRaffle"
-        width={140}
-        height={44}
-        className="h-10 w-auto object-contain"
-        priority
+        className="hidden xs:block h-10 md:h-14 lg:h-16 w-auto object-contain transition-all"
       />
     </Link>
   );
@@ -104,12 +108,12 @@ export default function AppHeader() {
             {!isAdmin && (
               <button
                 onClick={openCart}
-                className="relative w-8 h-8 bg-red-50 border border-red-100 text-[#C0000C] rounded-full flex items-center justify-center hover:bg-red-100 transition-colors"
+                className="relative w-8 h-8 bg-red-50 border border-red-100 text-[#E10600] rounded-full flex items-center justify-center hover:bg-red-100 transition-colors"
                 aria-label="Cart"
               >
                 <ShoppingBag size={16} />
                 {cartCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#C0000C] text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#E10600] text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
                     {cartCount > 9 ? '9+' : cartCount}
                   </span>
                 )}
@@ -122,8 +126,7 @@ export default function AppHeader() {
                 href="/dashboard/earnings"
                 className="flex items-center gap-1 px-2 py-1 bg-emerald-50 border border-emerald-100 text-emerald-700 rounded-full text-[11px] font-bold hover:bg-emerald-100 transition-colors"
               >
-                <Wallet size={11} />
-                ₦{(user?.walletBalance ?? 0).toLocaleString()}
+                <Wallet size={11} />₦{(user?.walletBalance ?? 0).toLocaleString()}
               </Link>
             )}
 
@@ -159,14 +162,16 @@ export default function AppHeader() {
             {desktopNavLinks.length > 0 && (
               <nav className="flex items-center gap-1">
                 {desktopNavLinks.map((link) => {
-                  const isActive = pathname === link.href || (link.href !== '/' && pathname?.startsWith(link.href));
+                  const isActive =
+                    pathname === link.href ||
+                    (link.href !== '/' && pathname?.startsWith(link.href));
                   return (
                     <a
                       key={link.href}
                       href={link.href}
                       className={`px-3 py-1.5 text-sm font-medium rounded-lg transition-colors ${
                         isActive
-                          ? 'text-[#C0000C] bg-red-50'
+                          ? 'text-[#E10600] bg-red-50'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
                       }`}
                     >
@@ -186,11 +191,11 @@ export default function AppHeader() {
                 {!isAdmin && (
                   <button
                     onClick={openCart}
-                    className="relative w-9 h-9 bg-red-50 border border-red-100 text-[#C0000C] rounded-xl flex items-center justify-center hover:bg-red-100 transition-colors"
+                    className="relative w-9 h-9 bg-red-50 border border-red-100 text-[#E10600] rounded-xl flex items-center justify-center hover:bg-red-100 transition-colors"
                   >
                     <ShoppingBag size={17} />
                     {cartCount > 0 && (
-                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#C0000C] text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
+                      <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#E10600] text-white text-[9px] font-black rounded-full flex items-center justify-center border border-white">
                         {cartCount > 9 ? '9+' : cartCount}
                       </span>
                     )}
@@ -203,8 +208,7 @@ export default function AppHeader() {
                     href="/dashboard/earnings"
                     className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 font-bold rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors text-sm"
                   >
-                    <Wallet size={14} />
-                    ₦{(user?.walletBalance ?? 0).toLocaleString()}
+                    <Wallet size={14} />₦{(user?.walletBalance ?? 0).toLocaleString()}
                   </Link>
                 )}
 
@@ -225,13 +229,17 @@ export default function AppHeader() {
                     onClick={() => setDesktopMenuOpen(!desktopMenuOpen)}
                     className="flex items-center gap-2 px-3 py-1.5 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
                   >
-                    <div className="w-6 h-6 bg-[#C0000C] rounded-full flex items-center justify-center text-white text-xs font-black">
+                    <div className="w-6 h-6 bg-[#E10600] rounded-full flex items-center justify-center text-white text-xs font-black">
                       {user?.name?.charAt(0)?.toUpperCase() || 'U'}
                     </div>
                     <span className="text-sm font-semibold text-gray-800 max-w-[100px] truncate">
                       {user?.name?.split(' ')[0] || user?.userNumber || 'Account'}
                     </span>
-                    {desktopMenuOpen ? <X size={14} className="text-gray-500" /> : <Menu size={14} className="text-gray-500" />}
+                    {desktopMenuOpen ? (
+                      <X size={14} className="text-gray-500" />
+                    ) : (
+                      <Menu size={14} className="text-gray-500" />
+                    )}
                   </button>
 
                   {/* Dropdown */}
@@ -245,31 +253,62 @@ export default function AppHeader() {
                         <p className="text-[11px] text-gray-400 font-mono">{user?.userNumber}</p>
                       </div>
                       <div className="py-1">
-                        <Link
-                          href="/dashboard"
-                          onClick={() => setDesktopMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          Dashboard
-                        </Link>
-                        <Link
-                          href="/dashboard/tickets"
-                          onClick={() => setDesktopMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          My Tickets
-                        </Link>
-                        <Link
-                          href="/dashboard/settings"
-                          onClick={() => setDesktopMenuOpen(false)}
-                          className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                        >
-                          Settings
-                        </Link>
+                        {isAdmin ? (
+                          <>
+                            <Link
+                              href="/admin"
+                              onClick={() => setDesktopMenuOpen(false)}
+                              className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              Admin Dashboard
+                            </Link>
+                            <Link
+                              href="/admin/items"
+                              onClick={() => setDesktopMenuOpen(false)}
+                              className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              Raffle Items
+                            </Link>
+                            <Link
+                              href="/admin/users"
+                              onClick={() => setDesktopMenuOpen(false)}
+                              className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              Manage Users
+                            </Link>
+                          </>
+                        ) : (
+                          <>
+                            <Link
+                              href="/dashboard"
+                              onClick={() => setDesktopMenuOpen(false)}
+                              className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              Dashboard
+                            </Link>
+                            <Link
+                              href="/dashboard/tickets"
+                              onClick={() => setDesktopMenuOpen(false)}
+                              className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              My Tickets
+                            </Link>
+                            <Link
+                              href="/dashboard/settings"
+                              onClick={() => setDesktopMenuOpen(false)}
+                              className="flex items-center gap-2 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                            >
+                              Settings
+                            </Link>
+                          </>
+                        )}
                       </div>
                       <div className="border-t border-gray-50 py-1">
                         <button
-                          onClick={() => { handleLogout(); setDesktopMenuOpen(false); }}
+                          onClick={() => {
+                            handleLogout();
+                            setDesktopMenuOpen(false);
+                          }}
                           className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 transition-colors"
                         >
                           <LogOut size={14} />
@@ -293,7 +332,7 @@ export default function AppHeader() {
                     </Link>
                     <Link
                       href="/register"
-                      className="px-4 py-2 text-sm font-bold bg-[#C0000C] text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm"
+                      className="px-4 py-2 text-sm font-bold bg-[#E10600] text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm"
                     >
                       Get Started
                     </Link>

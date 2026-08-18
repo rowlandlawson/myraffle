@@ -1,4 +1,4 @@
-import { Item } from '@/types/items';
+import type { Item } from '@/types/items';
 
 interface ItemsStatsProps {
   items: Item[];
@@ -9,10 +9,7 @@ export default function ItemsStats({ items }: ItemsStatsProps) {
   const activeItems = items.filter((i) => i.status === 'active').length;
   const completedItems = items.filter((i) => i.status === 'completed').length;
 
-  const totalRevenue = items.reduce(
-    (sum, item) => sum + item.ticketPrice * item.ticketsSold,
-    0,
-  );
+  const totalRevenue = items.reduce((sum, item) => sum + item.ticketPrice * item.ticketsSold, 0);
 
   const stats = [
     {

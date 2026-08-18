@@ -19,9 +19,7 @@ export default function WinnerCard({ winner }: WinnerCardProps) {
           <div className="text-sm text-gray-600">Won {winner.itemName}</div>
         </div>
         <div className="text-right">
-          <div className="text-sm font-semibold text-gray-900">
-            {winner.date}
-          </div>
+          <div className="text-sm font-semibold text-gray-900">{winner.date}</div>
         </div>
       </div>
     </div>

@@ -1,18 +1,18 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Eye, EyeOff } from 'lucide-react';
-import { registerSchema } from '@/lib/validation';
 import { useAuthStore } from '@/lib/authStore';
+import { registerSchema } from '@/lib/validation';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Eye, EyeOff } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import type { z } from 'zod';
 
 type RegisterFormData = z.infer<typeof registerSchema>;
 
 const inputBase =
-  'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:border-[#C0000C] focus:ring-2 focus:ring-[#C0000C]/10 transition-all';
+  'w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder-gray-400 focus:bg-white focus:outline-none focus:border-[#E10600] focus:ring-2 focus:ring-[#E10600]/10 transition-all';
 const labelBase = 'block text-xs font-semibold text-gray-700 mb-1.5 uppercase tracking-wide';
 
 export function RegisterForm() {
@@ -60,7 +60,9 @@ export function RegisterForm() {
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
       {/* Full Name */}
       <div>
-        <label htmlFor="fullName" className={labelBase}>Full Name</label>
+        <label htmlFor="fullName" className={labelBase}>
+          Full Name
+        </label>
         <input
           {...register('fullName')}
           id="fullName"
@@ -75,7 +77,9 @@ export function RegisterForm() {
 
       {/* Email */}
       <div>
-        <label htmlFor="email" className={labelBase}>Email Address</label>
+        <label htmlFor="email" className={labelBase}>
+          Email Address
+        </label>
         <input
           {...register('email')}
           id="email"
@@ -83,14 +87,14 @@ export function RegisterForm() {
           placeholder="you@example.com"
           className={inputBase}
         />
-        {errors.email && (
-          <p className="mt-1.5 text-xs text-red-500">{errors.email.message}</p>
-        )}
+        {errors.email && <p className="mt-1.5 text-xs text-red-500">{errors.email.message}</p>}
       </div>
 
       {/* Phone */}
       <div>
-        <label htmlFor="whatsapp" className={labelBase}>Phone Number</label>
+        <label htmlFor="whatsapp" className={labelBase}>
+          Phone Number
+        </label>
         <input
           {...register('whatsapp')}
           id="whatsapp"
@@ -99,14 +103,14 @@ export function RegisterForm() {
           className={inputBase}
         />
         <p className="mt-1.5 text-[11px] text-gray-400">WhatsApp or SMS — used for notifications</p>
-        {errors.whatsapp && (
-          <p className="mt-1 text-xs text-red-500">{errors.whatsapp.message}</p>
-        )}
+        {errors.whatsapp && <p className="mt-1 text-xs text-red-500">{errors.whatsapp.message}</p>}
       </div>
 
       {/* Password */}
       <div>
-        <label htmlFor="password" className={labelBase}>Password</label>
+        <label htmlFor="password" className={labelBase}>
+          Password
+        </label>
         <div className="relative">
           <input
             {...register('password')}
@@ -130,7 +134,9 @@ export function RegisterForm() {
 
       {/* Confirm Password */}
       <div>
-        <label htmlFor="confirmPassword" className={labelBase}>Confirm Password</label>
+        <label htmlFor="confirmPassword" className={labelBase}>
+          Confirm Password
+        </label>
         <div className="relative">
           <input
             {...register('confirmPassword')}
@@ -159,13 +165,17 @@ export function RegisterForm() {
           id="terms"
           checked={termsAccepted}
           onChange={(e) => setTermsAccepted(e.target.checked)}
-          className="w-4 h-4 mt-0.5 border border-gray-300 rounded accent-[#C0000C] cursor-pointer shrink-0"
+          className="w-4 h-4 mt-0.5 border border-gray-300 rounded accent-[#E10600] cursor-pointer shrink-0"
         />
         <label htmlFor="terms" className="text-sm text-gray-600 cursor-pointer leading-snug">
           I agree to the{' '}
-          <a href="#" className="text-[#C0000C] font-semibold hover:underline">Terms of Service</a>
-          {' '}and{' '}
-          <a href="#" className="text-[#C0000C] font-semibold hover:underline">Privacy Policy</a>
+          <a href="#" className="text-[#E10600] font-semibold hover:underline">
+            Terms of Service
+          </a>{' '}
+          and{' '}
+          <a href="#" className="text-[#E10600] font-semibold hover:underline">
+            Privacy Policy
+          </a>
         </label>
       </div>
 
@@ -183,7 +193,7 @@ export function RegisterForm() {
         className={`w-full py-3 text-white text-sm font-bold rounded-xl transition-colors mt-1 flex items-center justify-center gap-2 ${
           !termsAccepted
             ? 'bg-gray-300 cursor-not-allowed'
-            : 'bg-[#C0000C] hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed'
+            : 'bg-[#E10600] hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed'
         }`}
       >
         {isLoading ? (

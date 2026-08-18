@@ -1,7 +1,7 @@
 'use client';
 
+import type { User } from '@/types/users';
 import { TrendingUp } from 'lucide-react';
-import { User } from '@/types/users';
 
 interface TopSpendersProps {
   users: User[];
@@ -39,9 +39,7 @@ export default function TopSpenders({
               <span className="block font-bold text-gray-900">
                 ₦{user.totalSpent.toLocaleString()}
               </span>
-              <span className="text-xs text-gray-600">
-                {user.ticketsPurchased} tickets
-              </span>
+              <span className="text-xs text-gray-600">{user.ticketsPurchased} tickets</span>
             </div>
           </div>
         ))}

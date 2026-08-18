@@ -1,16 +1,21 @@
 'use client';
 
-import { useState, useRef, useCallback } from 'react';
-import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
 import { convertNairaToPoints } from '@/lib/constants';
+import { Image as ImageIcon, Loader2, Upload, X } from 'lucide-react';
+import { useCallback, useRef, useState } from 'react';
 
 interface UploadFormProps {
   onCancel: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: FormData) => void;
 }
 
 // Compress image using Canvas API
-async function compressImage(file: File, maxWidth = 1200, maxHeight = 1200, quality = 0.8): Promise<File> {
+async function compressImage(
+  file: File,
+  maxWidth = 1200,
+  maxHeight = 1200,
+  quality = 0.8,
+): Promise<File> {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.onload = () => {
@@ -27,13 +32,19 @@ async function compressImage(file: File, maxWidth = 1200, maxHeight = 1200, qual
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d');
-      if (!ctx) { resolve(file); return; }
+      if (!ctx) {
+        resolve(file);
+        return;
+      }
 
       ctx.drawImage(img, 0, 0, width, height);
 
       canvas.toBlob(
         (blob) => {
-          if (!blob) { resolve(file); return; }
+          if (!blob) {
+            resolve(file);
+            return;
+          }
           const compressed = new File([blob], file.name.replace(/\.\w+$/, '.jpg'), {
             type: 'image/jpeg',
             lastModified: Date.now(),
@@ -66,9 +77,7 @@ export default function UploadForm({ onCancel, onSubmit }: UploadFormProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
@@ -122,7 +131,7 @@ export default function UploadForm({ onCancel, onSubmit }: UploadFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validate required fields
     if (!formData.name.trim()) {
       alert('Item name is required');
@@ -144,7 +153,7 @@ export default function UploadForm({ onCancel, onSubmit }: UploadFormProps) {
       alert('Item image is required');
       return;
     }
-    
+
     // Build FormData including all fields for creating raffle with item
     const fd = new FormData();
     fd.append('name', formData.name);
@@ -155,11 +164,11 @@ export default function UploadForm({ onCancel, onSubmit }: UploadFormProps) {
     fd.append('totalTickets', formData.totalTickets);
     if (formData.raffleDate) fd.append('raffleDate', formData.raffleDate);
     if (imageFile) fd.append('image', imageFile);
-    
+
     onSubmit(fd);
   };
 
-  const pointsValue = formData.value ? convertNairaToPoints(parseFloat(formData.value)) : 0;
+  const pointsValue = formData.value ? convertNairaToPoints(Number.parseFloat(formData.value)) : 0;
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -178,11 +187,7 @@ export default function UploadForm({ onCancel, onSubmit }: UploadFormProps) {
           <label className="block text-xs font-semibold text-gray-600 mb-2">Item Image *</label>
           {imagePreview ? (
             <div className="relative w-full h-52 rounded-xl overflow-hidden border-2 border-green-200 bg-gray-50">
-              <img
-                src={imagePreview}
-                alt="Preview"
-                className="w-full h-full object-contain"
-              />
+              <img src={imagePreview} alt="Preview" className="w-full h-full object-contain" />
               <button
                 type="button"
                 onClick={() => {
@@ -205,13 +210,17 @@ export default function UploadForm({ onCancel, onSubmit }: UploadFormProps) {
           ) : (
             <div
               onClick={() => fileInputRef.current?.click()}
-              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDragging(true);
+              }}
               onDragLeave={() => setIsDragging(false)}
               onDrop={handleDrop}
-              className={`w-full h-44 rounded-xl border-2 border-dashed cursor-pointer transition-all flex flex-col items-center justify-center gap-2 ${isDragging
+              className={`w-full h-44 rounded-xl border-2 border-dashed cursor-pointer transition-all flex flex-col items-center justify-center gap-2 ${
+                isDragging
                   ? 'border-red-400 bg-red-50'
                   : 'border-gray-300 bg-gray-50 hover:border-red-400 hover:bg-red-50/30'
-                }`}
+              }`}
             >
               <ImageIcon size={32} className={isDragging ? 'text-red-500' : 'text-gray-400'} />
               <p className="text-sm text-gray-500 font-medium">
@@ -263,7 +272,9 @@ export default function UploadForm({ onCancel, onSubmit }: UploadFormProps) {
             </select>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Item Value (₦) *</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+              Item Value (₦) *
+            </label>
             <input
               type="number"
               name="value"
@@ -280,7 +291,9 @@ export default function UploadForm({ onCancel, onSubmit }: UploadFormProps) {
             )}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Ticket Price (₦) *</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+              Ticket Price (₦) *
+            </label>
             <input
               type="number"
               name="ticketPrice"
@@ -292,12 +305,16 @@ export default function UploadForm({ onCancel, onSubmit }: UploadFormProps) {
             />
             {formData.ticketPrice && (
               <p className="text-xs text-yellow-600 mt-1 flex items-center gap-1">
-                ⭐ ≈ {convertNairaToPoints(parseFloat(formData.ticketPrice)).toLocaleString()} pts / ticket
+                ⭐ ≈{' '}
+                {convertNairaToPoints(Number.parseFloat(formData.ticketPrice)).toLocaleString()} pts
+                / ticket
               </p>
             )}
           </div>
           <div>
-            <label className="block text-xs font-semibold text-gray-600 mb-1.5">Total Tickets *</label>
+            <label className="block text-xs font-semibold text-gray-600 mb-1.5">
+              Total Tickets *
+            </label>
             <input
               type="number"
               name="totalTickets"

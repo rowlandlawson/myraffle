@@ -11,9 +11,7 @@ export default function RegisterPage() {
         {/* Header */}
         <div className="space-y-1.5">
           <h2 className="text-2xl font-black text-gray-900 tracking-tight">Create your account</h2>
-          <p className="text-sm text-gray-500">
-            Join thousands of participants winning weekly
-          </p>
+          <p className="text-sm text-gray-500">Join thousands of participants winning weekly</p>
         </div>
 
         <RegisterForm />
@@ -23,7 +21,7 @@ export default function RegisterPage() {
             Already have an account?{' '}
             <Link
               href="/login"
-              className="text-[#C0000C] font-bold hover:text-red-700 transition-colors"
+              className="text-[#E10600] font-bold hover:text-red-700 transition-colors"
             >
               Sign in
             </Link>

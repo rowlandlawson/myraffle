@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
 import { usePathname } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -9,7 +9,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
  * Global visitor tracker — fires POST /api/track-visit on every
  * client-side route change. Mount once in the root layout.
  * Skips /api paths and deduplicates within the same pathname.
- * 
+ *
  * Tracks: IP address, user agent, timestamp, page visited, referrer
  */
 export default function VisitorTracker() {

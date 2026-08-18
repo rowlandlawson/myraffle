@@ -1,26 +1,17 @@
 'use client';
 
-import React, { useState } from 'react';
-import {
-  Play,
-  Users,
-  Share2,
-  CheckCircle,
-  Zap,
-  Award,
-  Lightbulb,
-  Calendar,
-} from 'lucide-react';
-import TaskCard from '@/components/earnings/TaskCard';
-import ReferralSection from '@/components/earnings/ReferralSection';
-import WatchAdModal from '@/components/earnings/WatchAdModal';
-import toast from 'react-hot-toast';
 import EarningsStatCard from '@/components/earnings/EarningsStatCard';
+import ReferralSection from '@/components/earnings/ReferralSection';
+import TaskCard from '@/components/earnings/TaskCard';
+import WatchAdModal from '@/components/earnings/WatchAdModal';
 import WalletTransactionRow from '@/components/wallet/WalletTransactionRow';
 import { useAuthStore } from '@/lib/authStore';
-import { useTasks, useCompletedTasks, useCompleteTask } from '@/lib/hooks/useTasks';
-import { useWalletTransactions } from '@/lib/hooks/useWallet';
+import { type TaskItem, useCompleteTask, useCompletedTasks, useTasks } from '@/lib/hooks/useTasks';
 import type { StatsRange } from '@/lib/hooks/useTasks';
+import { useWalletTransactions } from '@/lib/hooks/useWallet';
+import { Award, Calendar, CheckCircle, Lightbulb, Play, Share2, Users, Zap } from 'lucide-react';
+import React, { useState } from 'react';
+import toast from 'react-hot-toast';
 
 export default function EarningsPage() {
   const { user } = useAuthStore();
@@ -33,13 +24,11 @@ export default function EarningsPage() {
   const [showWatchAd, setShowWatchAd] = useState(false);
   const [adTimer, setAdTimer] = useState(0);
   const [adTotalDuration, setAdTotalDuration] = useState(30);
-  const [completingTaskId, setCompletingTaskId] = useState<string | null>(null);
+  const [_completingTaskId, setCompletingTaskId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'tasks' | 'earnings'>('tasks');
   const [clickedTaskIds, setClickedTaskIds] = useState<Set<string>>(new Set());
 
-  const completedTaskIds = new Set(
-    (completedData?.completedTasks ?? []).map((ct) => ct.taskId),
-  );
+  const completedTaskIds = new Set((completedData?.completedTasks ?? []).map((ct) => ct.taskId));
 
   // NOTE: DAILY_LOGIN auto-complete is handled by the dashboard page, not here.
 
@@ -47,12 +36,11 @@ export default function EarningsPage() {
     totalPoints: user?.walletBalance ?? 1000,
     totalPointsEarned: completedData?.summary.totalPointsEarned ?? 0,
     tasksCompleted: completedData?.summary.totalTasksCompleted ?? 0,
-    referrals: (completedData?.completedTasks ?? []).filter(
-      (ct) => ct.task.type === 'REFERRAL',
-    ).length,
+    referrals: (completedData?.completedTasks ?? []).filter((ct) => ct.task.type === 'REFERRAL')
+      .length,
   };
 
-  const handleCompleteTask = async (task: any) => {
+  const handleCompleteTask = async (task: TaskItem) => {
     if (task.type.startsWith('WATCH_AD')) {
       const duration = task.adDuration || 30;
       // Simulate watching an ad before completing
@@ -67,7 +55,7 @@ export default function EarningsPage() {
             setShowWatchAd(false);
             // Now actually complete the task via API
             completeTaskMutation.mutate(task.id, {
-              onError: (err: any) => toast.error(err.message || 'Failed to complete task'),
+              onError: (err: Error) => toast.error(err.message || 'Failed to complete task'),
             });
             setCompletingTaskId(null);
             return 0;
@@ -79,14 +67,14 @@ export default function EarningsPage() {
       setCompletingTaskId(task.id);
       completeTaskMutation.mutate(task.id, {
         onSuccess: () => setCompletingTaskId(null),
-        onError: (err: any) => {
+        onError: (err: Error) => {
           toast.error(err.message || 'Failed to complete task');
           setCompletingTaskId(null);
         },
       });
     }
   };
-  const handleTaskAction = (task: any) => {
+  const handleTaskAction = (task: TaskItem) => {
     if (task.type.startsWith('SOCIAL_')) {
       handleCompleteTask(task);
       return;
@@ -100,9 +88,12 @@ export default function EarningsPage() {
     handleCompleteTask(task);
   };
 
-  const getButtonLabel = (task: any) => {
+  const getButtonLabel = (task: TaskItem) => {
     // Social tasks: show completed state
-    if (task.type.startsWith('SOCIAL_') && (task.recentlyCompleted || completedTaskIds.has(task.id as string))) {
+    if (
+      task.type.startsWith('SOCIAL_') &&
+      (task.recentlyCompleted || completedTaskIds.has(task.id as string))
+    ) {
       return 'Completed ✓';
     }
     // Daily login: show claimed state
@@ -163,7 +154,7 @@ export default function EarningsPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center gap-3">
-          <span className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin"></span>
+          <span className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin" />
           <p className="text-gray-600">Loading tasks...</p>
         </div>
       </div>
@@ -175,9 +166,7 @@ export default function EarningsPage() {
       {/* Header */}
       <div className="bg-gradient-to-r from-red-600 to-red-700 text-white rounded-xl mb-6 md:mb-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 md:py-8">
-          <h1 className="text-2xl md:text-3xl font-bold mb-2">
-            Earn Naira Rewards
-          </h1>
+          <h1 className="text-2xl md:text-3xl font-bold mb-2">Earn Naira Rewards</h1>
           <p className="text-red-100 text-sm md:text-base">
             Complete tasks and watch ads to earn free Naira added directly to your wallet
           </p>
@@ -206,14 +195,23 @@ export default function EarningsPage() {
             {/* Time Range Filter */}
             <div className="flex items-center gap-2 flex-wrap">
               <Calendar size={16} className="text-gray-400" />
-              {([['today', 'Today'], ['week', 'This Week'], ['month', 'This Month'], ['year', 'This Year'], ['all', 'All Time']] as const).map(([value, label]) => (
+              {(
+                [
+                  ['today', 'Today'],
+                  ['week', 'This Week'],
+                  ['month', 'This Month'],
+                  ['year', 'This Year'],
+                  ['all', 'All Time'],
+                ] as const
+              ).map(([value, label]) => (
                 <button
                   key={value}
                   onClick={() => setStatsRange(value)}
-                  className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${statsRange === value
-                    ? 'bg-red-600 text-white shadow-sm'
-                    : 'bg-white text-gray-600 border border-gray-200 hover:border-red-200 hover:text-red-600'
-                    }`}
+                  className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-all ${
+                    statsRange === value
+                      ? 'bg-red-600 text-white shadow-sm'
+                      : 'bg-white text-gray-600 border border-gray-200 hover:border-red-200 hover:text-red-600'
+                  }`}
                 >
                   {label}
                 </button>
@@ -232,21 +230,51 @@ export default function EarningsPage() {
               <EarningsStatCard
                 title="Earned"
                 value={`₦${userStats.totalPointsEarned.toLocaleString()}`}
-                subtitle={statsRange === 'all' ? 'All time' : statsRange === 'today' ? 'Today' : statsRange === 'week' ? 'This week' : statsRange === 'month' ? 'This month' : 'This year'}
+                subtitle={
+                  statsRange === 'all'
+                    ? 'All time'
+                    : statsRange === 'today'
+                      ? 'Today'
+                      : statsRange === 'week'
+                        ? 'This week'
+                        : statsRange === 'month'
+                          ? 'This month'
+                          : 'This year'
+                }
                 icon={<Award size={20} className="text-green-500" />}
                 borderColor="border-green-500"
               />
               <EarningsStatCard
                 title="Tasks Done"
                 value={userStats.tasksCompleted}
-                subtitle={statsRange === 'all' ? 'All time' : statsRange === 'today' ? 'Today' : statsRange === 'week' ? 'This week' : statsRange === 'month' ? 'This month' : 'This year'}
+                subtitle={
+                  statsRange === 'all'
+                    ? 'All time'
+                    : statsRange === 'today'
+                      ? 'Today'
+                      : statsRange === 'week'
+                        ? 'This week'
+                        : statsRange === 'month'
+                          ? 'This month'
+                          : 'This year'
+                }
                 icon={<CheckCircle size={24} className="text-blue-500" />}
                 borderColor="border-blue-500"
               />
               <EarningsStatCard
                 title="Referrals"
                 value={userStats.referrals}
-                subtitle={statsRange === 'all' ? 'All time' : statsRange === 'today' ? 'Today' : statsRange === 'week' ? 'This week' : statsRange === 'month' ? 'This month' : 'This year'}
+                subtitle={
+                  statsRange === 'all'
+                    ? 'All time'
+                    : statsRange === 'today'
+                      ? 'Today'
+                      : statsRange === 'week'
+                        ? 'This week'
+                        : statsRange === 'month'
+                          ? 'This month'
+                          : 'This year'
+                }
                 icon={<Users size={24} className="text-purple-500" />}
                 borderColor="border-purple-500"
               />
@@ -258,8 +286,8 @@ export default function EarningsPage() {
                 <Lightbulb size={20} className="text-yellow-500" /> How It Works
               </p>
               <p className="text-blue-800 text-sm">
-                Earn Naira rewards directly into your wallet by watching ads, completing tasks, and referring friends.
-                Use your wallet balance to enter any raffle draw!
+                Earn Naira rewards directly into your wallet by watching ads, completing tasks, and
+                referring friends. Use your wallet balance to enter any raffle draw!
               </p>
             </div>
 
@@ -271,19 +299,33 @@ export default function EarningsPage() {
                   <table className="w-full">
                     <thead className="bg-gray-50 border-b border-gray-200">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Type</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Description</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Date</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Ref</th>
-                        <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase">Amount</th>
-                        <th className="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">
+                          Type
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">
+                          Description
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">
+                          Date
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">
+                          Ref
+                        </th>
+                        <th className="px-4 py-3 text-right text-xs font-bold text-gray-600 uppercase">
+                          Amount
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-bold text-gray-600 uppercase">
+                          Status
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {txData.transactions.map((tx) => {
                         const date = new Date(tx.createdAt);
                         const isMinus = tx.type === 'WITHDRAWAL' || tx.type === 'TICKET_PURCHASE';
-                        const mapType = (t: string) => {
+                        const mapType = (
+                          t: string,
+                        ): 'deposit' | 'withdrawal' | 'reward' | 'purchase' => {
                           if (t === 'TICKET_PURCHASE') return 'purchase';
                           if (t === 'TASK_REWARD' || t === 'RAFFLE_WIN') return 'reward';
                           if (t === 'WITHDRAWAL') return 'withdrawal';
@@ -294,7 +336,7 @@ export default function EarningsPage() {
                             key={tx.id}
                             transaction={{
                               id: tx.id,
-                              type: mapType(tx.type) as any,
+                              type: mapType(tx.type),
                               rawType: tx.type,
                               description: tx.description || `${tx.type} transaction`,
                               amount: isMinus ? -tx.amount : tx.amount,
@@ -312,7 +354,9 @@ export default function EarningsPage() {
               ) : (
                 <div className="text-center py-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                   <p className="text-gray-700 font-bold text-sm">No transactions recorded yet</p>
-                  <p className="text-gray-500 text-xs mt-1">Your wallet activity will show up here</p>
+                  <p className="text-gray-500 text-xs mt-1">
+                    Your wallet activity will show up here
+                  </p>
                 </div>
               )}
             </div>
@@ -330,7 +374,7 @@ export default function EarningsPage() {
                     <TaskCard
                       key={task.id}
                       task={{
-                        id: task.id as any,
+                        id: task.id,
                         type: task.type.toLowerCase(),
                         title: task.title,
                         description: task.description,
@@ -339,8 +383,8 @@ export default function EarningsPage() {
                         actionUrl: task.actionUrl,
                         platform: task.platform,
                       }}
-                      isCompleted={completedTaskIds.has(task.id as string) || !!task.completedToday}
-                      isClickedUrl={clickedTaskIds.has(task.id as string)}
+                      isCompleted={completedTaskIds.has(task.id) || !!task.completedToday}
+                      isClickedUrl={clickedTaskIds.has(task.id)}
                       onComplete={() => handleTaskAction(task)}
                       buttonLabel={getButtonLabel(task)}
                       completionsToday={getCompletionsToday(task.id)}
@@ -362,7 +406,7 @@ export default function EarningsPage() {
                     <TaskCard
                       key={task.id}
                       task={{
-                        id: task.id as any,
+                        id: task.id,
                         type: task.type.toLowerCase(),
                         title: task.title,
                         description: task.description,
@@ -371,8 +415,8 @@ export default function EarningsPage() {
                         actionUrl: task.actionUrl,
                         platform: task.platform,
                       }}
-                      isCompleted={completedTaskIds.has(task.id as string) || !!task.recentlyCompleted}
-                      isClickedUrl={clickedTaskIds.has(task.id as string)}
+                      isCompleted={completedTaskIds.has(task.id) || !!task.recentlyCompleted}
+                      isClickedUrl={clickedTaskIds.has(task.id)}
                       onComplete={() => handleTaskAction(task)}
                       buttonLabel={getButtonLabel(task)}
                     />
@@ -400,7 +444,7 @@ export default function EarningsPage() {
                     <TaskCard
                       key={task.id}
                       task={{
-                        id: task.id as any,
+                        id: task.id,
                         type: task.type.toLowerCase(),
                         title: task.title,
                         description: task.description,
@@ -409,8 +453,12 @@ export default function EarningsPage() {
                         actionUrl: task.actionUrl,
                         platform: task.platform,
                       }}
-                      isCompleted={task.type === 'DAILY_LOGIN' ? !!task.completedToday : !!task.recentlyCompleted}
-                      isClickedUrl={clickedTaskIds.has(task.id as string)}
+                      isCompleted={
+                        task.type === 'DAILY_LOGIN'
+                          ? !!task.completedToday
+                          : !!task.recentlyCompleted
+                      }
+                      isClickedUrl={clickedTaskIds.has(task.id)}
                       onComplete={() => handleTaskAction(task)}
                       buttonLabel={getButtonLabel(task)}
                     />
@@ -422,7 +470,9 @@ export default function EarningsPage() {
             {/* Empty state if no tasks */}
             {tasks.length === 0 && (
               <div className="text-center py-12">
-                <p className="text-gray-600 text-lg">No tasks available right now. Check back later!</p>
+                <p className="text-gray-600 text-lg">
+                  No tasks available right now. Check back later!
+                </p>
               </div>
             )}
           </div>

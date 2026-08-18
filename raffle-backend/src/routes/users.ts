@@ -1,14 +1,14 @@
 import { Router } from 'express';
 import {
-    getProfile,
-    updateProfile,
-    getUserStatistics,
-    suspendUser,
-    activateUser,
-    changePassword,
+  activateUser,
+  changePassword,
+  getProfile,
+  getUserStatistics,
+  suspendUser,
+  updateProfile,
 } from '../controllers/userController';
-import { requireAuth, requireAdmin } from '../middleware/auth';
-import { validate, updateProfileSchema } from '../middleware/validation';
+import { requireAdmin, requireAuth } from '../middleware/auth';
+import { updateProfileSchema, validate } from '../middleware/validation';
 
 const router = Router();
 

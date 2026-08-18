@@ -1,4 +1,4 @@
-import { ButtonHTMLAttributes, ReactNode } from 'react';
+import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -25,8 +25,7 @@ export default function Button({
     primary:
       'bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white shadow-lg hover:shadow-red-600/50',
     secondary: 'bg-slate-700 hover:bg-slate-600 text-white',
-    outline:
-      'border-2 border-slate-600 hover:border-slate-500 text-white hover:bg-slate-700/50',
+    outline: 'border-2 border-slate-600 hover:border-slate-500 text-white hover:bg-slate-700/50',
     ghost: 'text-slate-400 hover:text-white hover:bg-slate-700/50',
   };
 
@@ -48,7 +47,7 @@ export default function Button({
     <button className={classes} disabled={disabled || loading} {...props}>
       {loading ? (
         <span className="flex items-center justify-center gap-2">
-          <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></span>
+          <span className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
           Loading...
         </span>
       ) : (

@@ -58,20 +58,19 @@ export default function TicketCard({ ticket }: TicketCardProps) {
     }
   };
 
-  const isUrlImage = ticket.image && (ticket.image.startsWith('/') || ticket.image.startsWith('http'));
+  const isUrlImage =
+    ticket.image && (ticket.image.startsWith('/') || ticket.image.startsWith('http'));
 
   return (
-    <div className={`p-5 rounded-2xl border-2 transition-all shadow-xs ${getCardBorder(ticket.status)}`}>
+    <div
+      className={`p-5 rounded-2xl border-2 transition-all shadow-xs ${getCardBorder(ticket.status)}`}
+    >
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         {/* Left: Info */}
         <div className="flex items-center gap-4 w-full sm:w-auto">
           {isUrlImage && (
             <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 shrink-0">
-              <img
-                src={ticket.image}
-                alt={ticket.item}
-                className="w-full h-full object-cover"
-              />
+              <img src={ticket.image} alt={ticket.item} className="w-full h-full object-cover" />
             </div>
           )}
           <div className="space-y-1">
@@ -80,7 +79,9 @@ export default function TicketCard({ ticket }: TicketCardProps) {
               Ticket #: <span className="text-gray-800">{ticket.ticketNumber}</span>
             </p>
             <div className="flex items-center gap-3 text-xs text-gray-500 pt-0.5">
-              <span>Price: <strong className="text-gray-900">₦{ticket.price.toLocaleString()}</strong></span>
+              <span>
+                Price: <strong className="text-gray-900">₦{ticket.price.toLocaleString()}</strong>
+              </span>
               <span>•</span>
               <span>Date: {ticket.purchaseDate}</span>
             </div>
@@ -91,7 +92,7 @@ export default function TicketCard({ ticket }: TicketCardProps) {
         <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-200/60">
           <span
             className={`px-4 py-1.5 rounded-full text-xs font-extrabold border shadow-xs tracking-wide ${getBadgeStyle(
-              ticket.status
+              ticket.status,
             )}`}
           >
             {getStatusLabel(ticket.status)}

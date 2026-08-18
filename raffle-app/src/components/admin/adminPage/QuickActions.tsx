@@ -1,8 +1,8 @@
 'use client';
 
-import Link from 'next/link';
-import { Plus, Megaphone, BarChart3, FileDown } from 'lucide-react';
 import Card from '@/components/ui/Card';
+import { BarChart3, FileDown, Megaphone, Plus } from 'lucide-react';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 
 interface QuickAction {
@@ -71,7 +71,7 @@ export default function QuickActions() {
               <action.icon size={18} />
               {action.label}
             </button>
-          )
+          ),
         )}
       </div>
     </Card>

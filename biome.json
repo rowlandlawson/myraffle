@@ -8,10 +8,24 @@
     "rules": {
       "recommended": true,
       "correctness": {
-        "noUnusedVariables": "warn"
+        "noUnusedVariables": "error",
+        "useExhaustiveDependencies": "warn"
       },
       "style": {
         "noNonNullAssertion": "off"
+      },
+      "suspicious": {
+        "noExplicitAny": "error"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "off"
+      },
+      "a11y": {
+        "useButtonType": "off",
+        "noLabelWithoutControl": "off",
+        "useKeyWithClickEvents": "off",
+        "noSvgWithoutTitle": "off",
+        "useValidAnchor": "off"
       }
     }
   },
@@ -33,7 +47,9 @@
       "**/.next",
       "**/dist",
       "**/uploads",
-      "**/generated"
+      "**/generated",
+      "**/next-env.d.ts",
+      "**/biome-report.json"
     ]
   }
 }

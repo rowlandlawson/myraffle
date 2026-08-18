@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import { FileText, X, ShieldCheck } from 'lucide-react';
+import { FileText, ShieldCheck, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
 
 interface TermsModalProps {
   isOpen: boolean;
@@ -17,8 +17,8 @@ export default function TermsModal({ isOpen, onClose }: TermsModalProps) {
     if (isOpen) {
       setIsLoading(true);
       api
-        .get('/api/settings/terms_and_conditions')
-        .then((res: any) => {
+        .get<{ value?: string }>('/api/settings/terms_and_conditions')
+        .then((res) => {
           if (res.success && res.data?.value) {
             setContent(res.data.value);
           }
